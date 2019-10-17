@@ -1,3 +1,3 @@
 # della_via_projeto
-/csa
-/projeto
+/csa     - protheus 10
+/projeto - protheus 10
