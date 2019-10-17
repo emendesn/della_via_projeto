@@ -1,0 +1,74 @@
+Group Revisao - Durapol
+   Version=7.0
+   VSSDB=
+   HasProperties=1
+   Properties
+      BeforeApply=
+      AfterApply=
+      Icon=
+      ID=
+      Version=
+      PalmName=
+      OutPut=
+   End
+   ProjectsCount=3
+   Project Compras
+      FoldersCount=2
+      Folder Pontos de Entrada
+         VSSPath=Fontes
+         FilesCount=2
+         File \my projects\Durapol\Revisao\SF1100I.prw
+             Type=T
+         End
+         File \my projects\Durapol\Revisao\A100DEL.PRW
+             Type=T
+         End
+      End
+      Folder Fontes
+         VSSPath=Nova Pasta2
+         FilesCount=2
+         File \my projects\Durapol\Revisao\TESTE.PRW
+             Type=T
+         End
+         File \my projects\Durapol\Revisao\TstGrava.prw
+             Type=T
+         End
+      End
+   End
+   Project Faturamento
+      FoldersCount=2
+      Folder Pontos de Entrada
+         VSSPath=Nova Pasta1
+         FilesCount=4
+         File \my projects\Durapol\MS520VLD.PRW
+             Type=T
+         End
+         File \my projects\Durapol\m460Qry.Prw
+             Type=T
+         End
+         File \my projects\Durapol\M460MARK.PRW
+             Type=T
+         End
+         File \my projects\Durapol\Revisao\M460NUM.prw
+             Type=T
+         End
+      End
+      Folder Relatorio
+         VSSPath=Nova Pasta2
+         FilesCount=1
+         File \my projects\Durapol\DFatr04.prw
+             Type=T
+         End
+      End
+   End
+   Project Estoques
+      FoldersCount=1
+      Folder Pontos de Entrada
+         VSSPath=Nova Pasta1
+         FilesCount=1
+         File \my projects\Durapol\Revisao\DCOMG01.prw
+             Type=T
+         End
+      End
+   End
+End

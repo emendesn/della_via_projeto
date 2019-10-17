@@ -1,0 +1,50 @@
+Group TESTE
+   Version=7.0
+   VSSDB=
+   HasProperties=1
+   Properties
+      BeforeApply=
+      AfterApply=
+      Icon=
+      ID=
+      Version=
+      PalmName=
+      OutPut=
+   End
+   ProjectsCount=1
+   Project Novo Projeto
+      FoldersCount=2
+      Folder Fontes
+         VSSPath=Fontes
+         FilesCount=0
+      End
+      Folder Definições
+         VSSPath=Definições
+         FilesCount=8
+         File \my projects\Durapol\Sepu\SF1100I.prw
+             Type=T
+         End
+         File \my projects\Durapol\Sepu\MTA650A.prw
+             Type=T
+         End
+         File \my projects\Durapol\Sepu\MTA650I.prw
+             Type=T
+         End
+         File \my projects\Durapol\Sepu\WSEPU01.PRW
+             Type=T
+         End
+         File \my projects\Durapol\DFATR07.PRW
+             Type=T
+         End
+         File \my projects\Durapol\DFATR08.PRW
+             Type=T
+         End
+         File \my projects\Durapol\DESTA03.PRW
+             Type=T
+         End
+         File \my projects\Durapol\Sepu\TSTSE1.PRW
+             Type=T
+         End
+      End
+   End
+End

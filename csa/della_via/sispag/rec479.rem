@@ -1,0 +1,62 @@
+IDENT REGISTRO 00100100                                                           
+IDENT REMESSA  00200201                                                           
+IDENT ARQ      0030090"REMESSA"                                                   
+IDENT TP SERV  010011001                                                          
+IDENT EXTENSO  0120260"COBRANCA"                                                  
+FILLER         0270280"00"                                                        
+IDENT TP ARQ   0290290"1"                                                         
+NUMERO CONV    0300370SEE->EE_CODEMP                                              
+FILLER         0380460                                                            
+NOME CEDENTE   0470760SM0->M0_NOMECOM                                             
+NUMERO CAMARA  0770790"479"                                                       
+NOME BANCO     0800940"BANCO DE BOSTON"                                           
+DATA GRAVACAO  0951000GravaData(dDataBase,.F.)                                    
+DENS ARQ       101105 "01600"                                                     
+UNID DENS      106108 "BPI"                                                       
+FILLER         109199                                                             
+NUMERO CONTRATO200207 "00000000"                                                  
+FILLER         208394                                                             
+NUMERO SEQ     395400 "000001"                                                    
+IDENT TITULO   0010010"1"                                                         
+IDENT TP EMPRES0020030"01"                                                        
+NUMERO INSCRI  0040170SUBSTR(SM0->M0_CGC,1,14)                                    
+FILLER         0180370                                                            
+NUMERO SEQ     0380620SE1->E1_FILIAL+SE1->E1_PREFIXO+SE1->E1_NUM+SE1->E1_PARCELA  
+Nosso Numero   0630710STRZERO(VAL(SE1->E1_NUMBCO),9)                              
+VALOR ANTEC    0720820"00000000000"                                               
+FILLER         0830830"0"                                                         
+COD MOEDA      0840870"R$"                                                        
+RESERVADO BCO  88 1070                                                            
+IDENT TP CARTEI1081080"1"                                                         
+IDENT OCON REM 1091100SE1->E1_OCORREN                                             
+N TITULO       111120 SE1->E1_PREFIXO+SE1->E1_NUM+SE1->E1_PARCELA                 
+DATA VCTO TITUL121126 GravaData(SE1->E1_VENCTO,.F.)                               
+VALOR TITULO   1271390STRZERO(INT(SE1->E1_SALDO*100),13)                          
+COD CAMARA     1401420"479"                                                       
+FILLER         1431470                                                            
+COD ID TITULO  1481490"DM"                                                        
+Aceite         1501500"A"                                                         
+Data Emissao   1511560GravaData(SE1->E1_EMISSAO,.F.)                              
+Instrucao 1    1571580IF(!EMPTY(SE1->E1_INSTR1),SE1->E1_INSTR1,SEE->EE_INSTPRI)   
+N DIAS INSTRU  1591600SEE->EE_DIAS                                                
+Mora por dia   1611732STRZERO(SE1->E1_SALDO*SEE->EE_JUROS,13)                     
+Desconto ate   1741790"000000"                                                    
+Valor Desconto 1801920"0000000000000"                                             
+Valor IOF      1932050"0000000000000"                                             
+Abatimentos    2062180STRZERO(SE1->E1_DESCONT*100,13)                             
+Codigo Inscr.  2192200IF(RIGHT(SA1->A1_CGC,2)="  ",01,02)                         
+Numero Inscr   2212340SA1->A1_CGC                                                 
+Nome do Sacado 2352740SubStr(SA1->A1_NOME,1,40)                                   
+Lograd Sacado  2753110IF(!EMPTY(SA1->A1_ENDCOB),SA1->A1_ENDCOB,SA1->A1_END)       
+FILLER         3123140                                                            
+COMPL N TITULO 315326                                                             
+CEP SACADO     3273340IF(!EMPTY(SA1->A1_ENDCOB),SA1->A1_CEPC,SA1->A1_CEP)         
+CIDADE SACADO  3353490IF(!EMPTY(SA1->A1_ENDCOB),SA1->A1_MUNC,SA1->A1_MUN)         
+ESTADO SACADO  3503510IF(!EMPTY(SA1->A1_ENDCOB),SA1->A1_ESTC,SA1->A1_EST)         
+MEN BLOQUETE   3523910                                                            
+FILLER         3923940                                                            
+Sequencial     3954000incrementa()                                                
+Codigo Registro00100109                                                           
+Brancos        0023940                                                            
+Numero Sequenc 3954000Incrementa()                                                
+

@@ -1,0 +1,29 @@
+Group SFA_DURAPOL
+   Version=7.0
+   VSSDB=
+   HasProperties=1
+   Properties
+      BeforeApply=
+      AfterApply=
+      Icon=
+      ID=
+      Version=
+      PalmName=
+      OutPut=
+   End
+   ProjectsCount=1
+   Project SFA
+      FoldersCount=2
+      Folder Fontes
+         VSSPath=Fontes
+         FilesCount=1
+         File \my projects\SFA\AX_HCF.prw
+             Type=T
+         End
+      End
+      Folder Definições
+         VSSPath=Definições
+         FilesCount=0
+      End
+   End
+End

@@ -1,0 +1,823 @@
+//#INCLUDE "LOJR130.CH"
+#INCLUDE "PROTHEUS.CH"
+
+//Posicoes do array aLivro
+#DEFINE _LFTES     1
+#DEFINE _LFCF      2
+#DEFINE _LFALQIMP  3
+#DEFINE _LFVALCONT 4
+
+/*/
+ÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜ
+±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±
+±±ÚÄÄÄÄÄÄÄÄÄÄÂÄÄÄÄÄÄÄÄÄÄÂÄÄÄÄÄÄÄÂÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÂÄÄÄÄÄÄÂÄÄÄÄÄÄÄÄÄÄ¿±±
+±±³Fun‡…o	 ³ LOJR130	³ Autor ³ Marcelo Kotaki        ³ Data ³ 14/02/05 ³±±
+±±ÃÄÄÄÄÄÄÄÄÄÄÅÄÄÄÄÄÄÄÄÄÄÁÄÄÄÄÄÄÄÁÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÁÄÄÄÄÄÄÁÄÄÄÄÄÄÄÄÄÄ´±±
+±±³Descri‡…o ³ Emissao de NF de Cupom Fiscal (Decreto 4.373-N de 02/12/98)³±±
+±±ÃÄÄÄÄÄÄÄÄÄÄÅÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ´±±
+±±³Sintaxe   ³ LOJR130(void)											  ³±±
+±±ÃÄÄÄÄÄÄÄÄÄÄÅÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ´±±
+±±³ Uso		 ³ SIGALOJA 												  ³±±
+±±ÃÄÄÄÄÄÄÄÄÄÄÅÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÂÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ´±±
+±±³Analista  ³ Data/Bops/Ver ³Manutencao Efetuada                         ³±±
+±±ÃÄÄÄÄÄÄÄÄÄÄÅÄÄÄÄÄÄÄÄÂÄÄÄÄÄÄÂÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ´±±
+±±³Marcelo K.³14/02/05³710   ³-Revisao do fonte para compatibilizacao com ³±±
+±±³          ³        ³      ³o KRMS. Motivo BOPS 	                      ³±±
+±±³          ³        ³      ³                                            ³±±
+±±³          ³        ³      ³                                            ³±±
+±±ÀÄÄÄÄÄÄÄÄÄÄÁÄÄÄÄÄÄÄÄÁÄÄÄÄÄÄÁÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÙ±±
+±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±
+ßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßß
+/*/
+User Function DLojR130()
+
+Local aArea		   	:= GetArea()												// Salva a area atual
+Local lRet			:= .F.														// Retorno da funcao
+Local lOk	   		:= .T.														// Flag de validacao para continuar a gravacao
+Local titulo   		:= "Emiss„o de Nota Fiscal para Cupom Fiscal"				// "Emiss„o de Nota Fiscal para Cupom Fiscal"
+Local cDesc1   		:= "Este programa tem a fun‡„o de emitir Nota Fiscal com base em um Cupom Fiscal j "													// "Este programa tem a fun‡„o de emitir Nota Fiscal com base em um Cupom Fiscal j "
+Local cDesc2   		:= "emitido na Venda atendendo ao Decreto 4.373-N de 02/12/1998. Para tanto, ser " 													// "emitido na Venda atendendo ao Decreto 4.373-N de 02/12/1998. Para tanto, ser "	
+Local cDesc3   		:= "utilizado o script de Nota Fiscal gravado no Parƒmetro MV_SCRNFCP (" +GetMv("MV_SCRNFCP")+")"										  			// "utilizado o script de Nota Fiscal gravado no Parƒmetro MV_SCRNFCP (" +GetMv("MV_SCRNFCP")+")"				
+Local wnrel			:= "NFISCAL"            									// Nome DEFAULT do relatorio em Disco
+Local cString  		:= "SL1"													// Alias principal para a impressao do relatorio
+Local cScript  		:= GetMv("MV_SCRNFCP")										// Parametro que indica o Arquivo de Script de impressao de NF para Cupom Fiscal
+Local aRegsSF2 		:= {} 														// Registros do SF2 - Cabecalho das NF's de saida
+Local aRegsSD2 		:= {}														// Registros do SD2 - Itens de venda da NF de saida		
+Local aHeader  		:= {}														// aHeader auxiliar para gravacao da tabela SF2	
+Local cVar 			:= ""														// Variavel auxiliar para macro na gravacao dos registros
+Local aHeader1		:= {}														// aHeader auxiliar para gravacao da tabela SD2	
+Local cTesNota 		:= GetMv("MV_TESNOTA")                                     	// Parametro que indica Tipo de Saida para geracao de Nota Fiscal s/Cupom
+Local aNotas		:={}														// Array com a numeracao das NF's  
+Local nQtdNotas		:= 1														// Contador com o numero de NF's	
+Local cLojaNF  		:= Alltrim(GetMV("MV_LOJANF"))								// Parametro com a serie da Nota Fiscal - Somente para o SIGALOJA
+Local aGetBook		:= {}														// Array 
+Local aImpVarSD2 	:= {}														// Array com os itens do SD2
+Local aLivro     	:= {}														// Array para geracao do Livro Fiscal
+Local nTaxaMoeda 	:= 1														// Moeda utilizada
+Local nRegSD2    	:= 0														// Variavel auxiliar para armazenar o recno do SD2 	
+Local lGeraLivro 	:= .T.														// Flag que indica se o livro sera gerada ou nao
+Local aAreaSF3   	:= {}														// Salva a area especifica para o SF3 - Livros Fiscais	
+Local aAreaSL2   	:= {}														// Salva a area especifica para o SL2 - Livros Fiscais		   
+Local nMaxItens  	:= 0 														// Determina o numero maximo de itens que uma nf pode conter...															
+Local nItensVenda	:= 0														// Quantidade de itens da NF
+Local nRegSF2    	:= 0														// Salva uma posicao de registro do SF2
+Local cItem      	:= REPLICATE( "0", TamSx3("D2_ITEM")[1] )					// Contador de itens para o SD2				
+Local aTotNfs    	:= {}														// Array com os totalizadores para o SF2
+Local nI         	:= 0														// Contador auxiliar
+Local aAreaSX3   	:= SX3->(GetArea())										// Salva area do SX3	
+Local cNfOri     	:= ""														// Numero da NF de origem		
+Local cSerOri    	:= ""														// Serie da NF de origem
+Local cStrNfCup  	:= ""														// Associa o numero da NF ao cupom fiscal
+Local cTiposDoc  	:= ALLTRIM( SuperGetMv( 'MV_ESPECIE' ) )					// Conten tipos de documentos fiscais utilizados na emissao de notas fiscais
+Local cEspecie  	:= SPACE(5)													// Especie da NF	
+Local nCount        := 0 														// Contador auxiliar
+Local nPosSign		:= 0 														// Contador de posicao dentro de sring
+Local nSaveSx8      := GetSx8Len()                                             // Controle da numeracao sequencial
+
+Private aReturn  := { 	"Zebrado,Especial",;												// [1] Reservado para Formulario	"Zebrado,Especial"
+						1,;														// [2] Reservado para N§ de Vias	
+						"Administracao",;												// [3] Destinatario					"Administracao"
+						2,;														// [4] Formato => 1-Comprimido 2-Normal	
+						2,;														// [5] Midia   => 1-Disco 2-Impressora
+						1,;														// [6] Porta ou Arquivo 1-LPT1... 4-COM1...	
+						"",;													// [7] Expressao do Filtro
+						1 }														// [8] Ordem a ser selecionada
+																				// [9]..[10]..[n] Campos a Processar (se houver)
+//ÚÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ¿
+//³ Variaveis utilizadas para Impressao do Cabecalho e Rodape	 ³
+//ÀÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÙ
+Private nLastKey := 0															// Controla o cancelamento da SetPrint e SetDefault
+Private cPerg	 := "LJR130"													// Pergunte do Relatorio - SX1
+Private cSerie   := GetMv("MV_LOJANF")											// Serie da Nota Fiscal - SIGALOJA	
+Private cNumNota := CriaVar("L1_DOC",.F.)										// Numero da NF 
+Private oDlgLoja
+
+//ÚÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ¿
+//³Verifica se existe um sinal de & (macro substituicao), dessa forma³
+//³possibilita ao usuario executar uma customizacao.                 ³
+//³Foi necessario fazer dessa forma, pois caso contrario acarretaria ³
+//³erro na base de clientes ja implantada.                           ³
+//³Solicitado por: Projeto Kodak                                     ³
+//ÀÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÙ
+If LEFT(cLojaNF,1) == "&" 
+	cLojaNF := &( SUBSTR(cLojaNF,2,LEN(cLojaNF)) )
+Endif	
+
+cSerie  := PadR(cLojaNF,TamSX3("L1_SERIE")[1])
+
+If !Pergunte(cPerg,.T.)
+	Return(lRet)
+Endif
+
+//ÚÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ¿
+//³ Valida se o processo deve ou nao continuar                   ³
+//ÀÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÙ
+If ExistBlock("LJR130")
+	If !ExecBlock("LJR130", .F., .F.)
+		Return(lRet)
+	Endif
+Endif
+
+//ÚÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ¿
+//³ Variaveis utilizadas para parametros						³
+//³ mv_par01				// Numero do Cupom Fiscal 			³
+//³ mv_par02				// Serie 							³
+//ÀÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÙ
+DbSelectArea("SL1")
+DbSetOrder(2)
+If lOk  := DbSeek(xFilial("SL1") + Mv_par02 + Mv_par01)
+	If Empty( SL1->L1_PDV )
+		lOk := .F.
+	Endif
+Endif
+
+If !lOk
+	Help(" ","1","CUPFISCAL")
+	Return(lRet)
+Endif
+
+If SF2->(DbSeek( xFilial("SF2") + SL1->L1_DOC + SL1->L1_SERIE ))
+	If ! Empty(SF2->F2_NFCUPOM)
+		// "Atencao" - "Ja foi gerado uma nota fiscal para esse cupom fiscal." - "Ok"
+		Aviso("Atencao", "Ja foi gerado uma nota fiscal para esse cupom fiscal.", { "Ok" })
+		Return(lRet)
+	Endif
+Endif
+
+//ÚÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ¿
+//³ Envia controle para a funcao SETPRINT 						 ³
+//ÀÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÙ
+SetPrint(cString,wnrel,cPerg,@titulo,cDesc1,cDesc2,cDesc3,.F.,"")
+
+If nLastKey == 27
+	Return(lRet)
+Endif
+
+DbSelectArea("SX3")
+DbSetOrder(1)
+DbSeek("SF2")
+While !Eof() .AND. (SX3->X3_ARQUIVO == "SF2")
+	If SX3->X3_CONTEXT != "V"
+		AADD( aHeader,{	TRIM(x3titulo())	,;		// 1  
+						SX3->X3_CAMPO		,;		// 2
+						SX3->X3_PICTURE		,;		// 3
+						SX3->X3_TAMANHO		,;		// 4
+						SX3->X3_DECIMAL		,;		// 5
+						SX3->X3_VALID		,;		// 6
+						SX3->X3_USADO		,;		// 7
+						SX3->X3_TIPO		,;		// 8 	
+						SX3->X3_ARQUIVO } )			// 9 
+	Endif
+	SX3->( DbSkip() )
+End
+
+DbSeek("SD2")
+While !Eof() .AND. ( SX3->X3_ARQUIVO == "SD2" )
+
+	//ÚÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ¿
+	//³Carrega somente os campos REAIS³
+	//ÀÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÙ
+	If SX3->X3_CONTEXT != "V"
+		AADD( aHeader1,{	TRIM(x3titulo())	,;	// 1	
+						 	SX3->X3_CAMPO		,;	// 2
+						  	SX3->X3_PICTURE		,;	// 3
+							SX3->X3_TAMANHO		,;	// 4
+						 	SX3->X3_DECIMAL		,;	// 5
+						 	SX3->X3_VALID		,;	// 6
+							SX3->X3_USADO		,;	// 7
+						 	SX3->X3_TIPO		,;	// 8	
+						  	SX3->X3_ARQUIVO		,;	// 9
+						   	SX3->X3_CONTEXT } )		// 10	
+	Endif
+	SX3->( DbSkip() )
+End
+RestArea(aAreaSX3) //Retorna o SX3 para a posicao original...
+
+SetDefault(aReturn,cString)
+
+If nLastKey == 27
+	lOk := .F.
+Endif
+
+If lOk
+	//ÚÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ¿
+	//³Na legislacao brasileira em uma nf para cupom nao e necessario controlar a quantidade de itens...³
+	//ÀÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÙ
+	If cPaisLoc != "BRA"
+		//ÚÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ¿
+		//³Verifica se ha multiplas notas ³
+		//ÀÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÙ
+		aAreaSL2 := SL2->(GetArea())
+
+		DbSelectarea("SL2")
+		DbSetOrder(1)
+		If MsSeek( xFilial("SL2") + SL1->L1_NUM )
+			While 	!Eof()						.AND.;
+				 	L2_FILIAL == xFilial("SL2")	.AND.;
+					L2_NUM == SL1->L1_NUM
+
+				nItensVenda ++
+				DbSkip()
+			End
+		Endif
+		RestArea(aAreaSL2)		
+		
+		//Determina o numero maximo de itens que uma nf pode conter...
+		If cPaisLoc <> "CHI"
+			nMaxItens := GetMV("MV_SER"+cSerie,.F.,GETMV("MV_NUMITEN"))
+		Else
+			nMaxItens := GETMV("MV_NUMITEN")
+		Endif
+		
+		//Determina a qtde de notas que serao geradas...
+		If nItensVenda > nMaxItens
+			nQtdNotas := Int(nItensVenda/nMaxItens) + Iif(Mod(nItensVenda,nMaxItens) > 0,1,0)
+		Endif
+		
+		//Calcula os totais das novas nfs que serao geradas...
+		If nQtdNotas > 1
+			Lj130CalcNFs(@aTotNfs,nMaxItens)
+		Endif
+	Endif
+	
+	//Pesquisa o Cupom Original...
+	DbSelectarea("SF2")
+	DbSetOrder(1)
+	If MsSeek( xFilial("SF2") + SL1->L1_DOC + SL1->L1_SERIE + SL1->L1_CLIENTE + SL1->L1_LOJA )
+		nRegSF2 := SF2->(RecNo())
+	Endif
+	
+	If cPaisLoc <> "BRA"
+		If !Empty(SF2->F2_NFORI) .And. cPaisLoc == "MEX"
+			cNfOri := SF2->F2_NFORI
+			cSerOri:= SF2->F2_SERIORI
+			
+			If SF2->(MsSeek(xFilial("SF2") + cNfOri + cSerOri))
+				If SF2->F2_GLOBAL == "1"
+					MsgAlert("Nao se pode gerar uma nota fiscal para um cupom que ja pertence a uma nota fiscal global ("+SF2->F2_DOC+" "+SF2->F2_SERIE+")") //"Nao se pode gerar uma nota fiscal para um cupom que ja pertence a uma nota fiscal global (""
+					SF2->(DbGoTo(nRegSF2))
+					lOk := .F.
+				Endif
+			Endif
+		
+		Endif
+		
+		If lOk
+			SF2->(DbGoTo(nRegSF2))
+			If !Empty(SF2->F2_NFCUPOM)
+				cStrNfCup := SubStr(SF2->F2_NFCUPOM,4,TamSx3("F2_DOC")[1])+" "+SubStr(SF2->F2_NFCUPOM,1,TamSx3("F2_SERIE")[1])
+				//"Ja existe uma Nota Fiscal ("") gerada para o Cupom "" Nao e possivel gerar outra Nota Fiscal para o mesmo Cupom Fiscal"
+				MsgAlert("Ja existe uma Nota Fiscal (" + cStrNfCup + ") gerada para o Cupom " + SF2->F2_DOC + " Nao e possivel gerar outra Nota Fiscal para o mesmo Cupom Fiscal")
+				lOk := .F.
+			Endif
+		Endif
+	Endif
+	
+	//Gera a numeracao da(s) nf(s) que sera(o) gerada(s)...
+	If lOk
+		If !lj010Nota(cLojaNF, 2,, nQtdNotas, @aNotas)
+			lOk := .F.
+		Endif
+	Endif
+Endif
+
+If lOk
+	BEGIN TRANSACTION
+	
+		For nI := 1 To Len(aNotas)
+			cSerie 	 := Padr(aNotas[nI][1],TamSx3("F2_SERIE")[1])
+			cNumNota := Padr(aNotas[nI][2],TamSx3("F2_DOC")[1])
+			
+			If nI == 1
+				If cPaisLoc != "BRA"
+					//ÚÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ¿
+					//³Verifica se foi gerado o registro no SF3 para o cupom original, caso tenha sido³
+					//³gerado nao existe necessidade de gerar livro para a factura que sera gerada    ³
+					//ÀÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÙ
+					aAreaSF3 := SF3->(GetArea())
+					DbSelectarea("SF3")
+					DbSetOrder(4)
+					If MsSeek( xFilial("SF3") + SL1->L1_CLIENTE + SL1->L1_LOJA + SL1->L1_DOC + SL1->L1_SERIE )
+						If AllTrim(SF3->F3_ESPECIE) == "CF"
+							lGeraLivro := .F.
+						Endif
+					Endif
+					RestArea(aAreaSF3)
+				Endif
+				
+				//ÚÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ¿
+				//³Posiciona o arquivo SF2 no cupom para o qual sera gerada nf e³
+				//³faz a amaracao entre o cupom original e a nf gerada          ³
+				//ÀÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÙ
+				DbSelectArea("SF2")
+				DbSetOrder(1)
+				DbGoTo(nRegSF2)
+				Reclock("SF2",.F.)
+				SF2->F2_NFCUPOM := cSerie + cNumNota
+				MsUnlock()
+				DbCommit()
+				
+				//Armazena os campos e os seus respectivos valores para posterior gravacao...
+				For nCount := 1 TO LEN( aHeader )
+					cVar := TRIM( aHeader[ nCount ][2] )
+					AADD( aRegsSF2, Eval( FielDblock( cVar ) ) )
+				Next nCount
+			Endif
+			
+			//ÚÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ¿
+			//³Gravando Registro no SF2 zerado conforme legisla‡ao, qdo pais igual a Brasil   ³
+			//ÀÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÙ
+			RecLock("SF2",.T.)
+			For nCount := 1 TO LEN( aHeader )
+				cVar := TRIM( aHeader[ nCount ][2] )
+				Replace &cVar. With aRegsSF2[nCount]
+			Next nCount
+			
+			Replace F2_DOC   	With cNumNota
+			Replace F2_SERIE 	With cSerie
+
+			//ÚÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ¿
+			//³Inicializa com "NF" se estiver fora do PAIS atualiza³
+			//ÀÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÙ
+			cEspecie := "NF"
+			If cPaisLoc == "BRA"
+				If cTiposDoc != NIL
+					cTiposDoc := StrTran( cTiposDoc, ";", CHR(13)+CHR(10))
+					
+					For nCount := 1 TO MLCount( cTiposDoc )
+						cEspecie := ALLTRIM( StrTran( MemoLine( cTiposDoc,, nCount ), CHR(13), CHR(10) ) )
+						nPosSign := Rat( "=", cEspecie)
+
+						If nPosSign > 0 .AND. ALLTRIM( cSerie ) == ALLTRIM( SUBSTR( cEspecie, 1, nPosSign - 1 ) )
+							DbSelectarea("SX5")
+							DbSetorder(1)
+							If MsSeek( xFilial("SX5") + "42" + SUBSTR(cEspecie, nPosSign + 1) )
+								cEspecie := SUBSTR( cEspecie, nPosSign + 1 )
+							Else
+								cEspecie := SPACE(5)
+							Endif
+						   
+							Exit
+						Else
+							cEspecie := SPACE(5)
+						Endif
+					Next nCount
+					
+				Endif
+			Endif
+			
+			dbSelectArea("SF2")
+			Replace F2_ESPECIE 	With cEspecie
+			Replace F2_PDV   	With ""
+			Replace F2_ECF   	With ""
+			Replace F2_NFCUPOM 	With SL1->L1_SERIE+SL1->L1_DOC		// Aqui grava o numero do cupom na nota fiscal gerada
+			Replace F2_NEXTDOC 	With Iif(Len(aNotas) > 1 .And. nI < Len(aNotas),Padr(aNotas[nI+1][2],TamSx3("F2_DOC")[1]),"") //Numero da Prox. Nota
+
+			If Len(aNotas) > 1 .AND. nI < Len(aNotas)
+				Replace F2_NEXTDOC 	With Padr( aNotas[nI+1][2], TamSx3("F2_DOC")[1] ) //Numero da Prox. Nota
+			Else
+				Replace F2_NEXTDOC 	With ""	
+			Endif	
+
+			Replace F2_PREFIXO 	With cSerie
+			Replace F2_EMISSAO  With dDataBase
+			
+			If cPaisLoc == "BRA" .AND. !LjAnalisaLeg(10)[1]
+				Replace F2_DUPL  	With ""
+				Replace F2_VALBRUT	With 0
+				Replace F2_VALMERC	With 0
+				Replace F2_VALFAT  	With 0
+				Replace F2_DESCONT	With 0
+			Endif
+			
+			If cPaisLoc != "BRA"
+				//ÚÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ¿
+				//³E necessario gravar os campo F2_NFORI e F2_SERIORI   ³
+				//³para que essa factura nao seja considerada na geracao³
+				//³da fatura global                                     ³
+				//ÀÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÙ
+				Replace F2_NFORI   With SL1->L1_DOC
+				Replace F2_SERIORI With SL1->L1_SERIE
+				Replace F2_HORA    With SubStr(Time(),1,5)
+				Replace F2_TIPODOC With "01"
+				If !Empty(aTotNfs)
+					Replace F2_VALBRUT With aTotNfs[nI][3]
+					Replace F2_VALMERC With aTotNfs[nI][1]
+					Replace F2_VALFAT  With aTotNfs[nI][2]
+					Replace F2_DESCONT With aTotNfs[nI][4]
+					
+					For nCount := 1 To Len(aTotNfs[nI][5])
+						//Base do Imposto
+						cVar := Trim(aTotNfs[ nI ][5][ nCount ][2])
+						Replace &cVar. With aTotNfs[ nI ][5][ nCount ][3]
+						
+						//Valor do Imposto
+						cVar := Trim(aTotNfs[ nI ][5][ nCount ][4])
+						Replace &cVar. With aTotNfs[ nI ][5][ nCount ][5]
+					Next nCount
+				Endif
+			Endif
+			
+			If cPaisLoc == "BRA"
+				Replace F2_ICMFRET	With 0
+				Replace F2_FRETE	With 0
+				Replace F2_SEGURO	With 0
+				Replace F2_DESPESA	With 0
+				Replace F2_VALICM	With 0
+				Replace F2_BASEICM	With 0
+				Replace F2_VALIPI	With 0
+				Replace F2_BASEIPI	With 0
+				Replace F2_ICMSRET	With 0
+				Replace F2_BASEISS	With 0
+				Replace F2_VALISS 	With 0
+				Replace F2_BRICMS 	With 0
+				Replace F2_ICMAUTO 	With 0
+				Replace F2_VALINSS	With 0
+				Replace F2_BASEINS	With 0
+				Replace F2_VALIMP1	With 0
+				Replace F2_VALIMP2	With 0
+				Replace F2_VALIMP3	With 0
+				Replace F2_VALIMP4	With 0
+				Replace F2_VALIMP5	With 0
+				Replace F2_VALIMP6	With 0
+				Replace F2_VALPIS	With 0
+				Replace F2_VALIRRF	With 0
+			Endif
+			
+			MsUnlock()
+			DbCommit()
+			
+			//Gravando Registro no SD2 zerado conforme legislacao, qdo pais igual a Brasil...
+			nItensVenda := 0
+			DbSelectArea("SD2")
+			DbSetOrder(3)
+			If nRegSD2 == 0
+				DbSeek( xFilial("SD2")+ SL1->L1_DOC + SL1->L1_SERIE + SL1->L1_CLIENTE + SL1->L1_LOJA )
+			Else
+				DbGoTo(nRegSD2)
+			Endif
+			
+			While 	!Eof() 							.AND.;
+					 D2_FILIAL	 == xFilial("SD2") 	.AND.;
+					 D2_DOC		 == SL1->L1_DOC 	.AND.;	
+					 D2_SERIE 	 == SL1->L1_SERIE 	.AND.;
+					 D2_LOJA	 == SL1->L1_LOJA  
+									
+				If (cPaisLoc != "BRA") .AND. (Len(aNotas) > 1)
+					nItensVenda ++
+					cItem := Soma1(cItem,Len(cItem))
+					If nItensVenda > nMaxItens
+						nItensVenda := 0
+						cItem       := Replicate( "0", TamSx3("D2_ITEM")[1] )
+						Exit
+					Endif
+				Endif
+				
+				//ÚÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ¿
+				//³Armazena os campos e os seus respectivos valores para posterior gravacao   ³
+				//ÀÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÙ
+				For nCount := 1 TO LEN( aHeader1 )
+					cVar := TRIM( aHeader1[ nCount ][2] )
+					AADD( aRegsSD2, Eval( FielDblock( cVar ) ) )
+				Next nCount
+				nRegSD2 := Recno()
+				
+				Reclock("SD2",.T.)
+				For nCount := 1 TO LEN( aHeader1 )
+					cVar := TRIM( aHeader1[ nCount ][2] )
+					Replace &cVar. With aRegsSD2[ nCount ]
+				Next nCount
+				
+				Replace D2_DOC     With cNumNota
+				Replace D2_SERIE   With cSerie
+				Replace D2_EMISSAO With dDatabase
+				If cPaisLoc == "BRA"
+					Replace D2_VALFRE	With 0
+					Replace D2_DESPESA	With 0
+					Replace D2_SEGURO	With 0
+					Replace D2_VALICM	With 0
+					Replace D2_VALIPI	With 0
+					Replace D2_BASEICM	With 0
+					Replace D2_PICM		With 0
+					Replace D2_IPI		With 0
+					Replace D2_PICM		With 0
+					Replace D2_BRICMS	With 0
+					Replace D2_BASEORI  With 0
+					Replace D2_CODISS   With ""
+					Replace D2_ICMSRET  With 0
+					Replace D2_BASIMP1  With 0
+					Replace D2_BASIMP2  With 0
+					Replace D2_BASIMP3  With 0
+					Replace D2_BASIMP4  With 0
+					Replace D2_BASIMP5  With 0
+					Replace D2_BASIMP6  With 0
+					Replace D2_VALIMP1  With 0
+					Replace D2_VALIMP2  With 0
+					Replace D2_VALIMP3  With 0
+					Replace D2_VALIMP4  With 0
+					Replace D2_VALIMP5  With 0
+					Replace D2_VALIMP6  With 0
+					Replace D2_ALIQINS  With 0
+					Replace D2_BASEIPI  With 0
+					Replace D2_BASEISS  With 0
+					Replace D2_BASEINS  With 0
+					Replace D2_BASEISS  With 0
+					Replace D2_VALISS   With 0
+					Replace D2_ICMFRET  With 0
+					Replace D2_VALINS   With 0
+				Else
+					If Len(aNotas) >  1
+						Replace D2_ITEM    With cItem
+						Replace D2_ITEMPV  With cItem
+					Endif
+					Replace D2_REMITO  With "NFCUP" //Gravar este campo para ser ignorado nos recalculos.
+					Replace D2_PDV     With ""
+					Replace D2_NUMSEQ  With ProxNum()
+					Replace D2_NFORI   With SL1->L1_DOC
+					Replace D2_SERIORI With SL1->L1_SERIE
+					Replace D2_ESPECIE With "NF"
+					Replace D2_TIPODOC With "01"
+				Endif
+				
+				If cPaisLoc == "BRA" .AND. !LjAnalisaLeg(10)[1]
+					Replace D2_CUSTO1  	With 0
+					Replace D2_CUSTO2	With 0
+					Replace D2_CUSTO3	With 0
+					Replace D2_CUSTO4	With 0
+					Replace D2_CUSTO5	With 0
+					Replace D2_PRUNIT 	With 0
+					Replace D2_DESCON 	With 0
+					Replace D2_COMIS1   With 0
+					Replace D2_COMIS2   With 0
+					Replace D2_COMIS3   With 0
+					Replace D2_COMIS4   With 0
+					Replace D2_COMIS5   With 0
+					Replace D2_PRCVEN  	With 0
+					Replace D2_TOTAL	With 0
+					Replace D2_DESC		With 0
+				Endif
+				
+				If cPaisLoc == "BRA" .AND. !Empty(cTesNota)
+					DbSelectArea("SF4")
+					DbSetOrder(1)
+					DbSeek(xFilial()+cTesNota)
+					DbSelectArea("SD2")
+					Replace D2_TES  With cTesNota
+					Replace D2_CF	With SF4->F4_CF
+				Endif
+				MsUnlock()
+				DbCommit()
+				
+				//Prepara os dados para a geracao do livro fiscal...
+				If cPaisLoc != "BRA"
+					DbSelectArea("SF4")
+					DbSetOrder(1)
+					DbSeek(xFilial("SF4")+SD2->D2_TES)
+					
+					aImpVarSD2 := Lj130SimSD2(SD2->D2_TES,"SD2")
+					aLivro     := GetBook(@aGetBook,aImpVarSD2,"V",nTaxaMoeda,aLivro,"S",,lGeraLivro)
+					
+					DbSelectArea("SD2")
+					DbSetOrder(3)
+				Endif
+				
+				If ExistBlock("LJR130IT")
+					ExecBlock("LJR130IT",.F.,.F.)
+				Endif
+					
+				DbGoto(nRegSD2)
+				DbSkip()
+				aRegsSD2:= {}
+				nRegSD2 := RecNo()
+			End
+			
+			//Grava o Livro Fiscal
+			If cPaisLoc != "BRA"
+				Lj130Livro("NF",dDataBase,aLivro)
+				aLivro     := {}
+				aGetBook   := {}
+				aImpVarSD2 := {}
+			Endif
+			
+			If ExistBlock("LJR130GR")
+				ExecBlock("LJR130GR",.F.,.F.)
+			Endif
+		
+		Next nI     
+	    While (GetSX8Len() > nSaveSx8)
+		   ConfirmSX8()
+	    End
+	END TRANSACTION
+	
+	//ÚÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ¿
+	//³Chama o script de impressão da nota depois da gravação        ³
+	//³de todas as informacoes da NF                                 ³
+	//ÀÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÙ
+	DbSelectArea("SF2")
+	DbSetOrder(1)
+	DbGoTo(nRegSF2)
+	ExecBlock( cScript, .F., .F. )
+Endif
+
+Set Device To Screen
+
+DbSelectArea("SL1")
+SL1->( DbSetOrder(1) )
+Set Filter To
+
+If aReturn[5] == 1
+	Set Printer To
+	DbCommitAll()
+	OurSpool(wnrel)
+Endif
+
+MS_FLUSH()
+lRet := .T.
+
+//Retorna a Area Original...
+RestArea(aArea)
+
+Return(lRet)
+
+/*/
+ÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜ
+±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±
+±±ÚÄÄÄÄÄÄÄÄÄÄÂÄÄÄÄÄÄÄÄÄÄÄÄÄÂÄÄÄÄÄÄÄÂÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÂÄÄÄÄÄÄÂÄÄÄÄÄÄÄÄÄÄ¿±±
+±±³ Fun‡…o   ³Lj130Livro   ³ Autor ³ Fernando Machima   ³ Data ³ 12.11.02 ³±±
+±±ÃÄÄÄÄÄÄÄÄÄÄÅÄÄÄÄÄÄÄÄÄÄÄÄÄÁÄÄÄÄÄÄÄÁÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÁÄÄÄÄÄÄÁÄÄÄÄÄÄÄÄÄÄ´±±
+±±³ Descri‡ao³ Gerar os registros do Livro Fiscal                         ³±±
+±±ÃÄÄÄÄÄÄÄÄÄÄÅÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ´±±
+±±³ Uso      ³ LOJR130                                                    ³±±
+±±ÀÄÄÄÄÄÄÄÄÄÄÁÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÙ±±
+±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±
+ßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßß
+/*/
+Static Function Lj130Livro(cEspecie,dData,aLivro)
+
+Local cEspec        := Padr(cEspecie,len(criavar("F3_ESPECIE",.f.)))
+Local cEspTmp	    := MVNOTAFIS+"|"+GetSESNew('NDC',"1")+"|"+GetSESNew('NDI',"2")+"|"+GetSESNew('NCI',"2")+"|"+GetSESNew('NCC',"2")
+Local cTipContNF    := Iif(ValType(lFiscal)== "L" .And. lFiscal ,GetMV("MV_CONTNFI",,"I"),GetMV("MV_CONTNF"))
+Local nX, nY
+
+DbSelectArea("SF3")
+DbSetOrder(5)
+//Exclui os registros de mesma numeracao que estao cancelados
+If DbSeek( xFilial("SF3")+cSerie+cNumNota)
+	While !Eof() .And. (xFilial("SF3")+cSerie+cNumNota) == (SF3->F3_FILIAL+SF3->F3_SERIE+SF3->F3_NFISCAL)
+	   If !Empty(SF3->F3_DTCANC)
+	      If cTipContNF == "M" .And. Alltrim(F3_ESPECIE)$ cEspTmp .Or. (cTipContNF == "I" .And. Alltrim(F3_ESPECIE)==	Alltrim(cEspec))	   
+			 RecLock("SF3",.F.)
+			 DbDelete()
+			 MsUnLock()
+			 DbCommit() //-- Atualiza as gravacoes pendentes na tabela
+		  Endif
+	   Endif
+	   DbSkip()
+	End
+Endif
+
+For nX := 2 To Len( aLivro )
+	RecLock( "SF3",.T. )
+	For nY := 1 To Len( aLivro[1] )
+		SF3->( FieldPut(FieldPos(aLivro[1,nY]),aLivro[nX,nY]) )
+	Next nY
+	Replace F3_FILIAL  With xFilial("SF3")
+	Replace F3_NFISCAL With cNumNota
+	Replace F3_SERIE   With cSerie	
+	Replace F3_ENTRADA With dData	
+	MsUnLock()
+	DbCommit() //-- Atualiza as gravacoes pendentes na tabela
+Next nX
+
+Return
+
+/*
+ÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜ
+±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±
+±±ÉÍÍÍÍÍÍÍÍÍÍÑÍÍÍÍÍÍÍÍÍÍÍËÍÍÍÍÍÍÍÑÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍËÍÍÍÍÍÍÑÍÍÍÍÍÍÍÍÍÍÍÍÍ»±±
+±±ºPrograma  ³Lj130SimSD2ºAutor  ³Fernando Machima   º Data ³  20/11/02   º±±
+±±ÌÍÍÍÍÍÍÍÍÍÍØÍÍÍÍÍÍÍÍÍÍÍÊÍÍÍÍÍÍÍÏÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÊÍÍÍÍÍÍÏÍÍÍÍÍÍÍÍÍÍÍÍÍ¹±±
+±±ºDescricao ³Preparacao de array para geracao do livro                   º±±
+±±ÌÍÍÍÍÍÍÍÍÍÍØÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍ¹±±
+±±ºUso       ³ LOJR130                                                    º±±
+±±ÈÍÍÍÍÍÍÍÍÍÍÏÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍ¼±±
+±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±
+ßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßß
+*/
+Static Function Lj130SimSD2(cTes,cAliasSD2)
+
+Local nX
+Local cCampoBase:= ""
+Local cCampoVlr := ""
+Local cCampoAliq:= ""
+Local aInfo	    :=	TesImpInf(cTes)
+Local aReturn	:=	{0,0,0,0,0,{}}
+
+aReturn[1]	:=	(cAliasSD2)->D2_QUANT
+aReturn[2]	:=	(cAliasSD2)->D2_PRCVEN
+aReturn[3]	:=	(cAliasSD2)->D2_TOTAL
+aReturn[4]	:=	0
+aReturn[5]	:=	0
+
+For nX	:=	1	To	Len(aInfo)
+    cCampoBase  := (cAliasSD2)+"->"+aInfo[nX][7]
+    cCampoVlr   := (cAliasSD2)+"->"+aInfo[nX][2]    
+    cCampoAliq  := (cAliasSD2)+"->"+aInfo[nX][10]
+    
+    AAdd(aReturn[6],Array(18))
+	aReturn[6][nX][1]	:= aInfo[nX][1]
+	aReturn[6][nX][2]	:= &(cCampoAliq)
+	aReturn[6][nX][3]	:= &(cCampoBase)
+	aReturn[6][nX][4]	:= &(cCampoVlr)
+	aReturn[6][nX][5]	:= aInfo[nX][3]+aInfo[nX][4]+aInfo[nX][5]
+	aReturn[6][nX][6]	:= "D2_VALIMP"+Substr(aInfo[nX][2],10)
+	aReturn[6][nX][7]	:= "D2_BASIMP"+Substr(aInfo[nX][2],10)
+	aReturn[6][nX][8]	:= "F2_VALIMP"+Substr(aInfo[nX][2],10)
+	aReturn[6][nX][9]	:= "F2_BASIMP"+Substr(aInfo[nX][2],10)
+	aReturn[6][nX][17] := Substr(aInfo[nX][2],10)
+Next nX                                     
+
+Return(aReturn)
+
+/*
+ÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜ
+±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±
+±±ÉÍÍÍÍÍÍÍÍÍÍÑÍÍÍÍÍÍÍÍÍÍÍËÍÍÍÍÍÍÍÑÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍËÍÍÍÍÍÍÑÍÍÍÍÍÍÍÍÍÍÍÍÍ»±±
+±±ºPrograma  ³Lj130CalcNFºAutor  ³Julio Cesar        º Data ³  12/03/03   º±±
+±±ÌÍÍÍÍÍÍÍÍÍÍØÍÍÍÍÍÍÍÍÍÍÍÊÍÍÍÍÍÍÍÏÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÊÍÍÍÍÍÍÏÍÍÍÍÍÍÍÍÍÍÍÍÍ¹±±
+±±ºDescricao ³Cria array com as diversas nfs criadas para o cupom.        º±±
+±±ÌÍÍÍÍÍÍÍÍÍÍØÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍ¹±±
+±±ºUso       ³ LOJR130                                                    º±±
+±±ÈÍÍÍÍÍÍÍÍÍÍÏÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍ¼±±
+±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±
+ßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßß
+*/
+Static Function Lj130CalcNFs(aTotNfs,nMaxItens)
+
+Local aAreaAtu    := GetArea()
+Local aAreaSD2    := SD2->(GetArea())
+Local nItensVenda := 0
+Local aImpsInf    := {}
+Local nI          := 0
+Local aImps       := {}
+Local nTotImp     := 0
+Local nPosImp     := 0
+
+Private cCpoBase  := ""
+Private cCpoVal   := ""
+
+//////////////////////////////////////////////////////////
+//Estrutura do array aTotNfs                            //
+//1 - F2_VALMERC										//
+//2 - F2_VALFAT											//
+//3 - F2_VALBRUT										//
+//4 - F2_DESCONT										//
+//5 - Array com a sumarizacao dos impostos variaveis	//
+//////////////////////////////////////////////////////////
+
+DbSelectArea("SD2")
+DbSetOrder(3)
+If MsSeek(xFilial("SD2")+SL1->(L1_DOC+L1_SERIE+L1_CLIENTE+L1_LOJA))
+	While !Eof() .And.	(D2_FILIAL+D2_DOC+D2_SERIE+D2_CLIENTE+D2_LOJA) == ;
+				        (xFilial("SD2")+SL1->(L1_DOC+L1_SERIE+L1_CLIENTE+L1_LOJA))
+
+		nItensVenda++		
+		If (nItensVenda > nMaxItens)
+			nItensVenda := 1
+			aImps       := {}
+		Endif
+
+		nTotImp  := 0
+		aImpsInf := TesImpInf(D2_TES)
+		For nI := 1 To Len(aImpsInf)
+			cCpoBase := aImpsInf[nI][7]
+			cCpoVal  := aImpsInf[nI][2]
+			If (nPosImp := aScan(aImps,{|x| Trim(x[1])==aImpsInf[nI][1]})) == 0  
+				Aadd(aImps,{aImpsInf[nI][1],aImpsInf[nI][8],&cCpoBase.,;
+			    	        aImpsInf[nI][6],&cCpoVal.,aImpsInf[nI][3]})
+			Else
+				aImps[nPosImp][3] += &cCpoBase.
+				aImps[nPosImp][5] += &cCpoVal.
+			Endif
+			
+			If aImpsInf[nI][3] == "1"
+				nTotImp += &cCpoVal.
+			Endif
+		Next nI
+
+		If (nItensVenda == 1)
+			Aadd(aTotNfs,{D2_TOTAL,D2_TOTAL+nTotImp,D2_TOTAL+nTotImp,D2_DESCON,aClone(aImps)})
+		Else  
+			aTotNfs[Len(aTotNfs)][1] += D2_TOTAL
+			aTotNfs[Len(aTotNfs)][2] += D2_TOTAL+nTotImp
+			aTotNfs[Len(aTotNfs)][3] += D2_TOTAL+nTotImp				
+			aTotNfs[Len(aTotNfs)][4] += D2_DESCON
+			aTotNfs[Len(aTotNfs)][5] := aClone(aImps)
+		Endif
+		DbSkip()
+	End
+	RestArea(aAreaSD2)
+Endif
+RestArea(aAreaAtu)
+
+Return Nil

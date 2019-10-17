@@ -1,0 +1,32 @@
+Group Durapol_Fabio
+   Version=7.0
+   VSSDB=
+   HasProperties=1
+   Properties
+      BeforeApply=
+      AfterApply=
+      Icon=
+      ID=
+      Version=
+      PalmName=
+      OutPut=
+   End
+   ProjectsCount=1
+   Project ERP
+      FoldersCount=2
+      Folder Excluir
+         VSSPath=Fontes
+         FilesCount=0
+      End
+      Folder Incluir
+         VSSPath=Definições
+         FilesCount=2
+         File \my projects\FIN\Dfinr03Della.prw
+             Type=T
+         End
+         File \my projects\FIN\fa300oco.prw
+             Type=T
+         End
+      End
+   End
+End

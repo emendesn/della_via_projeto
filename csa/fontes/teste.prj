@@ -1,0 +1,50 @@
+Group 
+   Version=7.0
+   VSSDB=
+   HasProperties=1
+   Properties
+      BeforeApply=
+      AfterApply=
+      Icon=
+      ID=
+      Version=
+      PalmName=
+      OutPut=
+   End
+   ProjectsCount=1
+   Project Novo Projeto
+      FoldersCount=2
+      Folder Fontes
+         VSSPath=Fontes
+         FilesCount=8
+         File \my projects\Fontes\CtbXSal.Prw
+             Type=T
+         End
+         File \my projects\Fontes\ctba102.prw
+             Type=T
+         End
+         File \my projects\Fontes\CTBA105.PRW
+             Type=T
+         End
+         File \my projects\Fontes\CTBANFS.PRW
+             Type=T
+         End
+         File \my projects\Fontes\ctbxfun.prx
+             Type=T
+         End
+         File \my projects\Fontes\CTBA101.PRW
+             Type=T
+         End
+         File \my projects\Fontes\fina370.prx
+             Type=T
+         End
+         File \my projects\Fontes\MATXFUNA.PRX
+             Type=T
+         End
+      End
+      Folder Definições
+         VSSPath=Definições
+         FilesCount=0
+      End
+   End
+End

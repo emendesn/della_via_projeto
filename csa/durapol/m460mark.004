@@ -1,0 +1,594 @@
+#include "Protheus.ch"
+/*
+ÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜ
+±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±
+±±ÉÍÍÍÍÍÍÍÍÍÍÑÍÍÍÍÍÍÍÍÍÍËÍÍÍÍÍÍÍÑÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍËÍÍÍÍÍÍÑÍÍÍÍÍÍÍÍÍÍÍÍÍ»±±
+±±ºPrograma  ³M460Mark  ºAutor  ³Microsiga           º Data ³  31/07/05   º±±
+±±ÌÍÍÍÍÍÍÍÍÍÍØÍÍÍÍÍÍÍÍÍÍÊÍÍÍÍÍÍÍÏÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÊÍÍÍÍÍÍÏÍÍÍÍÍÍÍÍÍÍÍÍÍ¹±±
+±±ºDesc.     ³ Ponto de entrada na geracao da nota fiscal de saida        º±±
+±±º          ³ Usado para trazer descontos comerciais (NCC) e ratear      º±±
+±±º          ³ no campo desconto de cada item do SC6/SC9                  º±±
+±±º          ³                                                            º±±
+±±º          ³ Utiliza variavel "_cQuerySC9", publica definida e          º±±
+±±º          ³ preenchida no ponto de entrada M460QRY com o filtra do SC9 º±±
+±±º          ³                                                            º±±
+±±ÌÍÍÍÍÍÍÍÍÍÍØÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍ¹±±
+±±ºUso       ³ Durapol                                                   º±±
+±±ÈÍÍÍÍÍÍÍÍÍÍÏÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍ¼±±
+±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±
+ßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßß
+*/
+
+USER FUNCTION M460MARK()
+
+LOCAL oTituloNCC
+LOCAL _nVar     := 0
+LOCAL aTitulos  := {}
+LOCAL nValTot   := 0
+LOCAL oOkNCC	:= LoadBitmap( GetResources(), "LBOK" )
+LOCAL oNoNCC	:= LoadBitmap( GetResources(), "LBNO" )
+LOCAL nMaxIte   := GETMV("MV_NUMITEN")
+LOCAL _cPedido  := SC9->C9_PEDIDO
+LOCAL lCredito  := .F.             
+LOCAL aArea     := GetArea()
+LOCAL aAreaSav  := {{"SC6",0,0},{"SC9",0,0},{"SE1",0,0},{"SE5",0,0},{"SA1",0,0}}
+LOCAL i         := 0
+
+PRIVATE oDlgNCC
+PRIVATE oGet01 
+PRIVATE _cSerie   := Alltrim(SX5->X5_CHAVE)
+PRIVATE _cNota    := Alltrim(SX5->X5_DESCRI)
+PRIVATE _cPedSC9  := SC9->C9_PEDIDO
+PRIVATE _cMarca   := PARAMIXB[1]
+PRIVATE _lInverte := ThisInv()
+
+//-- salva todos os alias q serao trabalhados
+For i:=1 To Len(aAreaSav)
+    dbSelectArea(aAreaSav[i][1])
+    aAreaSav[i][2] := IndexOrd()
+    aAreaSav[i][3] := Recno()
+Next
+            
+Processa({|| aTitulos:= SF460Tit(SC9->C9_CLIENTE,SC9->C9_LOJA)})  // Monta a Matriz com as compensacoes validas
+
+If Len(aTitulos) == 0
+	//-- restaura todos os alias
+	For i:=1 To Len(aAreaSav)
+	    dbSelectArea(aAreaSav[i][1])
+	    dbSetOrder(aAreaSav[i][2])
+	    dbGoTo(aAreaSav[i][3])
+	Next    
+	RestArea(aArea)	
+	Return(.t.)
+ELSE
+	lConfirma := IW_MsgBox("Este Cliente tem nota(s) de credito. Deseja Aplicar estes descontos"," * * *  A T E N Ç Ã O  * * * ","YESNO")
+	IF !lConfirma
+		//-- restaura todos os alias
+		For i:=1 To Len(aAreaSav)
+		    dbSelectArea(aAreaSav[i][1])
+		    dbSetOrder(aAreaSav[i][2])
+		    dbGoTo(aAreaSav[i][3])
+		Next    
+		RestArea(aArea)	
+		Return(.t.)
+	ENDIF
+Endif
+
+DEFINE MSDIALOG oDlgNCC TITLE OemToAnsi("Aplicação de Créditos") From 12,1.5 To 25.6,79.5 OF oMainWnd
+@ 0.5,0.5 TO 6, 38.3 LABEL OemToAnsi("Créditos Existente(s)") OF oDlgNCC
+
+@ 1.0,1.0 LISTBOX oTituloNCC	VAR cVarQ Fields;
+		HEADER "",OemToAnsi("Prefixo"),;
+		OemToAnsi("Laudo"),;
+		OemToAnsi("Parcela"),;
+		OemToAnsi("Motivo"),;
+		OemToAnsi("Descr Motivo"),;
+		OemToAnsi("Coleta"),;
+		OemToAnsi("Tipo"),;
+		OemToAnsi("Valor"),;
+		OemToAnsi("Valor a Compensar"),;
+		OemToAnsi("Observação"),;
+		COLSIZES 9,;
+		GetTextWidth(0,"BBB"),;
+		GetTextWidth(0,"BBBBBB"),;
+		GetTextWidth(0,"BBB"),;
+		GetTextWidth(0,"BBB"),;
+		GetTextWidth(0,"BBBBBBBBBBBBBBBB"),;
+		GetTextWidth(0,"BBBBBB"),;
+		GetTextWidth(0,"BBB"),;
+		GetTextWidth(0,"BBBBBBBBB"),;
+		GetTextWidth(0,"BBBBBBBBB"),;
+		GetTextWidth(0,"BBBBBBBBBBBBBBBB"),;
+		SIZE 293,54.5 ON DBLCLICK (aTitulos:= SF460Troca(oTituloNCC:nAt,aTitulos,@oGet01,@nValTot,@oTituloNCC,nMaxIte,_cPedido),oTituloNCC:Refresh()) NOSCROLL
+		
+oTituloNCC:SetArray(aTitulos)
+oTituloNCC:bLine := { || {If(aTitulos[oTituloNCC:nAt,11],oOkNCC,oNoNCC),;
+						aTitulos[oTituloNCC:nAt,1],aTitulos[oTituloNCC:nAt,2],;
+						aTitulos[oTituloNCC:nAt,3],aTitulos[oTituloNCC:nAt,4],;
+						aTitulos[oTituloNCC:nAt,5],aTitulos[oTituloNCC:nAt,6],;
+						aTitulos[oTituloNCC:nAt,7],aTitulos[oTituloNCC:nAt,8],;
+						aTitulos[oTituloNCC:nAt,9],aTitulos[oTituloNCC:nAt,10]}}
+						
+@  072 , 183 SAY "Valor Selecionado" PIXEL OF oDlgNCC SIZE 70,7
+@  072 , 233 MSGET oGet01 VAR nValTot PICTURE "@E 999,999,999.99" WHEN .F. PIXEL OF oDlgNCC SIZE 70,7
+
+DEFINE SBUTTON FROM 90,234.6 TYPE 1 ACTION (SF460OK(nValTot,aTitulos,_cPedido,oDlgNCC),oDlgNCC:End()) ENABLE OF oDlgNCC
+DEFINE SBUTTON FROM 90,264.6 TYPE 2 ACTION oDlgNCC:End() ENABLE OF oDlgNCC
+
+ACTIVATE MSDIALOG oDlgNCC CENTERED
+
+//-- restaura todos os alias
+For i:=1 To Len(aAreaSav)
+    dbSelectArea(aAreaSav[i][1])
+    dbSetOrder(aAreaSav[i][2])
+    dbGoTo(aAreaSav[i][3])
+Next    
+
+RestArea(aArea)
+
+Return(.t.)
+
+
+/*/
+±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±
+±±ÚÄÄÄÄÄÄÄÄÄÄÂÄÄÄÄÄÄÄÄÄÄÂÄÄÄÄÄÄÄÂÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÂÄÄÄÄÄÄÂÄÄÄÄÄÄÄÄÄÄ¿±±
+±±³Fun‡„o	 ³SF460Tit  ³ Autor ³ Microsiga             ³ Data ³ 31/07/05 ³±±
+±±ÃÄÄÄÄÄÄÄÄÄÄÅÄÄÄÄÄÄÄÄÄÄÁÄÄÄÄÄÄÄÁÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÁÄÄÄÄÄÄÁÄÄÄÄÄÄÄÄÄÄ´±±
+±±³Descri‡„o ³ Retorna titulos NCC prefico SEP em aberto para o cliente   ³±±
+±±ÀÄÄÄÄÄÄÄÄÄÄÁÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÙ±±
+±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±
+ßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßß
+/*/
+
+STATIC FUNCTION SF460TIT(cCliente,cLoja)
+
+LOCAL lMarca   := .f.
+LOCAL aTitulos := {}
+LOCAL nMoeda
+
+DbSelectArea("SE1")
+DbSetOrder(2)
+DbSeek(xFilial("SE1")+cCliente+cLoja+"SEP",.f.)
+
+While !EOF() .And. SE1->E1_FILIAL == xFilial("SE1") .AND. cCliente+cLoja == SE1->(E1_CLIENTE+E1_LOJA) .AND. "SEP" == SE1->E1_PREFIXO
+	
+	If SE1->E1_TIPO <> "NCC"
+		SE1->(DbSkip())
+		LOOP
+	Endif
+	
+	IF SE1->E1_SALDO == 0
+		SE1->(DbSkip())
+		LOOP
+	ENDIF
+
+	SA1->(dbSetOrder(1))
+	SA1->(DbSeek(xFilial("SA1")+cCliente+cLoja))
+	
+	AAdd(aTitulos,{SE1->E1_PREFIXO,;
+	SE1->E1_NUM,;
+	SE1->E1_PARCELA,;
+	SE1->E1_MOTDESC,;
+	Tabela("DV",SE1->E1_MOTDESC),;
+	SE1->E1_COLETA,;
+	SE1->E1_TIPO,;
+	Transform(SE1->E1_SALDO,"@E 9999,999,999.99"),;
+	Transform(0,"@E 9999,999,999.99"),;
+	SE1->E1_HIST,;
+	lMarca ,;
+	SE1->(RECNO()) })
+	
+	DbSelectARea("SE1")
+	SE1->(DbSkip())
+	
+EndDo                   
+
+Return(aTitulos)
+                        
+
+/*/
+±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±
+±±ÚÄÄÄÄÄÄÄÄÄÄÂÄÄÄÄÄÄÄÄÄÄÂÄÄÄÄÄÄÄÂÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÂÄÄÄÄÄÄÂÄÄÄÄÄÄÄÄÄÄ¿±±
+±±³Fun‡„o	 ³SF460Troca³ Autor ³ Microsiga             ³ Data ³ 31/07/05 ³±±
+±±ÃÄÄÄÄÄÄÄÄÄÄÅÄÄÄÄÄÄÄÄÄÄÁÄÄÄÄÄÄÄÁÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÁÄÄÄÄÄÄÁÄÄÄÄÄÄÄÄÄÄ´±±
+±±³Descri‡„o ³ Marca/desmarca titulo a compensar e pede valor             ³±±
+±±ÀÄÄÄÄÄÄÄÄÄÄÁÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÙ±±
+±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±
+ßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßß
+/*/
+
+STATIC FUNCTION SF460Troca(nItem,aTitulos,oGet01,nValTot,oTituloNCC,nMaxIte,_cPedido)
+
+LOCAL oDlgNCC
+LOCAL nX      := 0
+LOCAL nAcresc := 0
+LOCAL nIteSel := 0
+LOCAL aPedido := SFItensPed(_cPedido)
+LOCAL nItePed := Len(aPedido)
+LOCAL nValPed := 0
+
+For n:= 1 to Len(aPedido)
+	nValPed += aPedido[n][3]
+Next
+
+nValor  := DesTrans(aTitulos[nItem][8])
+nValtot := 0
+
+aTitulos[nItem][11] := !aTitulos[nItem][11]
+
+If  !aTitulos[nItem][11]
+	aTitulos[nItem][9] :=Transf(0,"@E 9999,999,999.99")
+Else
+	nValor := GetValor(nValor)
+	aTitulos[nItem][9] :=Transf(nValor,"@E 9999,999,999.99")
+Endif
+
+For nX:=1 to Len(aTitulos)
+	IF aTitulos[nX][11]
+		nValTot += DesTrans(aTitulos[nX][9])
+		nIteSel++
+		IF nIteSel+nItePed > nMaxIte
+			_cMsg := "O número de itens permitidos por nota fiscal, foi excedido." + chr(13) + chr(10)
+			_cMsg += " Este item não será considerado para este processo."
+			
+			Iw_MsgBox(_cMsg,"","ALERT")
+			aTitulos[nItem][11] := .F.
+		ENDIF
+		
+		IF nValTot > nValPed
+			_cMsg := "Com este item, o valor do crédito, supera o valor da nota fiscal que será gerada." + chr(13) + chr(10)
+			_cMsg += " Este item não será considerado para este processo."
+			
+			Iw_MsgBox(_cMsg,"","ALERT")
+			
+			aTitulos[nItem][11] := .F.
+		ENDIF
+	Endif
+Next
+
+oGet01:Refresh()
+
+Return(aTitulos)
+
+
+/*/
+±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±
+±±ÚÄÄÄÄÄÄÄÄÄÄÂÄÄÄÄÄÄÄÄÄÄÂÄÄÄÄÄÄÄÂÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÂÄÄÄÄÄÄÂÄÄÄÄÄÄÄÄÄÄ¿±±
+±±³Fun‡„o	 ³SFItensPed³ Autor ³ Microsiga             ³ Data ³ 31/07/05 ³±±
+±±ÃÄÄÄÄÄÄÄÄÄÄÅÄÄÄÄÄÄÄÄÄÄÁÄÄÄÄÄÄÄÁÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÁÄÄÄÄÄÄÁÄÄÄÄÄÄÄÄÄÄ´±±
+±±³Descri‡„o ³ Retorna itens do pedido                       			  ³±±
+±±ÀÄÄÄÄÄÄÄÄÄÄÁÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÙ±±
+±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±
+ßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßß
+/*/
+
+STATIC FUNCTION SFItensPed(_cPedido)
+LOCAL aRet     := {}
+LOCAL nRet     := 0
+LOCAL nValTot  := 0
+LOCAL aAreaSC6 := GetArea("SC6")
+
+DbSelectArea("SC6")
+DbSetOrder(1)
+DbSeek(xFilial("SC6")+_cPedido)
+
+While !EOF() .AND. _cPedido == SC6->C6_NUM
+	
+	AADD(aRet,{SC6->C6_ITEM,SC6->C6_PRUNIT,SC6->C6_VALOR,SC6->C6_TES})
+	DbSelectArea("SC6")
+	SC6->(DbSkip())
+EndDo
+
+RestArea(aAreaSC6)
+
+RETURN(aRet)
+
+
+/*/
+±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±
+±±ÚÄÄÄÄÄÄÄÄÄÄÂÄÄÄÄÄÄÄÄÄÄÂÄÄÄÄÄÄÄÂÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÂÄÄÄÄÄÄÂÄÄÄÄÄÄÄÄÄÄ¿±±
+±±³Fun‡„o	 ³SF460OK   ³ Autor ³ Microsiga             ³ Data ³ 31/07/05 ³±±
+±±ÃÄÄÄÄÄÄÄÄÄÄÅÄÄÄÄÄÄÄÄÄÄÁÄÄÄÄÄÄÄÁÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÁÄÄÄÄÄÄÁÄÄÄÄÄÄÄÄÄÄ´±±
+±±³Descri‡„o ³ Confirmacao: grava baixa da NCC selecionada e rateia valor ³±±
+±±³          ³ do desconto no SC5/SC6                                     ³±±
+±±ÀÄÄÄÄÄÄÄÄÄÄÁÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÙ±±
+±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±
+ßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßß
+/*/
+
+STATIC FUNCTION SF460OK(nValTot,aTitulos,_cPedido,oDlgNCC)
+
+LOCAL lRet      := .T.
+LOCAL aAreaSC6  := GetArea("SC6")
+LOCAL _cTesVend := GetMV("MV_X_TSVED")
+LOCAL _cNatCR   := STRTRAN(STRTRAN(GetMv("MV_NATCRED"),'"',""),"'","")
+LOCAL aPedido   := {}
+LOCAL nValPed   := 0
+LOCAL aVetor    := {}
+LOCAL nItPed    := 0
+LOCAL _nValFict := 0
+LOCAL _cParcela := "A"
+LOCAL _cQRY     := ""
+LOCAL _cVenda   := ""
+LOCAL _aRegSE5   := {}   
+LOCAL _nBaixa   := 0
+LOCAL _nX,_nPerc,_nDesc,_nDif
+Private lMsHelpAuto   := .F.
+Private lMsErroAuto   := .F.
+                     
+// Irei aplicar o desconto pró-rata nos itens do pedido de venda
+
+_cQry := "SELECT C9_OK,C9_FILIAL,C9_PEDIDO,C9_ITEM,C9_PRODUTO,C9_PRCVEN,R_E_C_N_O_ RECNO FROM " + RetSQLName("SC9")+ " SC9 "
+_cQry += " WHERE SC9.D_E_L_E_T_ <> '*' "
+_cQry += " AND " + _cQuerySC9 // variavel publica com filtro montado no PE M460QRY
+If _lInverte
+	_cQry += " AND SC9.C9_OK <> '" + _cMarca + "'"
+Else	
+	_cQry += " AND SC9.C9_OK = '" + _cMarca + "'"
+Endif	                                
+_cQry += " AND SC9.C9_BLCRED = '  ' "
+_cQry += " AND SC9.C9_BLEST = '  ' "
+_cQry += " AND SC9.C9_NFISCAL = '      ' "
+
+_cQry := ChangeQuery(_cQry)
+
+DbUseArea( .T., "TOPCONN", TCGenQry(,, _cQry), "TMPSC9", .F., .F. )
+
+DbSelectArea("TMPSC9")
+DbGoTop()
+
+While !EOF()
+
+	DbSelectArea("SC9")
+	DbGoTo(TMPSC9->RECNO)
+	DbSelectArea("SC6")
+
+	DbSetOrder(1)
+	DbSeek(xFilial("SC6")+SC9->C9_PEDIDO+SC9->C9_ITEM+SC9->C9_PRODUTO)
+
+    _cVenda := "N"
+	If SC6->C6_TES == _cTesVend
+		nValPed += TMPSC9->C9_PRCVEN
+		_cVenda := "S"
+	Endif	
+
+	AAdd(aPedido,{TMPSC9->C9_OK,;
+				  TMPSC9->C9_PEDIDO,;
+				  TMPSC9->C9_ITEM,;
+			  	  TMPSC9->C9_PRODUTO,;
+				  SC6->C6_TES,;
+				  TMPSC9->C9_PRCVEN,;
+				  _cVenda,;				  
+				  TMPSC9->RECNO})
+
+	DbSelectArea("TMPSC9")
+    dbSkip()
+
+Enddo
+
+TMPSC9->(DbCloseArea())
+
+_nDesc := 0
+
+For _nX := 1 To Len(aPedido)
+	
+	DbSelectArea("SC9")
+	DbGoTo(aPedido[_nX,8])
+	
+	DbSelectArea("SC6")
+	DbSetOrder(1)
+	DbSeek(xFilial("SC6")+SC9->C9_PEDIDO+SC9->C9_ITEM+SC9->C9_PRODUTO)
+	
+	IF aPedido[_nX,7] == "S" // tes de venda
+		
+		DbSelectArea("SC6")
+		
+		_nPerc := NoRound( (SC6->C6_VALOR / nValPed) , 2 )
+		
+		RecLock("SC6",.F.)
+		SC6->C6_VALDESC := _nPerc * nValTot 
+		SC6->C6_DESCONT := (NoRound(SC6->C6_VALDESC / SC6->C6_VALOR , 2) * 100)
+		SC6->C6_VALOR   := SC6->C6_VALOR - SC6->C6_VALDESC
+		SC6->C6_PRCVEN  := NoRound(SC6->C6_VALOR / SC6->C6_QTDVEN , 2)
+		MsUnlocK()
+		
+		_nDesc += SC6->C6_VALDESC
+		
+		DbSelectArea("SC9")
+		RecLock("SC9",.F.)
+		SC9->C9_PRCVEN := SC6->C6_PRCVEN   
+		MsUnlock()
+
+	EndIF
+	
+Next
+     
+// houve diferenca entre o valor total selecionado nas NCCs e o valor do descoto rateado
+// realiza ajuste no primeiro item
+
+_nDif := nValTot - _nDesc
+
+If _nDif <> 0
+
+	For _nX := 1 To Len(aPedido)
+		
+		DbSelectArea("SC9")
+		DbGoTo(aPedido[_nX,8])
+		
+		DbSelectArea("SC6")
+		DbSetOrder(1)
+		DbSeek(xFilial("SC6")+SC9->C9_PEDIDO+SC9->C9_ITEM+SC9->C9_PRODUTO)
+		
+		IF aPedido[_nX,7] == "S" // tes de venda
+			
+			DbSelectArea("SC6")
+			             
+			_nValor   := SC6->C6_VALOR + SC6->C6_VALDESC
+			_nValDesc := SC6->C6_VALDESC + _nDif
+			_nDescont := (NoRound(_nValDesc / _nValor , 2) * 100)
+			_nValor   := _nValor - _nValDesc
+			_nPrcVen  := NoRound(_nValor / SC6->C6_QTDVEN , 2)
+			
+			RecLock("SC6",.F.)
+			SC6->C6_VALDESC := _nValDesc
+			SC6->C6_DESCONT := _nDescont
+			SC6->C6_VALOR   := _nValor
+			SC6->C6_PRCVEN  := _nPrcVen
+			MsUnlocK()
+			
+			DbSelectArea("SC9")
+			RecLock("SC9",.F.)
+			SC9->C9_PRCVEN := SC6->C6_PRCVEN   
+			MsUnlock()
+			
+			Exit
+	
+		EndIF
+		
+	Next
+	
+Endif
+
+// Realizar a Baixa dos Créditos aplicados
+For nTitulo := 1 to Len(aTitulos)
+
+	IF aTitulos[nTitulo][11] // Somente creditos marcados
+        
+		_nBaixa := DesTrans(aTitulos[nTitulo][9])
+
+		DbSelectArea("SE1")
+		DbSetOrder(1) 
+		dbGoTo(aTitulos[nTitulo][12]) 
+		
+		SA1->(dbSetOrder(1))
+		SA1->(DbSeek(xFilial("SA1")+SE1->E1_CLIENTE+SE1->E1_LOJA))
+
+		// baixa titulo original NCC - Dados do SE1
+
+		DbSelectArea("SE1")
+		RecLock("SE1",.F.)
+        SE1->E1_BAIXA   := dDataBase
+		SE1->E1_NUMBOR  := _cNota
+		SE1->E1_SALDO   := SE1->E1_SALDO - _nBaixa
+		SE1->E1_VALLIQ  := _nBaixa
+		SE1->E1_LOTE    := "8850"
+		SE1->E1_MOVIMEN := dDataBase
+		SE1->E1_STATUS  := "B"
+		MsUnlock()
+
+        // busca a ultima sequencia de baixa do titulo no SE5
+                                                                                                           
+        _nSeq := "00"
+   	
+   		DbSelectArea("SE5")
+   		dbSetOrder(7)
+		dbSeek(xFilial("SE5")+SE1->E1_PREFIXO+SE1->E1_NUM+SE1->E1_PARCELA+SE1->E1_TIPO+SE1->E1_CLIENTE+SE1->E1_LOJA)
+	
+		While ! Eof() .And. SE5->(E5_FILIAL+E5_PREFIXO+E5_NUMERO+E5_PARCELA+E5_TIPO+E5_CLIFOR+E5_LOJA) == ;
+			xFilial("SE5")+SE1->E1_PREFIXO+SE1->E1_NUM+SE1->E1_PARCELA+SE1->E1_TIPO+SE1->E1_CLIENTE+SE1->E1_LOJA
+            _nSeq := SE5->E5_SEQ
+            dbSkip()
+        Enddo
+         
+		_nSeq := Soma1(_nSeq,2)
+
+        // baixa do titulo no SE5
+		
+   		DbSelectArea("SE5")
+		RecLock("SE5",.T.)
+		SE5->E5_FILIAL  := xFilial("SE5")
+		SE5->E5_DATA    := dDataBase
+		SE5->E5_TIPO    := SE1->E1_TIPO
+		SE5->E5_VALOR   := _nBaixa
+		SE5->E5_NATUREZ := SE1->E1_NATUREZ
+		SE5->E5_BANCO   := "SEP"
+		SE5->E5_AGENCIA := "00001"
+		SE5->E5_CONTA   := "0000000001"	
+		SE5->E5_NUMCHEQ := _cSerie+_cNota
+		SE5->E5_RECPAG  := "P"
+		SE5->E5_BENEF   := SA1->A1_NOME
+		SE5->E5_HISTOR  := "NF "+_cSerie+"-"+_cNota
+		SE5->E5_TIPODOC := "BA"
+		SE5->E5_VLMOED2 := _nBaixa
+		SE5->E5_LA      := "S"
+		SE5->E5_LOTE    := "8850"
+		SE5->E5_PREFIXO := SE1->E1_PREFIXO
+		SE5->E5_NUMERO  := SE1->E1_NUM
+		SE5->E5_PARCELA := SE1->E1_PARCELA
+		SE5->E5_CLIFOR  := SE1->E1_CLIENTE
+		SE5->E5_LOJA    := SE1->E1_LOJA
+		SE5->E5_DTDIGIT := dDatabase
+		SE5->E5_MOTBX   := "NOR"
+		SE5->E5_SEQ     := _nSeq
+		SE5->E5_DTDISPO := dDatabase
+		SE5->E5_FILORIG := xFilial("SE5")
+		SE5->E5_CLIENTE := SE1->E1_CLIENTE
+		MsUnlock()
+
+	    /*
+	    AAdd( _aRegSE5, { "E1_PREFIXO" , SE1->E1_PREFIXO                 , NIL } ) 
+	    AAdd( _aRegSE5, { "E1_NUMERO"  , SE1->E1_NUM                     , NIL } ) 
+	    AAdd( _aRegSE5, { "E1_PARCELA" , SE1->E1_PARCELA                 , NIL } ) 
+	    AAdd( _aRegSE5, { "E1_CLIENTE" , SE1->E1_CLIENTE                 , NIL } ) 
+	    AAdd( _aRegSE5, { "E1_LOJA"    , SE1->E1_LOJA                    , NIL } ) 
+	    AAdd( _aRegSE5, { "E1_TIPO"    , SE1->E1_TIPO                    , NIL } ) 
+        */
+
+	    /*
+	    AAdd( _aRegSE5, { "CPREFIXO"   , SE1->E1_PREFIXO                 , NIL } ) 
+	    AAdd( _aRegSE5, { "CNUMERO"    , SE1->E1_NUM                     , NIL } ) 
+	    AAdd( _aRegSE5, { "CPARCELA"   , SE1->E1_PARCELA                 , NIL } ) 
+	    AAdd( _aRegSE5, { "CCLIENTE"   , SE1->E1_CLIENTE                 , NIL } ) 
+	    AAdd( _aRegSE5, { "CLOJA"      , SE1->E1_LOJA                    , NIL } ) 
+	    AAdd( _aRegSE5, { "CTIPO"      , SE1->E1_TIPO                    , NIL } ) 
+	    AAdd( _aRegSE5, { "DBAIXA"     , dDataBase                       , NIL } ) 
+	    AAdd( _aRegSE5, { "DDTCREDITO" , dDataBase                       , NIL } ) 
+	    AAdd( _aRegSE5, { "NVALREC"    , DesTrans(aTitulos[nTitulo][9])  , NIL } ) 
+	    AAdd( _aRegSE5, { "CBANCO"     , "SEP"                           , NIL } ) 
+	    AAdd( _aRegSE5, { "CAGENCIA"   , "00001"                         , NIL } ) 
+	    AAdd( _aRegSE5, { "CCONTA"     , "0000000001"                    , NIL } ) 
+	    AAdd( _aRegSE5, { "CHIST070"   , _cSerie+"-"+_cNota              , NIL } ) 
+	    AAdd( _aRegSE5, { "CMOTBX"     , "NOR"                           , NIL } ) 
+
+		MsExecAuto( {|x,y| Fina070(x,y)}, _aRegSE5, 3 )
+
+		//-- Verifica se houve algum erro.
+		If lMsErroAuto
+			MostraErro()
+		EndIf
+		*/
+	
+	ENDIF         
+
+Next nTitulo
+
+RestArea(aAreaSC6)
+
+RETURN(lRet)
+
+
+/*/
+±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±
+±±ÚÄÄÄÄÄÄÄÄÄÄÂÄÄÄÄÄÄÄÄÄÄÂÄÄÄÄÄÄÄÂÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÂÄÄÄÄÄÄÂÄÄÄÄÄÄÄÄÄÄ¿±±
+±±³Fun‡„o	 ³ GetValor ³ Autor ³ Microsiga             ³ Data ³ 31/07/05 ³±±
+±±ÃÄÄÄÄÄÄÄÄÄÄÅÄÄÄÄÄÄÄÄÄÄÁÄÄÄÄÄÄÄÁÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÁÄÄÄÄÄÄÁÄÄÄÄÄÄÄÄÄÄ´±±
+±±³Descri‡„o ³ Tela para alteracao do valor a compensar                   ³±±
+±±ÀÄÄÄÄÄÄÄÄÄÄÁÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÙ±±
+±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±
+ßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßß
+/*/
+
+Static Function GetValor(nValor)
+
+LOCAL oDlgVal,oGetVal
+LOCAL nValDig := nValor
+
+DEFINE MSDIALOG oDlgVal TITLE OemToAnsi("Valor a Compensar") From 12,10 To 17,32 OF oMainWnd
+
+@ 5,10 MSGET oGetVal VAR nValDig PICTURE "@E 999,999,999.99" VALID (nValDig>0 .And. nValDig<=nValor) PIXEL OF oDlgVal SIZE 70,7
+
+DEFINE SBUTTON FROM 22,57 TYPE 1 ACTION oDlgVal:End() ENABLE OF oDlgVal
+
+ACTIVATE MSDIALOG oDlgVal CENTERED
+                                            
+Return(nValDig)

@@ -1,0 +1,125 @@
+#include "rwmake.ch"
+
+/*
+ÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜ
+±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±
+±±ÉÍÍÍÍÍÍÍÍÍÍÑÍÍÍÍÍÍÍÍÍÍËÍÍÍÍÍÍÍÑÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍËÍÍÍÍÍÍÑÍÍÍÍÍÍÍÍÍÍÍÍÍ»±±
+±±ºPrograma  ³A175GRV   ºAutor  ³Microsiga           º Data ³  03/05/05   º±±
+±±ÌÍÍÍÍÍÍÍÍÍÍØÍÍÍÍÍÍÍÍÍÍÊÍÍÍÍÍÍÍÏÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÊÍÍÍÍÍÍÏÍÍÍÍÍÍÍÍÍÍÍÍÍ¹±±
+±±ºDesc.     ³ Insercao/Exclusao de itens no pedido de vendas de servicos º±±
+±±º          ³ executados mais do que foi contratado                      º±±
+±±ÌÍÍÍÍÍÍÍÍÍÍØÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍ¹±±
+±±ºUso       ³ Durapol                                                    º±±
+±±ÈÍÍÍÍÍÍÍÍÍÍÏÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍ¼±±
+±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±
+ßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßß
+*/
+
+User Function A175Grv     
+
+Local _aArea    := GetArea()
+Local lRet      := .T.
+Local _cOP      := SD3->D3_OP
+Local _aITPed   := {}
+                     
+IF !lEstorno
+	dbSelectArea("SD4")
+	dbSetOrder(2)
+	dbSeek(xFilial()+_cOP)
+	
+	While !Eof() .and. _cOP == SD4->D4_OP
+		dbSelectArea("SB1")
+		dbSetOrder(1)
+		dbSeek(xFilial()+SD4->D4_COD)
+		IF SB1->B1_TIPO == "MO" //.and. SB1->B1_GRUPO == _cGrupo
+			aAdd(_aITPed,{SB1->B1_COD,SB1->B1_LOCPAD,SB1->B1_TS,SD4->D4_QTDEORI,SB1->B1_CODISS,SB1->B1_UM})
+		EndIF
+		dbSelectArea("SD4")
+		dbSkip()
+	EndDo
+	IF Len(_aITPed) > 0
+		dbSelectArea("SC6")
+		dbSetOrder(1)
+		dbSeek(xFilial()+Substr(_cOP,1,6))
+		_cItem := 0
+		While!Eof() .and. SC6->C6_NUM == Substr(_cOP,1,6)
+			_cItem += 1
+			dbSkip()
+		EndDo
+		
+		For _i:= 1 To Len(_aITPed)
+			
+			dbSelectArea("SC5")
+			dbSetOrder(1)
+			dbSeek(xFilial("SC5")+Substr(_cOP,1,6))
+			
+			_nValor := U_BuscaPrcVenda(_aITPed[_i,1],SC5->C5_CLIENTE,SC5->C5_LOJACLI)
+			
+			IF _nValor == 0
+				MsgInfo("O Valor do serviço "+Alltrim(_aITPed[_i,1])+" esta sem o preenchimento.Verifique a tabela de preco ou o cadastro de produtos.","Atençao!")
+			EndIF
+			
+			dbSelectArea("SF4")
+			dbSetorder(1)
+			IF dbSeek(xFilial("SF4")+_aITPed[_i,3])
+			
+				dbSelectArea("SC6")	
+				RecLock("SC6",.T.)
+					SC6->C6_FILIAL  := xFilial("SC6")
+					SC6->C6_ITEM    := Strzero(_cItem+_i,2,0)
+					SC6->C6_PRODUTO := _aITPed[_i,1]
+					SC6->C6_LOCAL   := _aITPed[_i,2]
+					SC6->C6_UM      := _aITPed[_i,6]
+					SC6->C6_TES     := _aITPed[_i,3]
+					SC6->C6_CF      := SF4->F4_CF
+					SC6->C6_NUM     := Substr(_cOP,1,6)
+					SC6->C6_QTDVEN  := _aITPed[_i,4]
+					SC6->C6_PRCVEN  := _aITPed[_i,4]*_nValor
+					SC6->C6_VALOR   := _aITPed[_i,4]*_nValor
+					SC6->C6_CLI     := SC5->C5_CLIENTE
+					SC6->C6_LOJA    := SC5->C5_LOJACLI
+					SC6->C6_ENTREG  := dDatabase
+					SC6->C6_DESCRI  := Posicione("SB1",1,xFilial("SB1")+_aITPed[_i,1]+_aITPed[_i,2],"B1_DESC")
+					SC6->C6_TPOP    := "F"					
+					SC6->C6_CODISS  := _aITPed[_i,5]
+					SC6->C6_EMPD4   := "S"
+				MsUnlock()
+			Else
+				MsgInfo("Favor cadastrar o TES de devolução para o produto "+Alltrim(SC6->C6_PRODUTO)+";pois assim nao será possivel a inclusao deste item no pedido de vendas.","Atenção")
+			EndIF	
+		Next
+	EndIF
+Else
+	dbSelectArea("SD4")
+	dbSetOrder(2)
+	dbSeek(xFilial()+_cOP)
+	
+	While !Eof() .and. _cOP == SD4->D4_OP
+		dbSelectArea("SB1")
+		dbSetOrder(1)
+		dbSeek(xFilial()+SD4->D4_COD)
+		IF SB1->B1_TIPO == "MO" //.and. SB1->B1_GRUPO == _cGrupo
+			aAdd(_aITPed,{SB1->B1_COD,SB1->B1_LOCPAD,SB1->B1_TS,SD4->D4_QUANT,SB1->B1_CODISS,SB1->B1_UM})
+		EndIF
+		dbSelectArea("SD4")
+		dbSkip()
+	EndDo
+	dbSelectArea("SC6")
+	dbSetOrder(1)
+	IF dbSeek(xFilial("SC6")+Substr(_cOP,1,6))
+		For _i:=1 To Len(_aITPed)
+			lachou := .F.
+			While !Eof() .and. Substr(_cOP,1,6) == SC6->C6_NUM	 .and. !lachou
+				IF SC6->C6_PRODUTO == _aITPed[_i,1] .and. SC6->C6_EMPD4 == "S"
+					Reclock("SC6",.F.)
+						dbDelete()
+					MsUnlock()
+					lachou := .T.
+				EndIF
+				dbSkip()
+			EndDo
+		Next			
+	EndIF	
+EndIF
+RestArea(_aArea)
+Return(lRet)

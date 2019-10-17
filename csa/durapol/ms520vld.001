@@ -1,0 +1,88 @@
+
+/*
+ÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜ
+±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±
+±±ÉÍÍÍÍÍÍÍÍÍÍÑÍÍÍÍÍÍÍÍÍÍËÍÍÍÍÍÍÍÑÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍËÍÍÍÍÍÍÑÍÍÍÍÍÍÍÍÍÍÍÍÍ»±±
+±±ºPrograma  ³MS520VLD  ºAutor  ³Microsiga           º Data ³  02/08/05   º±±
+±±ÌÍÍÍÍÍÍÍÍÍÍØÍÍÍÍÍÍÍÍÍÍÊÍÍÍÍÍÍÍÏÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÊÍÍÍÍÍÍÏÍÍÍÍÍÍÍÍÍÍÍÍÍ¹±±
+±±ºDesc.     ³ Cancelamento da aplicação do desconto financeiro na nota   º±±
+±±º          ³ fiscal de saída                                            º±±
+±±ÌÍÍÍÍÍÍÍÍÍÍØÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍ¹±±
+±±ºUso       ³ AP                                                        º±±
+±±ÈÍÍÍÍÍÍÍÍÍÍÏÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍ¼±±
+±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±
+ßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßß
+*/
+
+USER FUNCTION MS520VLD()
+
+LOCAL lRet      := .T.
+LOCAL _cTesVend := GetMV("MV_X_TSVED")
+LOCAL _cNota    := SF2->F2_DOC
+LOCAL _cPedido  := ""
+
+DbSelectArea("SC6")
+DbSetOrder(4)
+
+IF DbSeek(xFilial("SC6")+SF2->F2_DOC+SF2->F2_SERIE)
+	While !Eof() .AND. SC6->C6_NOTA == SF2->F2_DOC .AND. SC6->C6_SERIE == SF2->F2_SERIE
+		IF SC6->C6_TES $ _cTesVend
+		    _cPedido := SC6->C6_NUM
+			RecLock("SC6")
+			SC6->C6_VALOR   := (SC6->C6_VALOR + SC6->C6_VALDESC)
+			SC6->C6_PRCVEN  := (SC6->C6_VALOR / SC6->C6_QTDVEN)
+			SC6->C6_VALDESC := 0
+			SC6->C6_DESCONT := 0
+			MsUnlock()
+		ENDIF
+		SC6->(DbSkip())
+	EndDo
+ENDIF
+
+// Voltar o saldo dos creditos aplicados
+DbSelectArea("SE1")
+DbSetOrder(12) // numero de bordero
+DbSeek(xFilial("SE1")+_cPedido)
+While !Eof() .AND. SE1->E1_NUMBOR == _cPedido
+	RecLock("SE1")
+	SE1->E1_SALDO   := SE1->E1_VALOR
+	SE1->E1_VALLIQ  := 0
+	SE1->E1_LOTE    := " "
+	SE1->E1_MOVIMEN := CTOD("  /  /  ")
+	SE1->E1_STATUS  := "A"
+	SE1->E1_NUMBOR  := " "
+	MsUnlock()
+
+	SE1->(DbSkip())
+EndDo
+
+// Deleta o titulo ficticio
+DbSelectArea("SE1")
+DbSetOrder(1)
+DbSeek(xFilial("SE1")+"SEP"+_cPedido+"A"+"NF ")
+
+While !Eof() .AND. SE1->E1_FILIAL == xFilial("SE1") .AND. SE1->E1_PREFIXO == "SEP" .AND. SE1->E1_NUM == _cPedido
+	
+	Reclock("SE1")
+	DbDelete()
+	MsUnlock()
+	
+	SE1->(DbSkip())
+	
+EndDo
+
+
+// Desfazer as compensações realizadas
+DbSelectArea("SE5")
+DbSetOrder(7)
+DbSeek(xFilial("SE5")+"SEP"+_cPedido)
+While !Eof() .AND. SE5->E5_PREFIXO == "SEP" .AND. SE5->E5_NUMERO == _cPedido
+	
+	RecLock("SE5")
+	DbDelete()
+	MsUnlock()
+	
+	SE5->(DbSkip())
+EndDo
+
+Return(lRet)

@@ -1,0 +1,486 @@
+/*/
+ÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜ
+±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±
+±±ÉÍÍÍÍÍÍÍÍÍÍÑÍÍÍÍÍÍÍÍÍÍËÍÍÍÍÍÍÍÑÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍËÍÍÍÍÍÍÑÍÍÍÍÍÍÍÍÍÍÍÍÍ»±±
+±±ºPrograma  ³DFATR80     º Autor ³ Microsiga        º Data ³  27/08/05   º±±
+±±ÌÍÍÍÍÍÍÍÍÍÍØÍÍÍÍÍÍÍÍÍÍÊÍÍÍÍÍÍÍÏÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÊÍÍÍÍÍÍÏÍÍÍÍÍÍÍÍÍÍÍÍÍ¹±±
+±±ºDescricao ³ Relatorio Margem de Contribuicao Mensal                    º±±
+±±º          ³                                                            º±±
+±±ÈÍÍÍÍÍÍÍÍÍÍÏÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍ¼±±
+±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±
+ßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßß
+/*/
+USER FUNCTION DFATR80
+
+LOCAL cDesc1         := "Este programa tem como objetivo imprimir relatorio "
+LOCAL cDesc2         := "de acordo com os parametros informados pelo usuario."
+LOCAL cDesc3         := "Margem de Contribuicao"
+LOCAL cPict          := ""
+LOCAL titulo         := "Margem de Contribuicao"
+LOCAL nLin           := 80
+LOCAL Cabec1         := ""
+LOCAL Cabec2         := ""
+LOCAL imprime        := .T.
+LOCAL aOrd           := {}
+LOCAL aPergunta         :={}
+PRIVATE lEnd         := .F.
+PRIVATE lAbortPrint  := .F.
+PRIVATE CbTxt        := ""
+PRIVATE limite       := 220
+PRIVATE tamanho      := "G"
+PRIVATE nomeprog     := "DFATR80"
+PRIVATE nTipo        := 15
+PRIVATE aReturn      := { "Zebrado", 1, "Administracao", 1, 2, 1, "", 1}
+PRIVATE nLastKey     := 0
+PRIVATE cPerg        := "FATR80"
+PRIVATE cbtxt        := Space(10)
+PRIVATE cbcont       := 00
+PRIVATE CONTFL       := 01
+PRIVATE m_pag        := 01
+PRIVATE wnrel        := "DFATR80"
+PRIVATE cString      := "SD2"
+
+dbSelectArea("SD2")
+dbSetOrder(5)
+
+// mv_par01 Da Data ?
+// mv_par02 Ate Data ?
+
+AAdd(aPergunta,{cPerg,"01","Da  Data ?"        ,"Da  Data"       ,"Da  Data"       ,"mv_ch1","D", 8,0,0,"G","","mv_par01","","","","","","","","","","","","","","","","","","","","","","","","",""})
+AAdd(aPergunta,{cPerg,"02","Ate Data ?"        ,"Ate Data"       ,"Ate Data"       ,"mv_ch2","D", 8,0,0,"G","","mv_par02","","","","","","","","","","","","","","","","","","","","","","","","",""})
+
+ValidPerg(aPergunta,cPerg)
+
+pergunte(cPerg,.F.)
+
+wnrel := SetPrint(cString,NomeProg,cPerg,@titulo,cDesc1,cDesc2,cDesc3,.T.,aOrd,.T.,Tamanho,,.T.)
+
+If nLastKey == 27
+	Return
+Endif
+
+SetDefault(aReturn,cString)
+
+If nLastKey == 27
+	Return
+Endif
+
+nTipo := If(aReturn[4]==1,15,18)
+
+RptStatus({|| RunReport(Cabec1,Cabec2,Titulo,nLin) },Titulo)
+
+Return
+
+/*/
+ÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜ
+±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±
+±±ÉÍÍÍÍÍÍÍÍÍÍÑÍÍÍÍÍÍÍÍÍÍËÍÍÍÍÍÍÍÑÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍËÍÍÍÍÍÍÑÍÍÍÍÍÍÍÍÍÍÍÍÍ»±±
+±±ºFun‡„o    ³RUNREPORT º Autor ³ Microsiga          º Data ³  27/08/05   º±±
+±±ÌÍÍÍÍÍÍÍÍÍÍØÍÍÍÍÍÍÍÍÍÍÊÍÍÍÍÍÍÍÏÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÊÍÍÍÍÍÍÏÍÍÍÍÍÍÍÍÍÍÍÍÍ¹±±
+±±ºDescri‡„o ³ Funcao auxiliar chamada pela RPTSTATUS. A funcao RPTSTATUS º±±
+±±º          ³ monta a janela com a regua de processamento.               º±±
+±±ÌÍÍÍÍÍÍÍÍÍÍØÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍ¹±±
+±±ºUso       ³ Programa principal                                         º±±
+±±ÈÍÍÍÍÍÍÍÍÍÍÏÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍ¼±±
+±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±
+ßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßß
+/*/
+
+STATIC FUNCTION RunReport(Cabec1,Cabec2,Titulo,nLin)
+
+LOCAL nOrdem
+LOCAL aArqTrab        := {}
+LOCAL aResumoPneus    := {}
+LOCAL aResumoSepu     := {}
+LOCAL cArqTrab        := ""
+LOCAL cGrupo          := ""
+LOCAL lRecapa         := .F.
+LOCAL lServic         := .F.
+LOCAL lAssTec         := .F.
+LOCAL lOutros         := .F.
+LOCAL nCustoGerencial := 0
+LOCAL nPneus          := 0
+LOCAL nTotFatura      := 0
+LOCAL nTotRecapa      := 0
+LOCAL nTotServic      := 0
+LOCAL nTotAssTec      := 0
+LOCAL nTotCusto       := 0
+LOCAL nTotMargCon     := 0
+LOCAL nTotPneus       := 0
+LOCAL nTotOutros      := 0
+LOCAL nAcuFatur       := 0
+LOCAL nAcuCusto       := 0
+
+Titulo := Titulo + " de " + DtoC(mv_par01) + " a " + DtoC(mv_par02)
+Cabec1 := ' Data     Faturamento   Recapagem    Servicos  Ass.Tecnica      Custo  %Margem     Acumulado    Acum.Custo %Margem Marg.Contr Pneus           Outros'
+Cabec2 := ''
+                     
+//-- CRIA ARQUIVO DE TRABALHO PARA PROCESSAMENTO DA LEITURA DE ITENS NOTAS FISCAIS
+AAdd(aArqTrab,{"DATAE","D",8,0}) // Emissao
+AAdd(aArqTrab,{"FATURA","N",17,2}) // Faturamento
+AAdd(aArqTrab,{"RECAPA","N",17,2}) // Recapagem
+AAdd(aArqTrab,{"SERVIC","N",17,2}) // Servico
+AAdd(aArqTrab,{"ASSTEC","N",17,2}) // Assistencia Tecnica
+AAdd(aArqTrab,{"OUTROS","N",17,2}) // Assistencia Tecnica
+AAdd(aArqTrab,{"CUSTO" ,"N",17,2}) // Custo
+AAdd(aArqTrab,{"FATMARGE","N",17,2}) // % Margem
+AAdd(aArqTrab,{"MARCONT","N",17,2}) // Margem Contribuicao
+AAdd(aArqTrab,{"PNEUS"  ,"N",6,0})  // Quantidade Pneus
+
+cArqTrab := CriaTrab(aArqTrab,.T.)
+dbUseArea(.t.,,cArqTrab,"TRB",)
+
+dbSelectArea("TRB")
+IndRegua("TRB",cArqTrab,"DTOS(TRB->DATAE)",,,"Criando Arquivo de Trabalho...")
+//-------------------
+
+//-- MONTA QUERY PARA TRAZER APENAS AS NOTAS FISCAIS CABECALHO DO MES PROCESSADO NOS PARAMETROS
+//-- FAZ ISTO, POIS PRECISA BUSCAR AS NCC´S A PARTIR DO CABECALHO DAS NOTAS E NAO A PARTIR DOS ITENS DA NOTA
+cQuerySF2 := "SELECT F2_DOC ,F2_SERIE, F2_EMISSAO FROM " + RetSqlName("SF2") + " SF2"
+cQuerySF2 += " where SF2.D_E_L_E_T_ = ' ' "
+cQuerySF2 += " and F2_FILIAL = '" + xFilial("SF2") + "' "
+cQuerySF2 += " and F2_EMISSAO >= '" + DtoS(mv_par01) + "' and F2_EMISSAO <= '" + DtoS(mv_par02) + "' "
+cQuerySF2 := ChangeQuery(cQuerySF2)
+dbUseArea(.T.,"TOPCONN",TCGenQry(,,cQuerySF2),"TRBSF2",.F.,.T.)
+TcSetField("TRBSF2", "F2_EMISSAO", "D")
+//-------------------
+
+SF4->( dbSetOrder(1) )
+SB1->( dbSetOrder(1) )
+SC6->( dbSetOrder(1) )
+SC2->( dbSetOrder(1) )
+SG1->( dbSetOrder(1) )
+SD3->( dbSetOrder(1) )
+
+dbSelectArea("SD2")
+dbSetOrder(5)
+dbSeek(xFilial("SD2")+DtoS(Mv_par01),.T.)
+SetRegua(RecCount())
+
+While !EOF() .And. xFilial("SD2") == SD2->D2_FILIAL .And. SD2->D2_EMISSAO <= Mv_Par02
+	
+	IncRegua()
+
+	If ! SF4->( dbSeek(xFilial("SF4") + SD2->D2_TES,.F.) )
+		SD2->( dbSkip() )
+		Loop                                                 
+	EndIf
+
+	SB1->( dbSeek(xFilial("SB1") + SD2->D2_COD,.F.) )
+	cGrupo          := AllTrim( Upper(SB1->B1_GRUPO) )
+	nPneus          := Iif ( cGrupo == "CARC", SD2->D2_QUANT, 0 )
+
+	If cGrupo == "CARC"
+		nPosPneu := AScan(aResumoPneus,{|x| x[1] == SB1->B1_X_ESPEC } ) 
+		SC6->( dbSeek(xFilial("SC6") + SD2->D2_PEDIDO+SD2->D2_ITEMPV,.F.) )
+		SC2->( dbSeek(xFilial("SC2") + SC6->C6_NUMOP+SC6->C6_ITEMOP,.F.) )
+		nServico := 0
+		While !Eof() .And. xFilial("SC6")==SC6->C6_FILIAL .And. SD2->D2_PEDIDO == SC6->C6_NUM
+			SB1->( dbSeek(xFilial("SB1") + SC6->C6_PRODUTO,.F.) )		
+			If Alltrim(Upper(SB1->B1_GRUPO)) == "SERV" .AND. SC6->C6_NUMOP+SC6->C6_ITEMOP==SC2->C2_NUM+SC2->C2_ITEM
+			   nServico := SC6->C6_VALOR
+			   Exit
+			Endif
+			SC6->(dbSkip())
+		EndDo           
+		nPosPneu := AScan(aResumoPneus,{|x| x[1] == SB1->B1_X_ESPEC })
+		If nPosPneu <= 0
+			AAdd(aResumoPneus,{SB1->B1_X_ESPEC,nPneus,nServico}) 
+		Else
+			aResumoPneus[nPosPneu][2] := aResumoPneus[nPosPneu][2] + nPneus
+			aResumoPneus[nPosPneu][3] := aResumoPneus[nPosPneu][3] + nServico
+		EndIf
+	EndIf
+	
+	SC6->( dbSeek(xFilial("SC6") + SD2->D2_PEDIDO+SD2->D2_ITEMPV,.F.) )
+	SC2->( dbSeek(xFilial("SC2") + SC6->C6_NUMOP+SC6->C6_ITEMOP,.F.) )
+
+	lRecapa         := ( cGrupo $ "SERV" .And. SF4->F4_DUPLIC == "S" )
+	lServic         := ( cGrupo $ GetMv("MV_X_GRPRO") .And. SF4->F4_DUPLIC == "S"  )
+	lAssTec         := ( cGrupo $ "ATEC" .And. SF4->F4_DUPLIC == "S"  )
+	lOutros         := ( ( !lRecapa .And. !lServic .And. !lOutros ) .And. SF4->F4_DUPLIC == "S" )
+	nCustoGerencial := 0
+
+	If lRecapa
+		dbSelectArea("SD3")
+		SD3->( dbSeek(xFilial("SD3") + SC2->C2_NUM+SC2->C2_ITEM+SC2->C2_SEQUEN, .f. ) )
+		lEntrou := .F.
+		While !Eof() .And. xFilial("SD3") == SD3->D3_FILIAL .And. Alltrim(SD3->D3_OP) == Alltrim(SC2->C2_NUM+SC2->C2_ITEM+SC2->C2_SEQUEN)
+			If SD3->D3_ESTORNO == "S" .Or. SD3->D3_CF $ "PR0/ER0"
+				SD3->( dbSkip() )
+				Loop
+			EndIf                                                
+			If Alltrim( Upper(SD3->D3_GRUPO) ) != "BAND"			
+				SD3->( dbSkip() )
+				Loop
+			EndIf
+			SB1->( dbSeek(xFilial("SB1") + SD3->D3_COD, .F. ) )
+			If "BANDA" $ Upper ( AllTrim ( SB1->B1_DESC ) )
+				If SG1->( dbSeek(xFilial("SG1") + SC2->C2_PRODUTO + SD3->D3_COD,.F.) )
+					nCustoGerencial := nCustoGerencial + SG1->G1_XCSBI 
+				EndIf                          
+			Else
+			   nCustoGerencial := nCustoGerencial +  SB1->B1_CUSTD 
+			EndIf
+			SD3->( dbSkip() )
+			lEntrou := .T.
+		EndDo             
+		If !lEntrou
+			dbSelectArea("SD4")            
+			dbSetOrder(2)
+			SD4->( dbSeek(xFilial("SD4") + SC2->C2_NUM+SC2->C2_ITEM+SC2->C2_SEQUEN, .f. ) )
+			While !Eof() .And. xFilial("SD4") == SD4->D4_FILIAL .And. Alltrim(SD4->D4_OP) == Alltrim(SC2->C2_NUM+SC2->C2_ITEM+SC2->C2_SEQUEN)
+				If SD4->D4_QUANT == SD4->D4_QTDEORI
+					SD4->( dbSkip() )
+					Loop
+				EndIf                                              
+				SB1->( dbSeek(xFilial("SB1") + SD4->D4_COD, .F. ) )				
+				If Upper(Alltrim(SB1->B1_GRUPO)) != "BAND"
+					SD4->( dbSkip() )
+					Loop
+				EndIf                                              
+				If "BANDA" $ Upper ( AllTrim ( SB1->B1_DESC ) )
+					If SG1->( dbSeek(xFilial("SG1") + SC2->C2_PRODUTO + SD4->D4_COD,.F.) )
+						nCustoGerencial := nCustoGerencial + ( SD4->D4_QTDEORI * SG1->G1_XCSBI )
+					EndIf                          
+				Else
+				   nCustoGerencial := nCustoGerencial + ( SD4->D4_QTDEORI * SB1->B1_CUSTD )
+				EndIf
+				SD4->( dbSkip() )
+			EndDo             		
+		EndIf
+	EndIf    
+
+	SB1->( dbSeek(xFilial("SB1") + SD2->D2_COD,.F.) )
+
+	dbSelectArea("TRB")
+	If ! ( dbSeek( DtoS(SD2->D2_EMISSAO) ) )
+		RecLock("TRB",.T.)
+		TRB->DATAE := SD2->D2_EMISSAO
+	Else
+		RecLock("TRB",.F.)
+	EndIf
+	TRB->FATURA   := TRB->FATURA + IIF ( SF4->F4_DUPLIC == "S", SD2->D2_TOTAL, 0)
+	TRB->RECAPA   := TRB->RECAPA + IIf( lRecapa , SD2->D2_TOTAL , 0 )
+	TRB->SERVIC   := TRB->SERVIC + IIf( lServic , SD2->D2_TOTAL , 0 )
+	TRB->ASSTEC   := TRB->ASSTEC + IIf( lAssTec , SD2->D2_TOTAL , 0 )
+	TRB->OUTROS   := TRB->OUTROS + IIf( lOutros , SD2->D2_TOTAL , 0 )	
+	TRB->CUSTO    := TRB->CUSTO  + nCustoGerencial
+	TRB->FATMARGE := TRB->FATURA / TRB->CUSTO
+	TRB->PNEUS    := TRB->PNEUS  + nPneus
+	MsUnlock()
+
+		
+	dbSelectArea("SD2")
+	SD2->( dbSkip() )
+	
+EndDo
+
+//-- VERIFICA SE EXISTEM DESCONTOS COMERCIAIS DO SEPU APLICADOS NESTE PERIODO A PARTIR DO CABECALHO DAS NOTAS
+SE1->( dbSetOrder(1) )
+
+dbSelectArea("TRBSF2")
+dbGotop()
+
+While !Eof()
+
+	dbSelectArea("SE5")
+	dbSetOrder(1)
+	//-- busca registro de baixa do uma NCC com prefixo SEP
+	//-- busca emissao + banco (SEP) + agencia (00001) + conta (0000000001) + numero do cheque ( serie + nota )
+	dbSeek(xFilial("SE5")+DtoS(TRBSF2->F2_EMISSAO)+"SEP000010000000001"+Alltrim(TRBSF2->F2_SERIE)+Alltrim(TRBSF2->F2_DOC),.F.)
+	
+	While !Eof() .And. SE5->(E5_FILIAL+DTOS(E5_DATA)+E5_BANCO+E5_AGENCIA+E5_CONTA+Alltrim(E5_NUMCHEQ)) == ;
+		xFilial("SE5")+DtoS(TRBSF2->F2_EMISSAO)+"SEP000010000000001"+Alltrim(TRBSF2->F2_SERIE)+Alltrim(TRBSF2->F2_DOC)
+		
+		SE1->( dbSeek(xFilial("SE1")+SE5->E5_PREFIXO+SE5->E5_NUMERO+SE5->E5_PARCELA+SE5->E5_TIPO,.F.) )
+
+		nPosSepu := AScan(aResumoSepu,{|x| x[1] == SE1->E1_MOTDESC } )
+		If nPosSepu <= 0
+			AAdd(aResumoSepu,{SE1->E1_MOTDESC,SE5->E5_VALOR})
+		Else
+			aResumoSepu[nPosSepu][2] := aResumoSepu[nPosSepu][2] + SE5->E5_VALOR
+		EndIf
+		
+		dbSelectArea("SE5")
+		SE5->( dbSkip() )
+		
+	Enddo                         
+	
+	dbSelectArea("TRBSF2")
+	TRBSF2->( dbSkip() )
+	
+EndDo	
+
+dbSelectArea("TRBSF2")
+dbCloseArea("TRBSF2")
+
+//-- IMPRIME O ARQUIVO DE TRABALHO
+dbSelectArea("TRB")
+dbGotop()
+
+While !EOF()
+	
+	If lAbortPrint
+		@nLin,00 PSAY "*** CANCELADO PELO OPERADOR ***"
+		Exit
+	Endif
+	
+	If nLin > 55
+		Cabec(Titulo,Cabec1,Cabec2,NomeProg,Tamanho,nTipo)
+		nLin := 8
+	Endif
+	
+/*
+Data     Faturamento   Recapagem    Servicos  Ass.Tecnica      Custo  %Margem     Acumulado    Acum.Custo %Margem Marg.Contr Pneus           Outros
+99/99/99  999,999.99  999,999.99  999,999.99   999,999.99 999,999.99   999.99  9,999,999.99  9,999,999.99  999.99 999,999.99 99999    99,999,999.99
+1         11          23          35           48         59           72      80            94            108    115        126      135
+*/
+	
+	nAcuFatur := nAcuFatur + TRB->FATURA
+	nAcuCusto := nAcuCusto + TRB->CUSTO
+	
+	
+	@nLin,001 PSAY TRB->DATAE
+	@nLin,011 PSAY TRB->FATURA    			PICTURE "@E 999,999.99"
+	@nLin,023 PSAY TRB->RECAPA    			PICTURE "@E 999,999.99"
+	@nLin,035 PSAY TRB->SERVIC    			PICTURE "@E 999,999.99"
+	@nLin,048 PSAY TRB->ASSTEC    			PICTURE "@E 999,999.99"
+	@nLin,059 PSAY TRB->CUSTO     			PICTURE "@E 999,999.99"
+	@nLin,072 PSAY TRB->FATMARGE  			PICTURE "@E 999.99"
+	@nLin,080 PSAY nAcuFatur      			PICTURE "@E 9,999,999.99"
+	@nLin,094 PSAY nAcuCusto              	PICTURE "@E 9,999,999.99"
+	@nLin,108 PSAY nAcuFatur / nAcuCusto  	PICTURE "@E 999.99"
+	@nLin,115 PSAY TRB->FATURA - TRB->CUSTO PICTURE "@E 999,999.99"
+	@nLin,126 PSAY TRB->PNEUS     			PICTURE "9999"
+	@nLin,135 PSAY TRB->OUTROS     			PICTURE "@E 99,999,999.99"
+	
+	nTotFatura := nTotFatura  + TRB->FATURA
+	nTotRecapa := nTotRecapa  + TRB->RECAPA
+	nTotServic := nTotServic  + TRB->SERVIC
+	nTotAssTec := nTotAssTec  + TRB->ASSTEC
+	nTotCusto  := nTotCusto   + TRB->CUSTO
+	nTotPneus  := nTotPneus   + TRB->PNEUS
+	nTotOutros := nTotOutros  + TRB->OUTROS
+	
+	nLin := nLin + 1
+	
+	TRB->( dbSkip() )
+	
+EndDo
+
+nLin++
+
+If nLin > 55
+	Cabec(Titulo,Cabec1,Cabec2,NomeProg,Tamanho,nTipo)
+	nLin := 8
+Endif
+
+@nLin,001 PSAY Replicate("-",132)
+
+nLin++             
+
+nTotMargCon := nTotFatura - nTotCusto
+
+@nLin,011 PSAY nTotFatura    PICTURE "@E 999,999.99"
+@nLin,023 PSAY nTotRecapa    PICTURE "@E 999,999.99"
+@nLin,035 PSAY nTotServic    PICTURE "@E 999,999.99"
+@nLin,048 PSAY nTotAssTec    PICTURE "@E 999,999.99"
+@nLin,059 PSAY nTotCusto     PICTURE "@E 999,999.99"
+@nLin,115 PSAY nTotMargCon   PICTURE "@E 999,999.99"
+@nLin,126 PSAY nTotPneus     PICTURE "99999"
+
+nLin:=nLin+2
+
+@nLin,001 PSAY "CF"
+@nLin,004 PSAY 0   PICTURE "@E 9999,999.99"
+@nLin,018 PSAY "MC LIQ:"
+@nLin,026 PSAY nTotMargCon PICTURE "@E 9999,999.99"
+@nLin,039 PSAY "PRECO MEDIO:"
+@nLin,052 PSAY nTotRecapa / nTotPneus PICTURE "@E 9999.99"
+@nLin,063 PSAY "MARGEM MEDIA:"
+@nLin,077 PSAY nTotMargCon / nTotPneus PICTURE "@E 9999.99"
+                          
+/*
+CF 9999,999.99   MC LIQ: 9999,999.99  PRECO MEDIO: 9999.99    MARGEM MEDIA: 9999.99
+1  4             18      26           39           52         63            77
+*/
+
+//-- Imprime Resumo por tipo de pneu
+nLin:=nLin+3
+
+If nLin > 55
+	Cabec(Titulo,Cabec1,Cabec2,NomeProg,Tamanho,nTipo)
+	nLin := 8
+Endif
+
+@nLin  ,001 PSAY "Distribuicao de Pneus"
+@nLin+1,001 PSAY "---------------------"
+nLin:=nLin+2
+
+/*
+Pequeno        186  999,999,999,99  9999,99
+1              16   21              37
+*/
+
+For i:=1 To Len(aResumoPneus)
+	If nLin > 55
+		Cabec(Titulo,Cabec1,Cabec2,NomeProg,Tamanho,nTipo)
+		nLin := 8
+	Endif
+	@nLin,001 PSAY IIF( Empty(aResumoPneus[i][1]) , "Indefinido" , Substr(aResumoPneus[i][1],1,15) ) 
+	@nLin,016 PSAY aResumoPneus[i][2] PICTURE "999"
+	@nLin,021 PSAY aResumoPneus[i][3] PICTURE "@E 999,999,999.99"
+//	@nLin,037 PSAY aResumoPneus[i][3] / aResumoPneus[i][2] PICTURE "@E 9999.99"
+	nLin++
+Next
+
+//------------------- FIM RESUMO PNEUS ----------
+
+//-- Imprime Resumo de Ajustes SEPU
+nLin:=nLin+3
+
+If nLin > 55
+	Cabec(Titulo,Cabec1,Cabec2,NomeProg,Tamanho,nTipo)
+	nLin := 8
+Endif
+
+@nLin  ,001 PSAY "SEPU"
+@nLin+1,001 PSAY "---------------------"
+nLin:=nLin+2
+
+/*
+Motivo                                                         Valor
+99-xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx           999,999,999,99
+1                                                     55
+*/
+
+For i:=1 To Len(aResumoSepu)
+	If nLin > 55
+		Cabec(Titulo,Cabec1,Cabec2,NomeProg,Tamanho,nTipo)
+		nLin := 8
+	Endif    
+//	SZS->( dbSeek(xFilial("SZS")+aResumoSepu[1][1],.F.) )
+	@nLin,001 PSAY aResumoSepu[i][1]+'-'//+Subst(SZS->ZS_DESCR,1,50)
+	@nLin,055 PSAY aResumoSepu[i][2] PICTURE "@E 999,999,999.99"
+	nLin++
+Next
+
+dbSelectArea("TRB")
+dbCloseArea("TRB")
+FErase(cArqTRAB+OrdBagExt())
+
+dbSelectArea("SD2")
+dbSetOrder(1)
+
+SET DEVICE TO SCREEN
+
+If aReturn[5]==1
+	dbCommitAll()
+	SET PRINTER TO
+	OurSpool(wnrel)
+Endif
+
+MS_FLUSH()
+
+Return

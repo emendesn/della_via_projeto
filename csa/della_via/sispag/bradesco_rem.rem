@@ -1,0 +1,55 @@
+Ident. Registro00100100                                                           
+Ident. Fita Rem00200201                                                           
+Literal Remessa0030090'REMESSA'                                                   
+Cod. Servico   010011001                                                          
+Literal Servico0120260'COBRANCA'                                                  
+Codigo Empresa 0270460"00000000000000011111"                                      
+Nome da Empresa0470760"NOME DO CLIENTE         "                                  
+Numero do Banco0770790237                                                         
+Nome do Banco  0800940'BRADESCO'                                                  
+Data da Gravaca0951000gravadata(ddatabase,.F.)                                    
+branco         1011080SPACE(8)                                                    
+Ident. Sistema 1091100"MX"                                                        
+Nr. Remessa    1111170STRZERO(VAL(SEE->EE_ULTDSK),7)                              
+Branco         1183940SPACE(286)                                                  
+Nr. Sequencial 3954000000001                                                      
+Ident. Registro00100101                                                           
+Tipo Inscricao 0020200SPACE(18)                                                   
+Ident. Empresa 0210370"00011111110011111"                                         
+Nr. Controle   0380620SPACE(25)                                                   
+Zeros          0630700SPACE(3)                                                    
+NOSSO NUMERO   0710810STRZERO(VAL(NOSSONUM()),11)                                 
+DIGITO no Banco0820820MODULO11("09"+STRZERO(VAL(SE1->E1_NUMBCO),11),2,7)          
+desconto       0830920SPACE(12)                                                   
+condicao pape  09309302                                                           
+Ident. Papel   0940940"N"                                                         
+Branco         0951040SPACE(10)                                                   
+Branco         1051050SPACE(1)                                                    
+Branco         1061060SPACE(1)                                                    
+Ocorrencia     1071100se1->e1_ocorren                                             
+Num Documento  1111200SE1->E1_PREFIXO+SE1->E1_NUM+SE1->E1_PARCELA                 
+Data do Vencto 1211260gravadata(se1->e1_vencto,.f.)                               
+Valor Titulo   1271390STRZERO(INT(ROUND(SE1->E1_VALOR*100,2)),13)                 
+Banco Cobranca 1401420SPACE(3)                                                    
+Agencia Cobranc1431470SPACE(5)                                                    
+Especie do Titu148149001                                                          
+Identificacao  1501500'N'                                                         
+Data Emissao   1511560GRAVADATA(SE1->E1_EMISSAO,.F.)                              
+1a.Instrucao   1571580SPACE(2)                                                    
+2a. Instrucao  1591600SPACE(2)                                                    
+Vlr.Atraso Dia 1611730                                                            
+Data Lim. Desc.1741790SPACE(6)                                                    
+Vlr Desconto   1801920SPACE(13)                                                   
+Vlr IOF        1932050SPACE(13)                                                   
+Vlr Abatimento 2062180SPACE(13)                                                   
+Ident. Sacado  2192200IIF(SA1->A1_TIPO ="F",01,02)                                
+Inscr. Sacado  2212340STRZERO(VAL(SA1->A1_CGC),14,0)                              
+Nome do Sacado 2352740SUBSTR(SA1->A1_NOME,1,40)                                   
+Endereco Sacado2753140SUBSTR(SA1->A1_END,1,40)                                    
+1a. mensagem   3153260SPACE(12)                                                   
+Codigo Postal  3273340SUBSTR(SA1->A1_CEP,1,5)+SUBSTR(SA1->A1_CEP,6,3)             
+2a. mensagem   3353940"Protestar no 5o.(quinto) dia apos o venc."                 
+Numero Sequenc.3954000INCREMENTA()                                                
+Ident.Registro 00100109                                                           
+branco         0023940SPACE(60)                                                   
+Sequencial     3954000Incrementa()                                                

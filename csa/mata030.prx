@@ -1,0 +1,1866 @@
+#INCLUDE "MATA030.CH"
+#INCLUDE "PROTHEUS.CH"
+
+/*/
+ÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜ
+±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±
+±±ÚÄÄÄÄÄÄÄÄÄÄÂÄÄÄÄÄÄÄÄÄÄÂÄÄÄÄÄÄÄÂÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÂÄÄÄÄÄÄÂÄÄÄÄÄÄÄÄÄÄ¿±±
+±±³Fun‡…o    ³ MATA030  ³ Autor ³ Jorge Queiroz         ³ Data ³          ³±±
+±±ÃÄÄÄÄÄÄÄÄÄÄÅÄÄÄÄÄÄÄÄÄÄÁÄÄÄÄÄÄÄÁÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÁÄÄÄÄÄÄÁÄÄÄÄÄÄÄÄÄÄ´±±
+±±³Descri‡…o ³ Programa de atualizacao de Clientes                        ³±±
+±±ÃÄÄÄÄÄÄÄÄÄÄÅÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ´±±
+±±³ Uso      ³ Generico                                                   ³±±
+±±ÃÄÄÄÄÄÄÄÄÄÄÁÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ´±±
+±±³         ATUALIZACOES SOFRIDAS DESDE A CONSTRU€AO INICIAL.             ³±±
+±±ÃÄÄÄÄÄÄÄÄÄÄÄÄÂÄÄÄÄÄÄÄÄÂÄÄÄÄÄÄÂÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ´±±
+±±³Programador ³ Data   ³ BOPS ³  Motivo da Alteracao                     ³±±
+±±ÃÄÄÄÄÄÄÄÄÄÄÄÄÅÄÄÄÄÄÄÄÄÅÄÄÄÄÄÄÅÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ´±±
+±±³            ³        ³      ³                                          ³±±
+±±ÀÄÄÄÄÄÄÄÄÄÄÄÄÁÄÄÄÄÄÄÄÄÁÄÄÄÄÄÄÁÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÙ±±
+±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±
+ßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßß
+*/
+Function MATA030(xRotAuto,nOpcAuto)
+
+Local lPyme		:= Iif(Type("__lPyme") <> "U",__lPyme,.F.)
+Local aRotAdic	:= {}
+Local aIndexSA1	:= {}
+Local cFiltraSA1:= ""
+
+PRIVATE cCadastro := STR0006  //"Clientes" 
+PRIVATE aMemos    := {{"A1_CODMARC","A1_VM_MARC"},{"A1_OBS","A1_VM_OBS"}}
+PRIVATE bFiltraBrw:= {|| Nil}
+PRIVATE aRotina
+Private aRotAuto := Nil
+//ÚÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ¿
+//³ Define Variaveis                                             ³
+//ÀÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÙ
+//ÚÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ¿
+//³ Define Array contendo as Rotinas a executar do programa      ³
+//³ ----------- Elementos contidos por dimensao ------------     ³
+//³ 1. Nome a aparecer no cabecalho                              ³
+//³ 2. Nome da Rotina associada                                  ³
+//³ 3. Usado pela rotina                                         ³
+//³ 4. Tipo de Transa‡„o a ser efetuada                          ³
+//³    1 - Pesquisa e Posiciona em um Banco de Dados             ³
+//³    2 - Simplesmente Mostra os Campos                         ³
+//³    3 - Inclui registros no Bancos de Dados                   ³
+//³    4 - Altera o registro corrente                            ³
+//³    5 - Remove o registro corrente do Banco de Dados          ³
+//ÀÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÙ
+
+
+If Alltrim(Upper(Funname())) == "ACAA700"  // verifica se foi chamado pelo modulo Gestao Educacional   
+	aRotina := { 	{STR0001,"PesqBrw"    , 0 , 1},;  // "Pesquisar"
+					{STR0002,"A030Visual" , 0 , 2},;  // "Visualizar"
+					{STR0003,"A030Inclui" , 0 , 3,81},;  // "Incluir"
+					{STR0004,"A030Altera" , 0 , 4,82},;  // "Alterar"
+					{STR0005,"A030Deleta" , 0 , 5,3}}// "Excluir"
+Else
+	aRotina := { 	{STR0001,"PesqBrw"    , 0 , 1},; // "Pesquisar"
+					{STR0002,"A030Visual" , 0 , 2},;  // "Visualizar"
+					{STR0003,"A030Inclui" , 0 , 3,81},;  // "Incluir"
+					{STR0004,"A030Altera" , 0 , 4,82},;  // "Alterar"
+					{STR0005,"A030Deleta" , 0 , 5,3},;// "Excluir"
+					{STR0010,"FtContato", 0 , 4}}  //"Contatos"
+							
+	If !lPyme
+		Aadd(aRotina,{STR0014,"MsDocument", 0 , 4}) //"Conhecimento"
+	EndIf			
+EndIf
+//ÚÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ¿
+//³ Ponto de entrada para adicao de campos memo do usuario       ³
+//ÀÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÙ
+If ExistBlock( "MA030MEM" ) 
+	aMemUser := ExecBlock( "MA030MEM", .F., .F. ) 
+	If ValType( aMemUser ) == "A"
+		AEval( aMemUser, { |x| AAdd( aMemos, x ) } ) 	
+	EndIf 	
+EndIf
+
+//ÚÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ¿
+//³ Endereca a funcao de BROWSE                                  ³
+//ÀÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÙ
+
+If Alltrim(Upper(Funname())) # "ACAA700" // Se nao foi chamado pelo modulo Gestao Educacional
+	aadd(aRotina,{STR0011,"Mata030Ref" , 0 , 3}) // //"Referencias"
+EndIf	
+
+//ÚÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ¿
+//³ Ponto de entrada - Adiciona rotinas ao aRotina       ³
+//ÀÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÙ
+If ExistBlock("MA030ROT")
+	aRotAdic := ExecBlock("MA030ROT", .F., .F.)
+	If ValType(aRotAdic) == "A"
+		AEval(aRotAdic,{|x| AAdd(aRotina,x)})
+	EndIf
+EndIf
+
+If xRotAuto <> Nil
+	DEFAULT nOpcAuto := 3
+	aRotAuto := xRotAuto
+	Private l030Auto := .T.
+	MBrowseAuto(nOpcAuto,aRotAuto,"SA1")
+Else
+   //ÚÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ¿
+   //³ Verifica a existencia de Filtros na mBrowse                  ³
+   //ÀÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÙ
+   If (ExistBlock("MA030BRW"))
+      cFiltraSA1 := ExecBlock("MA030BRW",.F.,.F.)
+	  bFiltraBrw := {|| FilBrowse("SA1",@aIndexSA1,@cFiltraSA1)}
+	  Eval(bFiltraBrw)
+   EndIf	
+	mBrowse( 6, 1,22,75,"SA1")
+   //ÚÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ¿
+   //³ Finaliza o uso da funcao FilBrowse e retorna os indices padroes.       ³
+   //ÀÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÙ
+   EndFilBrw("SA1",aIndexSA1)
+EndIf
+
+Return .T.
+/*/
+±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±
+±±ÚÄÄÄÄÄÄÄÄÄÄÂÄÄÄÄÄÄÄÄÄÄÂÄÄÄÄÄÄÄÂÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÂÄÄÄÄÄÄÂÄÄÄÄÄÄÄÄÄÄ¿±±
+±±³Fun‡…o    ³A030Deleta³ Autor ³ Jorge Queiroz         ³ Data ³          ³±±
+±±ÃÄÄÄÄÄÄÄÄÄÄÅÄÄÄÄÄÄÄÄÄÄÁÄÄÄÄÄÄÄÁÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÁÄÄÄÄÄÄÁÄÄÄÄÄÄÄÄÄÄ´±±
+±±³Descri‡…o ³ Programa de atualizacao de Clientes                        ³±±
+±±ÃÄÄÄÄÄÄÄÄÄÄÅÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ´±±
+±±³Sintaxe   ³ A030Deleta(ExpC1,ExpN1,ExpN2)                              ³±±
+±±ÃÄÄÄÄÄÄÄÄÄÄÅÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ´±±
+±±³Parametros³ ExpC1 = Alias do arquivo                                   ³±±
+±±³          ³ ExpN1 = Numero do registro                                 ³±±
+±±³          ³ ExpN2 = Opcao selecionada                                  ³±±
+±±ÃÄÄÄÄÄÄÄÄÄÄÅÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ´±±
+±±³ Uso      ³ MATA030                                                    ³±±
+±±ÀÄÄÄÄÄÄÄÄÄÄÁÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÙ±±
+±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±
+ßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßß
+/*/
+FUNCTION A030Deleta(cAlias,nReg,nOpc)
+
+Local aUsrBut     := {}
+Local aButtons    := {{"POSCLI",{|| a450F4Con()},OemtoAnsi(STR0017),OemtoAnsi(STR0018)}}
+Local aSM0CodFil  := {}
+Local aFiliais    := {}
+Local aObjects    := {}
+Local aSize       := {} 
+Local aInfo       := {}
+Local aPosObj     := {}  
+
+LOCAL cCodCli     := ""
+Local cQuery      := ""
+Local cInd        := ""
+Local cCondicao   := ""      
+Local cKey        := ""
+Local cCod        := ""
+
+Local oDlg
+Local lExitSC5
+Local lExecuta    := .T.                 
+Local l030DelT    := (ExistTemplate("M030DEL"))
+Local l030Del     := (ExistBlock("M030DEL"))
+Local lPodeApagar := .T.
+
+Local nRecnoSM0   := SM0->(RecNo())
+LOCAL nLoop       := 0 
+LOCAL nPosMemo    := 0 
+Local nOpcA       := 0
+Local nInd        := 0
+Local nBusca      := 0 
+
+//ÚÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ¿
+//³ Monta a entrada de dados do arquivo                          ³
+//ÀÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÙ
+PRIVATE aTELA[0][0],aGETS[0]
+
+//ÚÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ¿
+//³Caso exista o execblock , executa ,se voltar³
+//³.F. abandona o programa                     ³
+//ÀÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÙ
+If l030DelT
+	lExecuta := ExecTemplate("M030DEL",.f.,.f.)
+	If !lExecuta
+		Return .T.
+	Endif
+Endif
+If l030Del
+	lExecuta := ExecBlock("M030DEL",.f.,.f.)
+	If !lExecuta
+		Return .T.
+	Endif
+Endif
+
+If ! Select("JA2") == 0 .and. ! SA1->(FieldPos("A1_NUMRA")) == 0 .and. ! Empty(SA1->A1_NUMRA)
+	JA2->(dbSetOrder(1))
+ 	If JA2->(dbSeek(xfilial("JA2")+SA1->A1_NUMRA))
+		Return .F.
+	EndIF
+EndIf         
+
+//ÚÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ¿
+//³ Ponto de entrada para criacao de botoes do usuario  ³
+//ÀÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÙ
+If ExistBlock( "MA030BUT" ) 
+	If Valtype( aUsrBut := Execblock( "MA030BUT", .f., .f., { 5 } ) ) == "A"
+		AEval( aUsrBut, { |x| AAdd( aButtons, x ) } ) 
+	EndIF 
+EndIf 		
+
+While .T.
+	//ÚÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ¿
+	//³ Envia para processamento dos Gets          ³
+	//ÀÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÙ
+	nOpcA:=0
+	
+	SoftLock(cAlias)
+	
+	If ( Type("l030Auto") == "U" .or. !l030Auto )
+	
+		aSize := MsAdvSize()       
+
+		//ÚÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ¿
+		//³ Ajusta a largura para o tamanho padrao Protheus ³
+		//ÀÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÙ
+		
+		aSize[5] := 632      
+		aSize[3] := 318
+		
+		aObjects := {}
+		AAdd( aObjects, { 100, 100, .t., .t. } )
+		aInfo    := { aSize[1],aSize[2],aSize[3],aSize[4],2,2 } 
+		
+		aPosObj := MsObjSize( aInfo, aObjects ) 
+			
+		DEFINE MSDIALOG oDlg TITLE cCadastro FROM aSize[7],0 TO aSize[6],aSize[5] OF oMainWnd PIXEL
+		nOpcA:=EnChoice( cAlias, nReg, nOpc,,"AC",STR0009,, aPosObj[1] )  //"Quanto … exclus„o?"
+		nOpca := 1
+		ACTIVATE MSDIALOG oDlg ON INIT EnchoiceBar(oDlg,{|| nOpca := 2,oDlg:End()},{|| nOpca := 1,oDlg:End()},,aButtons)
+	Else
+		nOpcA := 2
+	EndIf
+	dbSelectArea(cAlias)
+	
+	IF nOpcA == 2
+		
+		// Preenche um array com as filiais
+		
+		dbSelectArea("SM0")
+		dbGoTop()
+		do While ! Eof()
+			If SM0->M0_CODIGO == cEmpAnt
+				Aadd(aSM0CodFil, SM0->M0_CODFIL)
+			Endif
+			dbSkip()
+		Enddo	
+		dbGoto(nRecnoSM0)
+
+		//ÚÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ¿
+		//³ Antes de deletar eu vou verificar se existe movimentacao     ³
+		//ÀÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÙ
+		cCod := SA1->A1_COD+SA1->A1_LOJA
+
+		//ÚÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ¿
+		//³ Verifica se existe Orcamento no Televendas SUA               ³
+		//ÀÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÙ
+		dbSelectArea("SUA")
+		dbSetOrder(6)
+
+		aFiliais := If(! Empty(xFilial()) .and. Empty(xFilial("SA1")), aClone(aSM0CodFil), {xFilial()})
+		For nBusca := 1 to Len(aFiliais)
+        	If DBSeek(aFiliais[nBusca]+cCod)
+        		HELP(" ",1,"TMKNDELREL")
+				lPodeApagar := .F.
+				dbSelectArea("SA1")
+				DbSetOrder(1)
+				MsUnLock()
+				Exit
+			EndIf
+		Next			
+
+		//ÚÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ¿
+		//³ Verifica se existe Atendimento no Telemarketing SUC          ³
+		//ÀÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÙ
+		If lPodeApagar
+			dbSelectArea("SUC")
+			dbSetOrder(2)
+	
+			aFiliais := If(! Empty(xFilial()) .and. Empty(xFilial("SA1")), aClone(aSM0CodFil), {xFilial()})
+			For nBusca := 1 to Len(aFiliais)		
+	        	If DBSeek(aFiliais[nBusca]+'SA1'+cCod)
+	        		HELP(" ",1,"TMKNDELREL")
+					lPodeApagar := .F.
+					dbSelectArea("SA1")
+					DbSetOrder(1)
+					MsUnLock()
+					Exit
+				EndIf
+			Next			
+		EndIf
+
+
+		//ÚÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ¿
+		//³ Verifica se existe Pedido de Venda                           ³
+		//ÀÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÙ
+		dbSelectArea("SC5")
+		dbSetOrder(3)
+
+		aFiliais := If(! Empty(xFilial()) .and. Empty(xFilial("SA1")), aClone(aSM0CodFil), {xFilial()})
+		For nBusca := 1 to Len(aFiliais)		
+                        dbSeek(aFiliais[nBusca]+SA1->A1_COD)
+			While !Eof() .And. aFiliais[nBusca]+SA1->A1_COD == SC5->C5_FILIAL+;
+                               SC5->C5_CLIENTE .And. lPodeApagar
+				If ((SA1->A1_LOJA == SC5->C5_LOJACLI) .and.;
+   	                         ! (SC5->C5_TIPO $ "BD"))
+					HELP(" ",1,"MA030TEMPV",, "Filial " + aFiliais[nBusca], 3, 0)
+					lPodeApagar := .F.
+					Exit
+				EndIf
+
+				If (SA1->A1_LOJA == SC5->C5_LOJAENT) .And. !SC5->C5_TIPO$"DB"
+					lPodeApagar := .F.
+					HELP(" ",1,"MA030LOJEN",, "Filial " + aFiliais[nBusca], 3, 0)
+					Exit
+				EndIf
+				
+				DbSkip()
+			EndDo
+			If !lPodeApagar
+				Exit
+			Endif
+		Next			
+		
+		DbSetOrder(1)
+
+		If ! lPodeApagar
+			dbSelectArea("SA1")
+			MsUnLock()
+			Exit
+		Endif
+
+		//ÚÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ¿
+		//³ Verifica se existe Contas a Receber deste cliente       ³
+		//ÀÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÙ
+		
+		dbSelectArea("SE1")      // Contas a receber
+		DbSetOrder(2)
+
+		aFiliais := If(! Empty(xFilial()) .and. Empty(xFilial("SA1")), aClone(aSM0CodFil), {xFilial()})
+		For nBusca := 1 to Len(aFiliais)		
+			If dbSeek(aFiliais[nBusca]+cCod)
+				HELP(" ",1,"MA030TEMCR",, "Filial " + aFiliais[nBusca], 3, 0)
+				dbSelectArea(cAlias)
+				MsUnLock()
+				lPodeApagar := .F.
+				Exit
+			EndIf
+		Next
+
+		DbSetOrder(1)
+
+		If ! lPodeApagar
+			Exit
+		Endif
+
+		//ÚÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ¿
+		//³ Verifica se existe Nota Fiscal de saida para este cliente ³
+		//ÀÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÙ
+		dbSelectArea("SF2")
+		dbSetOrder(2)
+
+		aFiliais := If(! Empty(xFilial()) .and. Empty(xFilial("SA1")), aClone(aSM0CodFil), {xFilial()})
+		For nBusca := 1 to Len(aFiliais)		
+			dbSeek(aFiliais[nBusca]+cCod)
+			While !Eof() .And. aFiliais[nBusca]+cCod == SF2->F2_FILIAL+SF2->F2_CLIENTE+SF2->F2_LOJA
+				If ! (SF2->F2_TIPO $ "BD")
+					HELP(" ",1,"MA030TEMNF",, "Filial " + aFiliais[nBusca], 3, 0)
+					dbSelectArea(cAlias)
+					MsUnLock()
+					lPodeApagar := .F.
+					Exit
+				EndIf
+				dbSkip()
+			End
+		Next
+		
+		DbSetOrder(1)                                                                      
+		
+		If lPodeApagar 
+			//ÚÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ¿
+			//³ Verifica se existe Base Instalada deste cliente       ³
+			//ÀÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÙ
+			AA3->( dbSetOrder( 1 ) ) 
+			If AA3->( dbSeek( xFilial( "AA3" ) + cCod ) )
+				Help( " ", 1, "MA030TEMBA" ) // "O cliente nao pode ser excluido pois existe base instalada para o mesmo !"
+				lPodeApagar := .F. 
+			EndIf 		
+		EndIf 
+
+		If ! lPodeApagar
+			Exit
+		Endif
+
+      If Select("SAO") # 0
+   	       //ÚÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ¿
+	  	   //³ Verifica se existe referencias cadastradas deste cliente  ³
+	  	   //ÀÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÙ
+			dbSelectArea("SAO")      // Contas a receber
+			DbSetOrder(1)
+
+			aFiliais := If(! Empty(xFilial()) .and. Empty(xFilial("SA1")), aClone(aSM0CodFil), {xFilial()})
+			For nBusca := 1 to Len(aFiliais)		
+				If dbSeek(aFiliais[nBusca]+cCod)
+					HELP(" ",1,"MATA030REF",, "Filial " + aFiliais[nBusca], 3, 0)
+					dbSelectArea(cAlias)
+					MsUnLock()
+					lPodeApagar := .F.
+					Exit
+				EndIf
+			Next          
+			
+			If ! lPodeApagar
+				Exit
+			Endif
+		EndIf
+
+		//ÚÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ¿
+		//³ Verifica se existe Pontos por setor                       ³
+		//ÀÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÙ
+		If lPodeApagar
+			DA7->(dbSetOrder(2))
+			If DA7->(MsSeek(xFilial("DA7")+cCod))
+				Help(" ",1,"NODELETA")
+				lPodeApagar := .F.				
+				Exit
+			Endif
+			
+			If ! lPodeApagar
+				Exit
+			Endif
+			
+		Endif				
+
+		//ÚÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ¿
+		//³ Verifica se existe Time Service                           ³
+		//ÀÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÙ
+		#IFDEF TOP
+			If TcSrvType() != "AS/400"     
+			
+				DAF->( dbSetOrder( 1 ) ) 
+			
+				cQuery := "SELECT COUNT(*) QTDTIME "
+				cQuery += " FROM " + RetSqlName("DAF")+ " DAF "
+				cQuery += " WHERE "
+				cQuery += " DAF_FILIAL = '"+xFilial("DAF")+"' AND "
+				cQuery += " DAF_CODCLI = '"+SA1->A1_COD+"' AND "
+				cQuery += " DAF_LOJA   = '"+SA1->A1_LOJA+"' AND "
+				cQuery += " DAF.D_E_L_E_T_ = ' ' "
+				
+				cQuery := ChangeQuery(cQuery)
+				dBUseArea(.T.,"TOPCONN",TCGENQRY(,,cQuery),"QRYVAL",.F.,.T.)
+				lQuery := .T.
+				
+		        If QRYVAL->QTDTIME > 0
+		        	Help(" ",1,"NODELETA") //Nao e possivel excluir o ajudante pois o mesmo encontras-se relacionado a outros cadastro ### INCLUIR ATUSX
+					lPodeApagar := .F.				
+				Endif	        	
+		
+				dbSelectArea("QRYVAL")
+				dbCloseArea()
+				dbSelectArea("DAF")
+				
+			Else
+		#ENDIF
+		
+				dbSelectArea("DAF")
+				dbSetOrder(1)
+				cInd := CriaTrab(NIL,.F.)
+		
+				cKey := IndexKey()
+				cCondicao := 'DAF_FILIAL == "'+xFilial("DAF")+'" .And.'
+				cCondicao += 'DAF_CODCLI == "'+SA1->A1_COD+'" .And.'		
+				cCondicao += 'DAF_LOJA   == "'+SA1->A1_LOJA+'" '		
+		
+				IndRegua("DAF",cInd,cKey,,cCondicao) //"Selecionando Registros ..."
+				nInd := RetIndex("DAF")
+		
+				#IFNDEF TOP
+					dbSetIndex(cInd+OrdBagExT())
+				#ENDIF   	
+				dbSetOrder(nInd+1)
+				dbGotop()
+		
+				If DAF->(!Eof())
+		        	Help(" ",1,"NODELETA") //Nao e possivel excluir o ajudante pois o mesmo encontras-se relacionado a outros cadastro ### INCLUIR ATUSX
+					lPodeApagar := .F.				
+				Endif
+		
+				dbSelectArea("DAF")
+				dbClearFilter()
+				RetIndex("DAF")
+				Ferase(cInd+OrdBagExt())
+				
+		#IFDEF TOP
+			Endif
+		#ENDIF		
+		
+		If ! lPodeApagar
+			Exit
+		Endif
+
+
+		//ÚÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ¿
+		//³ Verifica se existe Regras de Entrega                      ³
+		//ÀÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÙ
+		#IFDEF TOP
+			If TcSrvType() != "AS/400"
+			
+				DAD->( dbSetOrder( 1 ) )
+			
+				cQuery := "SELECT COUNT(*) QTDREGRA "
+				cQuery += " FROM " + RetSqlName("DAD")+ " DAD "
+				cQuery += " WHERE "
+				cQuery += " DAD_FILIAL = '"+xFilial("DAD")+"' AND "
+				cQuery += " DAD_CODCLI = '"+SA1->A1_COD+"' AND "
+				cQuery += " DAD_LOJA   = '"+SA1->A1_LOJA+"' AND "
+				cQuery += " DAD.D_E_L_E_T_ = ' ' "
+				
+				cQuery := ChangeQuery(cQuery)
+				dBUseArea(.T.,"TOPCONN",TCGENQRY(,,cQuery),"QRYVAL",.F.,.T.)
+				lQuery := .T.
+				
+		        If QRYVAL->QTDREGRA > 0
+		        	Help(" ",1,"NODELETA") //Nao e possivel excluir o ajudante pois o mesmo encontras-se relacionado a outros cadastro ### INCLUIR ATUSX
+					lPodeApagar := .F.				
+				Endif	        	
+		
+				dbSelectArea("QRYVAL")
+				dbCloseArea()
+				dbSelectArea("DAD")
+		
+			Else
+		#ENDIF
+		
+				dbSelectArea("DAD")
+				dbSetOrder(1)
+				cInd := CriaTrab(NIL,.F.)
+		
+				cKey := IndexKey()
+				cCondicao := 'DAD_FILIAL == "'+xFilial("DAD")+'" .And.'
+				cCondicao += 'DAD_CODCLI == "'+SA1->A1_COD+'" .And.'		
+				cCondicao += 'DAD_LOJA   == "'+SA1->A1_LOJA+'" '		
+		
+				IndRegua("DAD",cInd,cKey,,cCondicao) //"Selecionando Registros ..."
+				nInd := RetIndex("DAD")
+		
+				#IFNDEF TOP
+					dbSetIndex(cInd+OrdBagExT())
+				#ENDIF   	
+				dbSetOrder(nInd+1)
+				dbGotop()
+		
+				If DAD->(!Eof())
+		        	Help(" ",1,"NODELETA") //Nao e possivel excluir o ajudante pois o mesmo encontras-se relacionado a outros cadastro ### INCLUIR ATUSX
+					lPodeApagar := .F.				
+				Endif
+		
+				dbSelectArea("DAD")
+				dbClearFilter()
+				RetIndex("DAD")
+				Ferase(cInd+OrdBagExt())
+				
+		#IFDEF TOP
+			Endif
+		#ENDIF		
+
+		If ! lPodeApagar
+			Exit
+		Endif
+		
+		//ÚÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ¿
+		//³ Verifica se existem Regras de bonificacao financeira      ³
+		//ÀÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÙ
+		#IFDEF TOP
+			If TcSrvType() != "AS/400"
+			
+				AI1->( dbSetOrder( 1 ) )
+			
+				cQuery := "SELECT COUNT(*) QTDREGRA "
+				cQuery += "FROM " + RetSqlName("AI1")+ " AI1 "
+				cQuery += "WHERE "
+				cQuery += "AI1_FILIAL='"+xFilial("AI1")+"' AND "
+				cQuery += "AI1_CODCLI='"+SA1->A1_COD   +"' AND "
+				cQuery += "AI1_LOJA='"  +SA1->A1_LOJA  +"' AND "
+				cQuery += "AI1.D_E_L_E_T_=' '"
+				
+				cQuery := ChangeQuery(cQuery)
+				dBUseArea(.T.,"TOPCONN",TCGENQRY(,,cQuery),"QRYVAL",.F.,.T.)
+				lQuery := .T.
+				
+				If QRYVAL->QTDREGRA > 0
+					Help(" ",1,"NODELETA") //Nao e possivel excluir o cliente pois o mesmo encontras-se relacionado a outros cadastro ### INCLUIR ATUSX
+					lPodeApagar := .F.				
+				Endif	        	
+		
+				QRYVAL->( dbCloseArea() )   
+				dbSelectArea( "SA1" )
+		
+			Else
+		#ENDIF
+		
+				AI1->( dbSetOrder( 2 ) ) 
+				If AI1->( dbSeek( xFilial( "AI1" ) + SA1->A1_COD + SA1->A1_LOJA ) )
+		        	Help(" ",1,"NODELETA") //Nao e possivel excluir o ajudante pois o mesmo encontras-se relacionado a outros cadastro ### INCLUIR ATUSX
+					lPodeApagar := .F.				
+				Endif
+		
+		#IFDEF TOP
+			Endif
+		#ENDIF		
+		
+		If ! lPodeApagar
+			Exit
+		Endif
+
+		//ÚÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ¿
+		//³ Verifica se existe Nota de Entrada                        ³
+		//ÀÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÙ
+		#IFDEF TOP
+			If TcSrvType() != "AS/400"
+			
+				SF1->( dbSetOrder( 1 ) )
+			
+				cQuery := "SELECT COUNT(*) QTDNFENT "
+				cQuery += " FROM " + RetSqlName("SF1")+ " SF1 "
+				cQuery += " WHERE "
+				cQuery += " F1_FILIAL = '"+xFilial("SF1")+"' AND "
+				cQuery += " F1_FORNECE = '"+SA1->A1_COD+"' AND "
+				cQuery += " F1_LOJA   = '"+SA1->A1_LOJA+"' AND "
+				cQuery += " (F1_TIPO   = 'B' OR "				
+				cQuery += " F1_TIPO   = 'D') AND "								
+				cQuery += " SF1.D_E_L_E_T_ = ' ' "
+				
+				cQuery := ChangeQuery(cQuery)
+				dBUseArea(.T.,"TOPCONN",TCGENQRY(,,cQuery),"QRYVAL",.F.,.T.)
+				lQuery := .T.
+				
+		        If QRYVAL->QTDNFENT > 0
+		        	Help(" ",1,"NODELETA") //Nao e possivel excluir o ajudante pois o mesmo encontras-se relacionado a outros cadastro ### INCLUIR ATUSX
+					lPodeApagar := .F.				
+				Endif	        	
+		
+				dbSelectArea("QRYVAL")
+				dbCloseArea()
+				dbSelectArea("SF1")
+		
+			Else
+		#ENDIF
+		
+				dbSelectArea("SF1")
+				dbSetOrder(1)
+				cInd := CriaTrab(NIL,.F.)
+		
+				cKey := IndexKey()
+				cCondicao := 'F1_FILIAL == "'+xFilial("SF1")+'" .And.'
+				cCondicao += 'F1_FORNECE == "'+SA1->A1_COD+'" .And.'		
+				cCondicao += 'F1_LOJA   == "'+SA1->A1_LOJA+'" .And.'		
+				cCondicao += 'F1_TIPO   $ "DB" '		
+		
+				IndRegua("SF1",cInd,cKey,,cCondicao) //"Selecionando Registros ..."
+				nInd := RetIndex("SF1")
+		
+				#IFNDEF TOP
+					dbSetIndex(cInd+OrdBagExT())
+				#ENDIF   	
+				dbSetOrder(nInd+1)
+				dbGotop()
+		
+				If SF1->(!Eof())
+		        	Help(" ",1,"NODELETA") //Nao e possivel excluir o ajudante pois o mesmo encontras-se relacionado a outros cadastro ### INCLUIR ATUSX
+					lPodeApagar := .F.				
+				Endif
+		
+				dbSelectArea("SF1")
+				dbClearFilter()
+				RetIndex("SF1")
+				Ferase(cInd+OrdBagExt())
+				
+		#IFDEF TOP
+			Endif
+		#ENDIF		
+		
+		//-- Executa validacoes do modulo SIGATMS
+		If lPodeApagar .And. IntTms()
+			lPodeApagar := MTA030TMS()
+		EndIf
+
+		If ! lPodeApagar
+			Exit
+		Endif
+
+		Begin Transaction
+		
+		//ÚÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ¿
+		//³ PONTO DE ENTRADA M030EXC                                      ³
+		//³ Ponto de entrada para manuten‡äes antes de excluir-se os dados³
+		//³ do cliente e logo apos confirma‡Æo                            ³
+		//ÀÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÙ
+		IF ExistBlock("M030EXC")
+			ExecBlock("M030EXC",.F.,.F.)
+		Endif
+		
+		//ÚÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ¿
+		//³ Apos passar por todas as verificacoes , deleta o registro    ³
+		//ÀÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÙ
+		dbSelectArea(cAlias)
+
+		//ÚÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ¿
+		//³ Exclui a amarracao com os contatos                           ³
+		//ÀÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÙ
+
+		FtContato( Alias(), Recno(), 2, , 3 ) 
+		
+		//ÚÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ¿
+		//³ Exclui a amarracao com os conhecimentos                      ³
+		//ÀÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÙ
+		MsDocument( Alias(), RecNo(), 2, , 3 ) 
+	    
+		//ÚÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ¿
+		//³ Exclui as referencias dos memos                              ³
+		//ÀÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÙ
+		For nLoop := 1 To Len( aMemos )
+			If !Empty( nPosMemo := SA1->( FieldPos( aMemos[ nLoop, 1 ] ) ) )  
+				MSMM( SA1->( FieldGet( nPosMemo ) ),,,,2)
+			EndIf 	
+	    Next nLoop 
+		
+		cCodCli := SA1->A1_COD
+		RecLock(cAlias,.F.,.t.)
+		dbDelete()
+		
+		//ÚÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ¿
+		//³ Gravacao no Log de Alteracoes do Front Loja. ³
+		//ÀÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÙ
+		If FindFunction("FRTGeraSLH")
+			FRTGeraSLH("SA1", "D")
+		EndIf
+
+		If nModulo == 12
+			
+			//ÚÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ¿
+			//³ Se for SigaLoja e for um registro criado automaticamente a partir³
+			//³ do cadastro de Adm.Cartäes, deve ser deletado do SAE.            ³
+			//ÀÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÙ
+			dbSelectArea("SAE")
+			dbSetOrder(2)
+			If dbSeek( xFilial("SAE") + cCodCli )
+				
+				RecLock("SAE", .F.)
+				dbDelete()
+				MsUnlock()
+				dbSelectArea("SAE")
+			EndIf
+			dbSetOrder(1)
+			
+		EndIf
+		//ÚÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ¿
+		//³ Exclusao da Geocodificacao da entidade       ³
+		//ÀÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÙ
+		GeoSavCoor(xFilial("SA1"),"SA1",SA1->A1_COD+SA1->A1_LOJA,/*cLatitude*/,/*cLongitude*/,.F.,.T.)
+		End Transaction
+	Else
+		MsUnLock()
+	EndIf
+	Exit
+EndDo
+dbSelectArea(cAlias)
+
+Return
+
+/*/
+±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±
+±±ÚÄÄÄÄÄÄÄÄÄÄÂÄÄÄÄÄÄÄÄÄÄÂÄÄÄÄÄÄÄÂÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÂÄÄÄÄÄÄÂÄÄÄÄÄÄÄÄÄÄ¿±±
+±±³Fun‡…o    ³A030Visual³ Autor ³ Wagner Xavier         ³ Data ³          ³±±
+±±ÃÄÄÄÄÄÄÄÄÄÄÅÄÄÄÄÄÄÄÄÄÄÁÄÄÄÄÄÄÄÁÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÁÄÄÄÄÄÄÁÄÄÄÄÄÄÄÄÄÄ´±±
+±±³Descri‡…o ³ Programa de atualizacao de Clientes                        ³±±
+±±ÃÄÄÄÄÄÄÄÄÄÄÅÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ´±±
+±±³Sintaxe   ³ A030Visual(ExpC1,ExpN1,ExpN2)                              ³±±
+±±ÃÄÄÄÄÄÄÄÄÄÄÅÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ´±±
+±±³Parametros³ ExpC1 = Alias do arquivo                                   ³±±
+±±³          ³ ExpN1 = Numero do registro                                 ³±±
+±±³          ³ ExpN2 = Opcao selecionada                                  ³±±
+±±ÃÄÄÄÄÄÄÄÄÄÄÅÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ´±±
+±±³ Uso      ³ MATA030                                                    ³±±
+±±ÀÄÄÄÄÄÄÄÄÄÄÁÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÙ±±
+±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±
+ßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßß
+/*/
+FUNCTION A030Visual(cAlias,nReg,nOpc)
+
+Local aUsrBut   := {} 
+Local aButtons  := {}
+Local lPyme		:= Iif(Type("__lPyme") <> "U",__lPyme,.F.)
+
+aButtons  := {{"POSCLI",{|| a450F4Con()},STR0017, STR0018 }}
+
+If !lPyme
+	aAdd(aButtons,{"GEOROTA",{|| fGeoWizard("SA1",M->A1_COD+M->A1_LOJA,{"M->A1_END","M->A1_MUN","M->A1_EST","M->A1_CEP","M->A1_BAIRRO"},{||CodGeoRev(aCoor)[6] <> M->A1_CEP})},STR0021, STR0022 })
+	aAdd(aButtons,{"TK_VERTIT",{|| fConsWizard({M->A1_NOME, M->A1_PESSOA, M->A1_NREDUZ, M->A1_END, M->A1_CEP, M->A1_DDD, M->A1_TEL, M->A1_CGC, M->A1_RG, M->A1_DTNASC})},STR0019,STR0020 })
+EndIf
+
+If ExistBlock( "MA030BUT" ) 
+	If Valtype( aUsrBut := Execblock( "MA030BUT", .f., .f., { 2 } ) ) == "A"
+		AEval( aUsrBut, { |x| AAdd( aButtons, x ) } )
+	EndIf
+EndIf
+
+nOpcA:=AxVisual( cAlias, nReg, nOpc,,,,,aButtons)
+
+dbSelectArea(cAlias)
+
+Return
+
+
+/*/
+±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±
+±±ÚÄÄÄÄÄÄÄÄÄÄÂÄÄÄÄÄÄÄÄÄÄÂÄÄÄÄÄÄÄÂÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÂÄÄÄÄÄÄÂÄÄÄÄÄÄÄÄÄÄ¿±±
+±±³Fun‡…o    ³A030Inclui³ Autor ³ Wagner Xavier         ³ Data ³          ³±±
+±±ÃÄÄÄÄÄÄÄÄÄÄÅÄÄÄÄÄÄÄÄÄÄÁÄÄÄÄÄÄÄÁÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÁÄÄÄÄÄÄÁÄÄÄÄÄÄÄÄÄÄ´±±
+±±³Descri‡…o ³ Programa de atualizacao de Clientes                        ³±±
+±±ÃÄÄÄÄÄÄÄÄÄÄÅÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ´±±
+±±³Sintaxe   ³ A030Inclui(ExpC1,ExpN1,ExpN2)                              ³±±
+±±ÃÄÄÄÄÄÄÄÄÄÄÅÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ´±±
+±±³Parametros³ ExpC1 = Alias do arquivo                                   ³±±
+±±³          ³ ExpN1 = Numero do registro                                 ³±±
+±±³          ³ ExpN2 = Opcao selecionada                                  ³±±
+±±ÃÄÄÄÄÄÄÄÄÄÄÅÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ´±±
+±±³ Uso      ³ MATA030                                                    ³±±
+±±ÀÄÄÄÄÄÄÄÄÄÄÁÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÙ±±
+±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±
+ßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßß
+/*/
+FUNCTION A030Inclui(cAlias,nReg,nOpc)
+
+LOCAL aButtons := {} 
+LOCAL aUsrBut  := {} 
+LOCAL nOpcA
+LOCAL l030Inc  := (ExistBlock("M030Inc"))
+
+//ÚÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ¿
+//³ Limpa algum filtro do SA1                                    ³
+//ÀÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÙ
+LOCAL cOldFilter := SA1->(dbFilter())
+LOCAL nOrd       := SA1->(IndexOrd())
+LOCAL cKey       := SA1->(IndexKey())
+//ÚÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ¿
+//³ Funcionalidades do APDL                                      ³
+//ÀÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÙ
+LOCAL lIntegraDL :=	(GetMV("MV_INTDL") == "S")
+LOCAL lOperadorL := GetMV("MV_APDLOPE")
+LOCAL cFilialAdm := GetMV("MV_APDLFOP")
+LOCAL lFilialCli := cFilialAdm # cFilAnt
+Local lPyme      := Iif(Type("__lPyme") <> "U",__lPyme,.F.)
+
+//ÚÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ¿
+//³ Limpa o filtro do ponto de entrada                           ³
+//ÀÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÙ
+SA1->( dbClearFilter() ) 
+//ÚÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ¿
+//³ Adiciona botoes a enchoicebar                                ³
+//ÀÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÙ
+If !lPyme
+	aButtons  := {{"GEOROTA",{|| fGeoWizard("SA1",M->A1_COD+M->A1_LOJA,{"M->A1_END","M->A1_MUN","M->A1_EST","M->A1_CEP","M->A1_BAIRRO"},{||CodGeoRev(aCoor)[6] <> M->A1_CEP})},STR0021, STR0022 },;
+					{"TK_VERTIT",{|| fConsWizard({M->A1_NOME, M->A1_PESSOA, M->A1_NREDUZ, M->A1_END, M->A1_CEP, M->A1_DDD, M->A1_TEL, M->A1_CGC, M->A1_RG, M->A1_DTNASC})}, STR0019,STR0020 }}
+EndIf
+//ÚÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ¿
+//³ Ponto de entrada para criacao de botoes do usuario  ³
+//ÀÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÙ
+If ExistBlock( "MA030BUT" ) 
+	If Valtype( aUsrBut := Execblock( "MA030BUT", .f., .f., { 3 } ) ) == "A" 
+		AEval( aUsrBut, { |x| AAdd( aButtons, x ) } ) 
+	EndIF 
+EndIf
+//ÚÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ¿
+//³ Verifica se a rotina automatica esta ativa                   ³
+//ÀÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÙ							
+If ( Type("l030Auto") == "U" )
+	l030Auto := .f.
+EndIf
+//ÚÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ¿
+//³ Envia para processamento dos Gets          ³
+//ÀÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÙ
+nOpcA:=0
+	
+	Begin Transaction
+	nOpcA:=AxInclui(cAlias,nReg,nOpc,/*aAcho*/,/*cFunc*/,/*aCpos*/,"MA030TudOk()",/*lF3*/,/*cTransact*/,aButtons,/*aParam*/,aRotAuto,/*lVirtual*/)
+	If l030Inc
+		ExecBlock("M030Inc",.f.,.f., nOpcA )
+	Endif
+
+	//ÚÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ¿
+	//³ Gravacao no Log de Alteracoes do Front Loja. ³
+	//ÀÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÙ
+	If nOpcA == 1
+		If FindFunction("FRTGeraSLH")
+			FRTGeraSLH("SA1", "I")
+		EndIf
+	EndIf
+
+	//ÚÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ¿
+	//³ Caso utilize os modulos do APDL e esteja sendo utilizado ³
+	//³ no ambiente de operador logistico avisa o usuario sobre o³
+	//³ procediemento de cadastro de clientes.                   ³
+	//ÀÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÙ
+	If nOpcA == 1 .And. lIntegraDL .And. lOperadorL .And. lFilialCli
+		If !( l030Auto )
+			HELP(" ",1,"APDLCLIOPL")
+		EndIf
+		Mat030Oper(SA1->A1_COD,SA1->A1_LOJA,SA1->A1_CGC,cFilialAdm)
+	EndIf
+End Transaction	
+dbSelectArea(cAlias)
+
+//ÚÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ¿
+//³ Retorna o filtro original                                    ³
+//ÀÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÙ
+dbSelectArea("SA1")
+#IFDEF TOP    //Refaz Indregua
+   If !Empty(cOldFilter)
+      If nOrd == 0 .And. !Empty(cKey)
+         cOldFilter += ".AND. ORDERBY("+StrTran(ClearKey(cKey),"+",",")+")"
+      EndIf
+   EndIf
+#ENDIF
+If !Empty( cOldFilter )
+	SET FILTER TO &cOldFilter
+EndIf
+
+Return
+
+/*/
+±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±
+±±ÚÄÄÄÄÄÄÄÄÄÄÂÄÄÄÄÄÄÄÄÄÄÂÄÄÄÄÄÄÄÂÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÂÄÄÄÄÄÄÂÄÄÄÄÄÄÄÄÄÄ¿±±
+±±³Fun‡…o    ³A030Altera³ Autor ³Rosane                 ³ Data ³          ³±±
+±±ÃÄÄÄÄÄÄÄÄÄÄÅÄÄÄÄÄÄÄÄÄÄÁÄÄÄÄÄÄÄÁÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÁÄÄÄÄÄÄÁÄÄÄÄÄÄÄÄÄÄ´±±
+±±³Descri‡…o ³ Programa de atualizacao de Clientes                        ³±±
+±±ÃÄÄÄÄÄÄÄÄÄÄÅÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ´±±
+±±³Sintaxe   ³ A030Altera(ExpC1,ExpN1,ExpN2)                              ³±±
+±±ÃÄÄÄÄÄÄÄÄÄÄÅÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ´±±
+±±³Parametros³ ExpC1 = Alias do arquivo                                   ³±±
+±±³          ³ ExpN1 = Numero do registro                                 ³±±
+±±³          ³ ExpN2 = Opcao selecionada                                  ³±±
+±±ÃÄÄÄÄÄÄÄÄÄÄÅÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ´±±
+±±³ Uso      ³ MATA030                                                    ³±±
+±±ÀÄÄÄÄÄÄÄÄÄÄÁÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÙ±±
+±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±
+ßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßß
+/*/
+FUNCTION A030Altera(cAlias,nReg,nOpc)
+Local nOpcA     := 0
+Local lExecuta  := .T.
+Local l030Alt   := (ExistBlock("M030Alt"))
+Local cAliasAtu := ""
+Local nOrderAtu := 0
+Local lMt030AltT:= ExistTemplate("MALTCLI")
+Local lMt030Alt := ExistBlock("MALTCLI")
+Local aButtons  := {{"POSCLI",{|| a450F4Con()},STR0017, STR0018 }}
+Local lPyme		:= Iif(Type("__lPyme") <> "U",__lPyme,.F.)
+
+If !lPyme
+	aAdd(aButtons,{"GEOROTA",{|| fGeoWizard("SA1",M->A1_COD+M->A1_LOJA,{"M->A1_END","M->A1_MUN","M->A1_EST","M->A1_CEP","M->A1_BAIRRO"},{||CodGeoRev(aCoor)[6] <> M->A1_CEP})},STR0021, STR0022 })
+	aAdd(aButtons,{"TK_VERTIT",{|| fConsWizard({M->A1_NOME, M->A1_PESSOA, M->A1_NREDUZ, M->A1_END, M->A1_CEP, M->A1_DDD, M->A1_TEL, M->A1_CGC, M->A1_RG, M->A1_DTNASC})},STR0019, STR0020 })
+EndIf
+
+//ÚÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ¿
+//³ Ponto de entrada para criacao de botoes do usuario  ³
+//ÀÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÙ
+If ExistBlock( "MA030BUT" ) 
+	If Valtype( aUsrBut := Execblock( "MA030BUT", .f., .f., { 4 } ) ) == "A" 
+		AEval( aUsrBut, { |x| AAdd( aButtons, x ) } ) 
+	EndIF 
+EndIf
+If !Select("JA2") == 0 .and. ! SA1->(FieldPos("A1_NUMRA")) == 0 .and. ! Empty(SA1->A1_NUMRA)
+	JA2->(dbSetOrder(1))
+ 	If JA2->(dbSeek(xfilial("JA2")+SA1->A1_NUMRA))
+		Return .F.
+	EndIf
+EndIf
+
+//ÚÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ¿
+//³Caso exista o execblock , executa ,se voltar³
+//³.F. abandona o programa                     ³
+//ÀÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÙ
+#IFNDEF SHELL
+	If l030Alt
+		lExecuta := ExecBlock("M030Alt",.f.,.f.)
+		If !(lExecuta)
+			Return .T.
+		Endif
+	Endif
+#ENDIF
+nOpcA := AxAltera(cAlias,nReg,nOpc,/*aAcho*/,/*aCpos*/,/*nColMens*/,/*cMensagem*/,"MA030TudOk()",/*cTransact*/,/*cFunc*/,aButtons,/*aParam*/,aRotAuto,/*lVirtual*/)
+
+#IFDEF SHELL
+	If l030Alt
+		lExecuta := ExecBlock("M030Alt",.f.,.f.,nOpca)
+		If !(lExecuta)
+			Return .T.
+		Endif
+	Endif
+#ENDIF
+
+If nOpca == 1               
+//ÚÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ¿
+//³ Pontos de entrada 									³
+//ÀÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÙ
+	If lMt030AltT
+		ExecTemplate("MALTCLI",.F.,.F.)
+	Endif
+	If lMt030Alt
+		Execblock("MALTCLI",.F.,.F.)
+	Endif
+Endif
+
+//ÚÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ¿
+//³ Gravacao no Log de Alteracoes do Front Loja. ³
+//ÀÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÙ
+If nOpcA == 1
+	If FindFunction("FRTGeraSLH")
+		FRTGeraSLH("SA1", "A")
+	EndIf
+EndIf
+
+If nOpcA == 1 .And. nModulo == 12
+	
+	//ÚÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ¿
+	//³ Se for SigaLoja e for um registro criado automaticamente a partir ³
+	//³ do cadastro de Adm.Cartäes, deve atualizar o SAE.                 ³
+	//ÀÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÙ
+	cAliasAtu := Alias()
+	nOrderAtu := IndexOrd()
+	
+	dbSelectArea("SAE")
+	dbSetOrder(2)
+	If dbSeek( xFilial("SAE") + SA1->A1_COD )
+		
+		If SA1->A1_NOME <> SAE->AE_DESC
+			RecLock("SAE", .F.)
+			Replace AE_DESC With SA1->A1_NOME
+			MsUnlock()
+		EndIf
+		
+	EndIf
+	
+	dbSelectArea(cAliasAtu)
+	dbSetOrder(nOrderAtu)
+	
+EndIf
+
+Return .t.
+/*
+ÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜ
+±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±
+±±ÚÄÄÄÄÄÄÄÄÄÄÂÄÄÄÄÄÄÄÄÄÄÂÄÄÄÄÄÄÄÂÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÂÄÄÄÄÄÄÂÄÄÄÄÄÄÄÄÄÄ¿±±
+±±³Fun‡„o    ³Mata030Ref³ Autor ³  Eduardo Motta        ³ Data ³ 12/12/00 ³±±
+±±ÃÄÄÄÄÄÄÄÄÄÄÅÄÄÄÄÄÄÄÄÄÄÁÄÄÄÄÄÄÄÁÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÁÄÄÄÄÄÄÁÄÄÄÄÄÄÄÄÄÄ´±±
+±±³Descri‡„o ³ Manutencao das infromacoes cadastrais do cliente           ³±±
+±±ÃÄÄÄÄÄÄÄÄÄÄÅÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ´±±
+±±³Sintaxe   ³                                                            ³±±
+±±ÃÄÄÄÄÄÄÄÄÄÄÅÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ´±±
+±±³Uso       ³ Generico                                                   ³±±
+±±ÀÄÄÄÄÄÄÄÄÄÄÁÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÙ±±
+±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±
+ßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßß
+*/
+Function Mata030Ref(cAlias,nReg,nOpcx)
+Local aPages:= {}, aTitles:= {}
+Local nControl	:= 0
+Local ni, oDlg
+Local aCpoEncho := {"A1_NOME","A1_PESSOA","A1_NREDUZ","A1_TIPO","A1_END","A1_MUN",;
+                    "A1_EST","A1_BAIRRO","A1_ESTADO","A1_CEP","A1_TEL","A1_FAX","A1_CGC","A1_INSCR"}
+Local aNaoG1 := { "AO_FILIAL","AO_CLIENTE","AO_LOJA","AO_TIPO","AO_TELEFONE","AO_CONTATO","AO_DESDE","AO_ULTCOM","AO_MAICOM","AO_VLRMAI","AO_PAGPON",;
+                 "AO_BCOCAR","AO_LIMCRE","AO_MOVCC","AO_OUTOPE" }
+Local aNaoG2 := { "AO_FILIAL","AO_CLIENTE","AO_LOJA","AO_TIPO","AO_MOVCC","AO_OUTOPE" }
+Local aNaoG3 := { "AO_FILIAL","AO_CLIENTE","AO_LOJA","AO_TIPO","AO_ULTCOM","AO_MAICOM","AO_VLRMAI","AO_PAGPON",;
+                 "AO_BCOCAR","AO_LIMCRE" } 
+                 
+Local cLinOk := "Mata030Lin()"                 
+Local cTudOk := "AllWaysTrue()"                 
+Local lGetD := .F.
+Local oCliente, oLoja
+Local cCampo
+Local aCBox
+Local aSavSA1 := SA1->(GetArea())
+
+Local aObjects := {} 
+Local aPosObj  := {} 
+Local aSizeAut := {}
+Local aNaoGD   := {} 
+Local nBotGetD := 0
+Local nRigGetD := 0
+Local nBotFd   := 0
+Local nRigFd   := 0
+
+Private aRotina := { {""  	,""		, 0 , 1},;
+                      {STR0012	,""	, 0 , 2},; // //"Vizualizar"
+                      {STR0013  	,""	, 0 , 3}} // //"Alterar"
+Private nControGD		:= 0    // variavel para controle da ultima GETDADOS editada devido ao problema de que quando se esta editando a getdados e depois clica direto no OK nao e' executado o CODBLOCK de LOSTFOCUS da GETDADOS.
+Private nOpcao			:= If(nOpcx#2,3,nOpcx)
+Private aSvHeader		:= {{},{},{}}
+Private aSvCols		:= {{},{},{}}
+Private oGet01			:= NIL
+Private oGet02			:= NIL
+Private oGet03			:= NIL
+Private n				:= 1
+Private aCols           := {}
+Private aHeader         := {}
+Private aSvAtela		:= {{},{},{}}
+Private aSvAGets		:= {{},{},{}}
+Private aTela			:= {}
+Private aGets			:= {}
+Private oEnc01			:= NIL
+Private lOk				:= .F.
+Private nFoldAtu		:= 1
+Private Inclui			:= (nOpcao==3)
+Private Altera			:= (nOpcao==4)
+Private Exclui			:= (nOpcao==5)  
+
+//ÚÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ¿
+//³ Ponto de entrada para restringir a exibicao dos campos nos diferentes folders ³
+//ÀÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÙ  
+If ExistBlock( "MA030REF" ) 
+	aNaoGD := ExecBlock( "MA030REF", .F., .F. ) 
+	AEval( aNaoGD[ 1 ], { |x| AAdd( aNaoG1, x ) } )  
+	AEval( aNaoGD[ 2 ], { |x| AAdd( aNaoG2, x ) } )  
+	AEval( aNaoGD[ 3 ], { |x| AAdd( aNaoG3, x ) } )  	
+EndIf 	
+
+aCBox := RetX3Box("AO_TIPO")
+Aadd(aTitles,aCBox[1])
+Aadd(aPages,"HEADER 1")
+nControl++
+Aadd(aTitles,aCBox[2])
+Aadd(aPages,"HEADER 2")
+nControl++
+Aadd(aTitles,aCBox[3])
+Aadd(aPages,"HEADER 3")
+nControl++
+
+
+If nOpcao # 2	.And. nOpcao # 5		// Visual/Excluir
+	lGetD :=.T.
+EndIf
+
+aSizeAut := MsAdvSize()
+aObjects := {} 
+AAdd( aObjects, { 68, 312, .T., .t. } )
+AAdd( aObjects, { 105,309, .t., .t. } )
+
+aInfo := { aSizeAut[ 1 ], aSizeAut[ 2 ], aSizeAut[ 3 ], aSizeAut[ 4 ], 3, 3 } 
+
+aPosObj := MsObjSize( aInfo, aObjects ) 
+
+   dbSelectArea("SA1")
+   DbSetOrder(1)
+
+   DEFINE MSDIALOG oDlg TITLE cCadastro FROM aSizeAut[7],0 TO aSizeAut[6],aSizeAut[5] OF oMainWnd PIXEL
+
+	//ÚÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ¿
+	//³ Enchoice 01							                 ³
+	//ÀÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÙ  
+	dbSelectArea("SA1")                 
+
+	aTela := {}
+	aGets := {}
+
+	RegToMemory("SA1",.F.,.F.)
+
+	oEnc01:= MsMGet():New("SA1" ,nReg ,2,,,,,aPosObj[1],,,,,,oDlg,,,.F.,"aSvATela[1]",.T.)
+	oEnc01:oBox:bGotFocus   := {|| Fd_EntraEnc(1,"SA1")}
+	oEnc01:oBox:bLostFocus  := {|| Fd_SaiEnc(1)}
+   
+	aSvATela[1] := aClone(aTela)
+	aSvAGets[1] := aClone(aGets)
+
+   nBotFd   := (aPosObj[2,3]-aPosObj[2,1])
+   nRigFd   := (aPosObj[2,4]-aPosObj[2,2])
+   nBotGetD := (aPosObj[2,3]-aPosObj[2,1]-15)
+   nRigGetD := (aPosObj[2,4]-aPosObj[2,2]-2)
+
+	oFolder := TFolder():New(aPosObj[2,1],aPosObj[2,2],aTitles,aPages,oDlg,,,,.T.,.F.,nRigFd,nBotFd,)
+
+
+	//ÚÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ¿
+	//³ getDados 01								  ³
+	//ÀÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÙ
+	aHeader 	:= aClone(CriaHeader('SAO',1,aNaoG1))
+	aCols		:= aClone(CriaCols('SAO',1,nopcao,1,"AO_FILIAL+AO_CLIENTE+AO_LOJA",xFilial("SAO")+SA1->A1_COD+SA1->A1_LOJA,aNaoG1,"AO_TIPO=='1'"))
+	n        := len(aCols)
+
+	oGet01 	:= MSGetDados():New(0,0,nBotGetd,nRigGetd,nopcao,cLinOK,cTudOk,,lGetD,,1,,,,,,,oFolder:aDialogs[1])		
+	oGet01:oBrowse:bGotFocus 	:={|| Fd_Entra(1)} 	
+	oGet01:oBrowse:bLostFocus 	:={|| Fd_Sai(1)} 		
+	oGet01:oBrowse:Default()	
+	oGet01:oBrowse:Refresh()	
+
+	//ÚÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ¿
+	//³ getDados 02								  ³
+	//ÀÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÙ
+	aHeader 	:= aClone(CriaHeader('SAO',2,aNaoG2))
+	aCols		:= aClone(CriaCols('SAO',2,nopcao,1,"AO_FILIAL+AO_CLIENTE+AO_LOJA",xFilial("SAO")+SA1->A1_COD+SA1->A1_LOJA,aNaoG2,"AO_TIPO=='2'"))
+	n        := len(aCols)
+
+	oGet02 	:= MSGetDados():New(0,0,nBotGetd,nRigGetd,nOpcao,cLinOK,cTudOk,,lGetD,,1,,,,,,,oFolder:aDialogs[2])		
+	oGet02:oBrowse:bGotFocus 	:={|| Fd_Entra(2)} 	
+	oGet02:oBrowse:bLostFocus 	:={|| Fd_Sai(2)} 		
+	oGet02:oBrowse:Default()	
+
+	//ÚÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ¿
+	//³ getDados 03								  ³
+	//ÀÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÙ
+	aHeader 	:= aClone(CriaHeader('SAO',3,aNaoG3))
+	aCols		:= aClone(CriaCols('SAO',3,nopcao,1,"AO_FILIAL+AO_CLIENTE+AO_LOJA",xFilial("SAO")+SA1->A1_COD+SA1->A1_LOJA,aNaoG3,"AO_TIPO=='3'"))
+	n        := len(aCols)
+
+	oGet03 	:= MSGetDados():New(0,0,nBotGetd,nRigGetd,nOpcao,cLinOK,cTudOk,,lGetD,,1,,,,,,,oFolder:aDialogs[3])		
+	oGet03:oBrowse:bGotFocus 	:={|| Fd_Entra(3)} 	
+	oGet03:oBrowse:bLostFocus 	:={|| Fd_Sai(3)} 		
+	oGet03:oBrowse:Default()	
+   
+   
+	ACTIVATE DIALOG oDlg ON ;
+	INIT ( EnchoiceBar(oDlg, {|| lOk:=.T.,If(oGet02:TudoOk(),(If(Str(nOpcao,1) $ "345",Mata030Grv(),.t.),oDlg:End()),.F.)  },{|| oDlg:End()} ),	Mata030Ini())
+
+   RestArea(aSavSA1)
+
+Return
+
+/*/
+±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±
+±±ÚÄÄÄÄÄÄÄÄÄÄÂÄÄÄÄÄÄÄÄÄÄÄÂÄÄÄÄÄÄÂÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÂÄÄÄÄÄÄÂÄÄÄÄÄÄÄÄÄÄ¿±±
+±±³Fun‡…o    ³Mata030Lin ³Autor ³ Eduardo Motta         ³ Data ³ 12.12.00 ³±±
+±±ÃÄÄÄÄÄÄÄÄÄÄÅÄÄÄÄÄÄÄÄÄÄÄÁÄÄÄÄÄÄÁÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÁÄÄÄÄÄÄÁÄÄÄÄÄÄÄÄÄÄ´±±
+±±³Descri‡…o ³ Checagem de linha na getdados.                             ³±±
+±±ÃÄÄÄÄÄÄÄÄÄÄÅÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ´±±
+±±³ Uso      ³ MATA030                                                    ³±±
+±±ÀÄÄÄÄÄÄÄÄÄÄÁÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÙ±±
+±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±
+ßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßß
+/*/
+Function Mata030Lin()
+If aCols[n,Len(aHeader)+1]
+   Return .T.
+EndIf
+If Empty(aCols[n,1])
+   Return .F.
+EndIf   
+Return .t.
+
+/*/
+±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±
+±±ÚÄÄÄÄÄÄÄÄÄÄÂÄÄÄÄÄÄÄÄÄÄÄÂÄÄÄÄÄÄÂÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÂÄÄÄÄÄÄÂÄÄÄÄÄÄÄÄÄÄ¿±±
+±±³Fun‡…o    ³Mata030Grv ³Autor ³ Eduardo Motta         ³ Data ³ 12.12.00 ³±±
+±±ÃÄÄÄÄÄÄÄÄÄÄÅÄÄÄÄÄÄÄÄÄÄÄÁÄÄÄÄÄÄÁÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÁÄÄÄÄÄÄÁÄÄÄÄÄÄÄÄÄÄ´±±
+±±³Descri‡…o ³ Funcao de gravacao dos dados.                              ³±±
+±±ÃÄÄÄÄÄÄÄÄÄÄÅÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ´±±
+±±³ Uso      ³ MATA030                                                    ³±±
+±±ÀÄÄÄÄÄÄÄÄÄÄÁÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÙ±±
+±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±
+ßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßß
+/*/
+Function Mata030Grv()
+Local nI := 0,nJ
+If nControGD # 0
+   FD_Sai(nControGD)
+   nControGD := 0
+EndIf
+DbSelectArea("SAO")
+DbSetOrder(1)
+DbSeek(xFilial("SAO")+SA1->A1_COD+SA1->A1_LOJA)
+While !Eof() .and. AO_FILIAL == xFilial("SAO") .and. AO_CLIENTE == SA1->A1_COD .and. AO_LOJA == SA1->A1_LOJA
+	//ÚÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ¿
+	//³ Ponto de entrada antes da exclusao.³
+	//ÀÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÙ
+	If ExistBlock("M030SAO")
+		ExecBlock("M030SAO",.F.,.F.,{5})
+	Endif
+   RecLock("SAO",.F.)
+   DbDelete()
+   MsUnlock()
+   DbSkip()
+EndDo
+
+If nOpcao == 3 .or. nOpcao == 4   // se for inclusao ou alteracao
+   For nI := 1 To Len(aSvCols)
+      For nJ := 1 To Len(aSvCols[nI])
+         If Empty(aSvCols[nI,nJ,1]) .or. aSvCols[nI,nJ,len(aSvHeader[nI])+1]   // se o campo nome estiver em branco ou a linha estiver deletada nao processa.
+            Loop
+        EndIf   
+         RecLock("SAO",.T.)
+         SAO->AO_FILIAL  := xFilial("SAO")
+         SAO->AO_CLIENTE := SA1->A1_COD
+         SAO->AO_LOJA    := SA1->A1_LOJA
+         SAO->AO_TIPO    := Str(nI,1)      // tipo 1(instituicao de credito), 2(empresas) ou 3(bancos)
+         GravaACols("SAO",aSvHeader[nI],aSvCols[nI,nJ])
+         MsUnlock()
+			//ÚÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ¿
+			//³ Ponto de entrada apos alteracao.³
+			//ÀÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÙ
+			If ExistBlock("M030SAO")
+				ExecBlock("M030SAO",.F.,.F.,{nOpcao})
+			Endif
+      Next
+   Next   
+EndIf
+Return .T.
+
+/*/
+±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±
+±±ÚÄÄÄÄÄÄÄÄÄÄÂÄÄÄÄÄÄÄÄÄÄÄÂÄÄÄÄÄÄÂÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÂÄÄÄÄÄÄÂÄÄÄÄÄÄÄÄÄÄ¿±±
+±±³Fun‡…o    ³GravaACols ³Autor ³ Eduardo Motta         ³ Data ³ 12.12.00 ³±±
+±±ÃÄÄÄÄÄÄÄÄÄÄÅÄÄÄÄÄÄÄÄÄÄÄÁÄÄÄÄÄÄÁÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÁÄÄÄÄÄÄÁÄÄÄÄÄÄÄÄÄÄ´±±
+±±³Descri‡…o ³ Funcao para gravacao dos dados no aCols de acordo com o    ³±±
+±±³          ³ aHeader passado.                                           ³±±
+±±ÃÄÄÄÄÄÄÄÄÄÄÅÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ´±±
+±±³Parametros³ cAlias   - Alias que sera gravado                          ³±±
+±±³          ³ aAHeader - array aHeader                                   ³±±
+±±³          ³ aACols   - array aCols (devera ser passado a linha do aCols³±±
+±±³          ³                         ex: GravaACols(aHeader,aCols[1]))  ³±±
+±±ÃÄÄÄÄÄÄÄÄÄÄÅÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ´±±
+±±³ Uso      ³ MATA030                                                    ³±±
+±±ÀÄÄÄÄÄÄÄÄÄÄÁÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÙ±±
+±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±
+ßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßß
+/*/
+Static Function GravaACols(cAlias,aAHeader,aACols)
+Local nI := 0,cCampo,uValor
+If aACols[Len(aACols)]   // se o item do aCols estiver deletado
+   Return .F.
+EndIf   
+For nI := 1 to Len(aAHeader)
+   cCampo	:= cAlias+"->"+Trim(aAHeader[nI,2])
+   uValor	:= aACols[nI]
+   &cCampo	:= uValor
+Next
+Return .T.
+                                         
+/*/
+±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±
+±±ÚÄÄÄÄÄÄÄÄÄÄÂÄÄÄÄÄÄÄÄÄÄÄÂÄÄÄÄÄÄÂÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÂÄÄÄÄÄÄÂÄÄÄÄÄÄÄÄÄÄ¿±±
+±±³Fun‡…o    ³CriaHeader ³Autor ³ Eduardo Motta         ³ Data ³ 12.12.00 ³±±
+±±ÃÄÄÄÄÄÄÄÄÄÄÅÄÄÄÄÄÄÄÄÄÄÄÁÄÄÄÄÄÄÁÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÁÄÄÄÄÄÄÁÄÄÄÄÄÄÄÄÄÄ´±±
+±±³Descri‡…o ³ Funcao de criacao do aHeader.                              ³±±
+±±ÃÄÄÄÄÄÄÄÄÄÄÅÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ´±±
+±±³ Uso      ³ MATA030                                                    ³±±
+±±ÀÄÄÄÄÄÄÄÄÄÄÁÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÙ±±
+±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±
+ßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßß
+/*/
+Static Function CriaHeader(cAlias,nF,aNaoCampos)
+Local aTmpheader := {}
+dbSelectArea("SX3")
+dbSetOrder(1)
+dbSeek(cAlias)
+nUsado := 0
+While !EOF() .And. (x3_arquivo == cAlias)
+	IF X3USO(x3_usado) .AND. cNivel >= x3_nivel .And. Empty( AScan( aNaoCampos, { |x| x == AllTrim(SX3->X3_CAMPO) } ) )
+		nUsado++
+		AADD(aTmpHeader,{ TRIM(x3titulo()), x3_campo, x3_picture,x3_tamanho, x3_decimal, x3_valid,x3_usado, x3_tipo, x3_arquivo, x3_context } )
+	EndIf
+	dbSkip()
+End    
+aSvHeader[nF] := aClone(aTmpHeader)
+Return aTmpheader
+
+/*/
+±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±
+±±ÚÄÄÄÄÄÄÄÄÄÄÂÄÄÄÄÄÄÄÄÄÄÄÂÄÄÄÄÄÄÂÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÂÄÄÄÄÄÄÂÄÄÄÄÄÄÄÄÄÄ¿±±
+±±³Fun‡…o    ³CriaCols   ³Autor ³ Eduardo Motta         ³ Data ³ 12.12.00 ³±±
+±±ÃÄÄÄÄÄÄÄÄÄÄÅÄÄÄÄÄÄÄÄÄÄÄÁÄÄÄÄÄÄÁÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÁÄÄÄÄÄÄÁÄÄÄÄÄÄÄÄÄÄ´±±
+±±³Descri‡…o ³ Funcao de criacao do aCols de acordo com o aHeader         ³±±
+±±ÃÄÄÄÄÄÄÄÄÄÄÅÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ´±±
+±±³ Uso      ³ MATA030                                                    ³±±
+±±ÀÄÄÄÄÄÄÄÄÄÄÁÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÙ±±
+±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±
+ßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßß
+/*/
+Static Function CriaCols(cAlias,nF,nOpcao,nOrdem,cKey,cConteudo,aNaoCampos,cFiltro)
+Local nUsado:= 0
+Local aTmpHeader:= {}, aTmpCols:= {}
+Local nCnt:=0
+Local cVar,i,nI
+
+nOrdem 		:= if(nOrdem==NIL,1,nOrdem)         
+cKey   		:= if(cKey==NIL,'',cKey) 
+cConteudo	:= if(cConteudo=NIL,'',cConteudo)
+aNaoCampos  := if(aNaoCampos=NIL,{},aNaoCampos)
+
+aTmpHeader := aClone(aSvHeader[nF])
+
+   If cFiltro == NIL .or. Empty(cFiltro)
+      cFiltro := ".T."
+   EndIf
+   cFiltro := "("+Trim(cFiltro)+")"
+   dbSelectArea(cAlias)
+   dbSetOrder(nOrdem)
+   dbSeek(cConteudo)
+   While !EOF() .and. if(cKey=='',.t.,(&cKey == cConteudo))
+      If ! &cFiltro
+         DbSkip()
+         Loop
+      EndIf
+	   nCnt++
+   	dbSkip()
+   End	
+   nCnt := IIF(nCnt=0,nCnt:=1,nCnt)
+   aTmpCols := Array(nCnt, Len(aTmpHeader) + 1)
+   nCnt := 0
+   dbSelectArea(cAlias)
+   dbSetOrder(nOrdem)
+   dbSeek(cConteudo)
+   While !EOF() .and. if(cKey=='',.t.,(&cKey == cConteudo))
+      If ! &cFiltro
+         DbSkip()
+         Loop
+      EndIf
+   	nCnt++
+	   nUsado:=0
+    	dbSelectArea("SX3")
+   	dbSeek( cAlias )
+   	While !EOF() .And. x3_arquivo == cAlias
+   		If X3USO(x3_usado) .AND. cNivel >= x3_nivel .And. Empty( AScan( aNaoCampos, { |x| x == AllTrim(SX3->X3_CAMPO) } ) )
+	   		nUsado++
+		   	If x3_context # "V"
+	   			aTmpCols[nCnt][nUsado] := &(cAlias+"->"+Trim(x3_campo))
+		   	ElseIf x3_context == "V"
+			   	aTmpCols[nCnt][nUsado] := CriaVar(AllTrim(x3_campo))
+   			EndIf
+	   	EndIf
+   		dbSkip()
+   	End
+   	dbSelectArea(cAlias)
+   	dbSkip()
+   EndDo
+
+If Len(aTmpCols) == 0
+	aTmpCols := Array(1, Len(aTmpHeader) + 1)
+	aTmpCols[1,Len(aTmpHeader)+1] := .F.
+EndIf	
+
+//ÚÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ¿
+//³ Monta Array de 1 elemento ³
+//³ vazio. Se inclus†o.       ³
+//ÀÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÙ
+
+If Empty(aTmpCols[1][1])		//Inclusao ou arquivo vazio
+	dbSelectArea("SX3")
+	dbSeek(cAlias)
+	nUsado:=0
+	While !EOF() .And. (x3_arquivo == cAlias)
+		If X3USO(x3_usado) .AND. cNivel >= x3_nivel .And.	Empty( AScan( aNaoCampos, { |x| x == AllTrim(SX3->X3_CAMPO) } ) )
+			nUsado++
+			If x3_tipo == "C" 			
+			   	aTmpCols[1][nUsado] := SPACE(x3_tamanho)
+			ElseIf x3_tipo == "N"		
+			   	aTmpCols[1][nUsado] := 0
+			ElseIf x3_tipo == "D"		
+				aTmpCols[1][nUsado] := CTOD("  /  /  ")
+			ElseIf x3_tipo == "M"		
+				aTmpCols[1][nUsado] := ""
+			Else						
+				aTmpCols[1][nUsado] := .F.
+			EndIf
+			If x3_context == "V"		
+				aTmpCols[1][nUsado] := CriaVar(allTrim(x3_campo))
+			EndIf
+		EndIf
+		dbSkip()
+	EndDo		
+EndIf                                               
+
+For nI:=1 To Len(aTmpCols)
+   aTmpCols[nI][Len(aTmpHeader)+1] := .F.
+Next nI	
+
+aSvCols[nF]	:=aClone(aTmpCols)
+Return aTmpCols         
+         
+/*/
+±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±
+±±ÚÄÄÄÄÄÄÄÄÄÄÂÄÄÄÄÄÄÄÄÄÄÄÂÄÄÄÄÄÄÂÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÂÄÄÄÄÄÄÂÄÄÄÄÄÄÄÄÄÄ¿±±
+±±³Fun‡…o    ³Mata030Ini ³Autor ³ Eduardo Motta         ³ Data ³ 12.12.00 ³±±
+±±ÃÄÄÄÄÄÄÄÄÄÄÅÄÄÄÄÄÄÄÄÄÄÄÁÄÄÄÄÄÄÁÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÁÄÄÄÄÄÄÁÄÄÄÄÄÄÄÄÄÄ´±±
+±±³Descri‡…o ³ Funcao para inicio do dialogo                              ³±±
+±±ÃÄÄÄÄÄÄÄÄÄÄÅÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ´±±
+±±³ Uso      ³ MATA030                                                    ³±±
+±±ÀÄÄÄÄÄÄÄÄÄÄÁÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÙ±±
+±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±
+ßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßß
+/*/
+Static Function Mata030Ini()
+aHeader  := aClone(aSvHeader[1])
+aCols    := aClone(aSvCols[1])
+n			:= len(aCols)
+Return .T.
+
+/*/
+±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±
+±±ÚÄÄÄÄÄÄÄÄÄÄÂÄÄÄÄÄÄÄÄÄÄÄÂÄÄÄÄÄÄÂÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÂÄÄÄÄÄÄÂÄÄÄÄÄÄÄÄÄÄ¿±±
+±±³Fun‡…o    ³Fd_Entra   ³Autor ³ Eduardo Motta         ³ Data ³ 12.12.00 ³±±
+±±ÃÄÄÄÄÄÄÄÄÄÄÅÄÄÄÄÄÄÄÄÄÄÄÁÄÄÄÄÄÄÁÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÁÄÄÄÄÄÄÁÄÄÄÄÄÄÄÄÄÄ´±±
+±±³Descri‡…o ³ Retorna aCols e aHeader quando se foca a GETDADOS          ³±±
+±±ÃÄÄÄÄÄÄÄÄÄÄÅÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ´±±
+±±³Parametros³ nE - Numero da GetDados.                                   ³±±
+±±ÃÄÄÄÄÄÄÄÄÄÄÅÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ´±±
+±±³ Uso      ³ MATA030                                                    ³±±
+±±ÀÄÄÄÄÄÄÄÄÄÄÁÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÙ±±
+±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±
+ßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßß
+/*/
+Static Function Fd_Entra(nE)
+Local cVar := "oGet"+StrZero(nE,2)
+aHeader	:= AClone(aSvHeader[nE])
+aCols		:= AClone(aSvCols[nE])
+n			:= 1
+oFolder:SetOption(nE)
+oFolder:Refresh()
+&cVar:oBrowse:Refresh()
+nControGD := nE
+nFoldAtu := nE
+return           
+
+/*/
+±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±
+±±ÚÄÄÄÄÄÄÄÄÄÄÂÄÄÄÄÄÄÄÄÄÄÄÂÄÄÄÄÄÄÂÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÂÄÄÄÄÄÄÂÄÄÄÄÄÄÄÄÄÄ¿±±
+±±³Fun‡…o    ³Fd_Sai     ³Autor ³ Eduardo Motta         ³ Data ³ 12.12.00 ³±±
+±±ÃÄÄÄÄÄÄÄÄÄÄÅÄÄÄÄÄÄÄÄÄÄÄÁÄÄÄÄÄÄÁÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÁÄÄÄÄÄÄÁÄÄÄÄÄÄÄÄÄÄ´±±
+±±³Descri‡…o ³ Guarda aCols e aHeader quando se sai da GETDADOS           ³±±
+±±ÃÄÄÄÄÄÄÄÄÄÄÅÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ´±±
+±±³Parametros³ nE - Numero da GetDados.                                   ³±±
+±±ÃÄÄÄÄÄÄÄÄÄÄÅÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ´±±
+±±³ Uso      ³ MATA030                                                    ³±±
+±±ÀÄÄÄÄÄÄÄÄÄÄÁÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÙ±±
+±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±
+ßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßß
+/*/
+Static Function Fd_Sai(nE)
+aSvHeader[nE]	:= aClone(aHeader)
+aSvCols[nE]		:= aClone(aCols)
+n				   := 1
+nControGD      := 0
+return
+
+
+/*/
+±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±
+±±ÚÄÄÄÄÄÄÄÄÄÄÂÄÄÄÄÄÄÄÄÄÄÄÂÄÄÄÄÄÄÂÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÂÄÄÄÄÄÄÂÄÄÄÄÄÄÄÄÄÄ¿±±
+±±³Fun‡…o    ³Fd_EntraEnc³Autor ³ Eduardo Motta         ³ Data ³ 12.12.00 ³±±
+±±ÃÄÄÄÄÄÄÄÄÄÄÅÄÄÄÄÄÄÄÄÄÄÄÁÄÄÄÄÄÄÁÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÁÄÄÄÄÄÄÁÄÄÄÄÄÄÄÄÄÄ´±±
+±±³Descri‡…o ³ Atualiza aTela e aGets quando e focada a enchoice          ³±±
+±±ÃÄÄÄÄÄÄÄÄÄÄÅÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ´±±
+±±³Parametros³ nE - Numero da enchoice.                                   ³±±
+±±ÃÄÄÄÄÄÄÄÄÄÄÅÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ´±±
+±±³ Uso      ³ MATA030                                                    ³±±
+±±ÀÄÄÄÄÄÄÄÄÄÄÁÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÙ±±
+±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±
+ßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßß
+/*/
+Static Function Fd_EntraEnc(nE,cAlias)
+aTela := AClone(aSvAtela[nE])
+aGets := AClone(aSvaGets[nE])
+dbSelectArea(cAlias)
+Return  
+
+
+/*/
+±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±
+±±ÚÄÄÄÄÄÄÄÄÄÄÂÄÄÄÄÄÄÄÄÄÄÂÄÄÄÄÄÄÄÂÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÂÄÄÄÄÄÄÂÄÄÄÄÄÄÄÄÄÄ¿±±
+±±³Fun‡…o    ³Fd_SaiEnc ³ Autor ³ Eduardo Motta         ³ Data ³ 12.12.00 ³±±
+±±ÃÄÄÄÄÄÄÄÄÄÄÅÄÄÄÄÄÄÄÄÄÄÁÄÄÄÄÄÄÄÁÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÁÄÄÄÄÄÄÁÄÄÄÄÄÄÄÄÄÄ´±±
+±±³Descri‡…o ³ Guarda aTela e aGets na saida do foco na enchoice          ³±±
+±±ÃÄÄÄÄÄÄÄÄÄÄÅÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ´±±
+±±³Parametros³ nE - Numero da enchoice.                                   ³±±
+±±ÃÄÄÄÄÄÄÄÄÄÄÅÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ´±±
+±±³ Uso      ³ MATA030                                                    ³±±
+±±ÀÄÄÄÄÄÄÄÄÄÄÁÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÙ±±
+±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±
+ßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßß
+/*/
+Static Function Fd_Saienc(nE)
+aSvATela[nE]	:= aClone(aTela)
+aSvAGets[nE] 	:= aClone(aGets)
+return
+
+
+/*/
+±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±
+±±ÚÄÄÄÄÄÄÄÄÄÄÂÄÄÄÄÄÄÄÄÄÄÂÄÄÄÄÄÄÄÂÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÂÄÄÄÄÄÄÂÄÄÄÄÄÄÄÄÄÄ¿±±
+±±³Fun‡…o    ³RetX3Box  ³ Autor ³ Eduardo Motta         ³ Data ³ 12.12.00 ³±±
+±±ÃÄÄÄÄÄÄÄÄÄÄÅÄÄÄÄÄÄÄÄÄÄÁÄÄÄÄÄÄÄÁÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÁÄÄÄÄÄÄÁÄÄÄÄÄÄÄÄÄÄ´±±
+±±³Descri‡…o ³ Retorna array da ComboBox                                  ³±±
+±±ÃÄÄÄÄÄÄÄÄÄÄÅÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ´±±
+±±³Parametros³ cCampo - Nome do Campo                                     ³±±
+±±ÃÄÄÄÄÄÄÄÄÄÄÅÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ´±±
+±±³ Uso      ³ MATA030                                                    ³±±
+±±ÀÄÄÄÄÄÄÄÄÄÄÁÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÙ±±
+±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±
+ßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßß
+/*/
+STATIC FUNCTION RetX3Box(cCampo)
+LOCAL aRET:={},nCONT
+LOCAL cCBox
+LOCAL aSvArea := SX3->(GetArea())
+
+SX3->(DbSetOrder(2))
+SX3->(DbSeek(cCampo))
+cCBox := SX3->(X3Cbox())
+   
+BEGIN SEQUENCE 
+   While !Empty(cCBOX)
+      nCONT:=AT(";",cCBOX)
+      IF nCont == 0
+         AADD(aRET,SubStr(AllTrim(cCBOX),3))
+         Exit
+      Else
+         AADD(aRET,SubStr(AllTrim(SUBSTR(cCBOX,1,nCONT-1)),3))
+      Endif 
+      cCBOX:=SUBSTR(cCBOX,nCONT+1)
+   Enddo
+ENDSEQUENCE
+   
+RestArea(aSvArea)
+
+RETURN aRET
+
+/*/
+ÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜ
+±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±
+±±ÚÄÄÄÄÄÄÄÄÄÄÂÄÄÄÄÄÄÄÄÄÄÄÂÄÄÄÄÄÄÄÂÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÂÄÄÄÄÄÄÂÄÄÄÄÄÄÄÄÄÄ¿±±
+±±³Fun‡…o    ³ Ma030Tudok³ Autor ³ Aline Correa do Vale ³ Data ³ 19/02/97 ³±±
+±±ÃÄÄÄÄÄÄÄÄÄÄÅÄÄÄÄÄÄÄÄÄÄÄÁÄÄÄÄÄÄÄÁÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÁÄÄÄÄÄÄÁÄÄÄÄÄÄÄÄÄÄ´±±
+±±³Descri‡…o ³ Verifica se os campos estao OK                             ³±±
+±±ÃÄÄÄÄÄÄÄÄÄÄÅÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ´±±
+±±³ Uso      ³ Mata030                                                    ³±±
+±±ÀÄÄÄÄÄÄÄÄÄÄÁÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÙ±±
+±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±
+ßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßß
+/*/
+Function Ma030TudOk()
+
+Local lRet := .T.
+
+//ÚÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ¿
+//³ Quando o tipo de cliente for I, M, X ou E o campo do numero de inscricao torna-se obrigatorio ³
+//³ Localizacao Argentina 																		  ³
+//ÀÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÙ
+If cPaisLoc == "ARG" .and. M->A1_TIPO $ "IMXE" .and. empty(M->A1_CGC)
+	Aviso(STR0023,STR0025,{STR0024})  //"Atencao"###"O tipo de cliente selecionado exige o preenchimento do campo CUIT/CUIL"###"Ok"
+	lRet:=.F.
+Endif 
+
+//ÚÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ¿
+//³ Pontos de Entrada 		  ³
+//ÀÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÙ
+If ExistTemplate("MA030TOK")
+	lRet := ExecTemplate("MA030TOK")
+EndIf
+If ExistBlock("MA030TOK")
+	lRet := ExecBlock("MA030TOK")
+EndIf
+
+If lRet .And. cPaisLoc == "GUA"
+   lRet  := A030ValDoc()
+EndIf
+
+Return(lRet)
+
+/*
+ÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜ
+±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±
+±±ÚÄÄÄÄÄÄÄÄÄÄÂÄÄÄÄÄÄÄÄÄÄÄÂÄÄÄÄÄÄÄÂÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÂÄÄÄÄÄÄÂÄÄÄÄÄÄÄÄÄÄ¿±±
+±±³Fun‡…o    ³Mat030Oper ³ Autor ³Rodrigo de A. Sartorio³ Data ³ 03/07/01 ³±±
+±±ÃÄÄÄÄÄÄÄÄÄÄÅÄÄÄÄÄÄÄÄÄÄÄÁÄÄÄÄÄÄÄÁÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÁÄÄÄÄÄÄÁÄÄÄÄÄÄÄÄÄÄ´±±
+±±³Descri‡…o ³ Grava informacoes no arqv. de codigo do Operador Logistico ³±±
+±±ÃÄÄÄÄÄÄÄÄÄÄÅÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ´±±
+±±³ Uso      ³ Mata030                                                    ³±±
+±±ÀÄÄÄÄÄÄÄÄÄÄÁÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÙ±±
+±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±
+ßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßß
+*/
+Function Mat030Oper(cCod,cLoja,cCGC,cFilialAdm)
+Local cFilBack:=cFilAnt
+Local aArea:=GetArea()
+
+DEFAULT cFilialAdm := GetMV("MV_INTDL")
+
+cFilAnt:=cFilialAdm // Troca para a filial do operador logistico
+dbSelectArea("DCK")
+Reclock("DCK",.T.)
+Replace DCK_FILIAL	With xFilial()	// Filial do Arquivo no OL
+Replace DCK_FILCLI	With cFilBack	// Codigo da Filial Corrente
+Replace DCK_CODCLI	With cCod		// Codigo do Cliente na Filial Corrente
+Replace DCK_LOJCLI	With cLoja 		// Codigo da Loja do Cliente na Filial Corrente
+Replace DCK_CGC		With cCgc		// CGC do Cliente na Filial Corrente
+Replace DCK_CODOPL	With ""			// Codigo do Cliente para a filial de administracao do OL
+Replace DCK_LOJOPL	With ""			// Codigo da Loja do Cliente para a filial de administracao do OL
+MsUnlock()
+cFilAnt:=cFilBack // Troca para a filial de cliente do operador logistico
+RestArea(aArea)
+RETURN
+
+/*/
+ÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜ
+±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±
+±±ÚÄÄÄÄÄÄÄÄÄÄÂÄÄÄÄÄÄÄÄÄÄÂÄÄÄÄÄÄÄÂÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÂÄÄÄÄÄÄÂÄÄÄÄÄÄÄÄÄÄ¿±±
+±±³Funcao    ³A030ValDoc³ Autor ³ Fernando Machima      ³ Data ³ 07.06.04 ³±±
+±±ÃÄÄÄÄÄÄÄÄÄÄÅÄÄÄÄÄÄÄÄÄÄÁÄÄÄÄÄÄÄÁÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÁÄÄÄÄÄÄÁÄÄÄÄÄÄÄÄÄÄ´±±
+±±³Descricao ³Validacao do campo NIT. Nao permitir cadastrar dois clientes³±±
+±±³          ³com o mesmo NIT                                             ³±±
+±±ÃÄÄÄÄÄÄÄÄÄÄÅÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ´±±
+±±³Sintaxe   ³ A030ValDoc()                                               ³±±
+±±ÃÄÄÄÄÄÄÄÄÄÄÅÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ´±±
+±±³Uso       ³ Cadastro de clientes                                       ³±±
+±±ÀÄÄÄÄÄÄÄÄÄÄÁÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÙ±±
+±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±
+ßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßß
+/*/
+Static Function A030ValDoc()
+
+Local lRet     := .T.      
+Local lFound   := .F.
+Local cCodClie := Space(TamSX3("A1_COD")[1])
+Local cLojClie := Space(TamSX3("A1_LOJA")[1])
+Local aArea    := GetArea()
+
+DbSelectArea("SA1")
+DbSetOrder(3)
+If !Empty(M->A1_CGC) .And. DbSeek(xFilial("SA1")+M->A1_CGC)
+   While !Eof() .And. xFilial("SA1")+M->A1_CGC == SA1->A1_FILIAL+SA1->A1_CGC .And. !lFound
+      //Desconsiderar se for o proprio cliente ou uma de suas filiais
+      If M->A1_COD == SA1->A1_COD
+         DbSkip()
+	     Loop
+      EndIf
+      lFound    := .T.
+      lRet      := .F.
+      cCodClie  := SA1->A1_COD
+      cLojClie  := SA1->A1_LOJA			
+   End
+EndIf
+
+If !lRet
+   MsgStop(STR0026+cCodClie+"/"+cLojClie)	  //"NIT ja gravado para o cliente "        	     
+EndIf
+
+RestArea(aArea)
+
+Return (lRet)
+
+
+/*ÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜ
+±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±
+±±ÚÄÄÄÄÄÄÄÄÄÄÂÄÄÄÄÄÄÄÄÄÄÂÄÄÄÄÄÄÄÂÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÂÄÄÄÄÄÄÂÄÄÄÄÄÄÄÄÄÄ¿±±
+±±³Funcao    ³MTA030TMS ³ Autor ³ Eduardo de Souza      ³ Data ³ 08/11/04 ³±±
+±±ÃÄÄÄÄÄÄÄÄÄÄÅÄÄÄÄÄÄÄÄÄÄÁÄÄÄÄÄÄÄÁÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÁÄÄÄÄÄÄÁÄÄÄÄÄÄÄÄÄÄ´±±
+±±³Descricao ³ Valida se o cliente esta em uso no SIGATMS.                ³±±
+±±ÃÄÄÄÄÄÄÄÄÄÄÅÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ´±±
+±±³Sintaxe   ³ MTA030TMS()                                                ³±±
+±±ÃÄÄÄÄÄÄÄÄÄÄÅÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ´±±
+±±³Uso       ³ SIGATMS                                                    ³±±
+±±ÀÄÄÄÄÄÄÄÄÄÄÁÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÙ±±
+±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±
+ßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßß*/
+Function MTA030TMS()
+Local aArea     := GetArea()
+Local lRet      := .T.
+Local cQuery    := ""
+Local cAliasTRB := ""
+Local cIndex    := ""
+
+cIndex    := ""
+cAliasTRB := ""
+
+#IFDEF TOP
+	cAliasTRB := GetNextAlias()
+	cQuery := " SELECT "
+	cQuery += " COUNT(DTC_FILIAL) QUANT "
+	cQuery += "   FROM " + RetSqlName("DTC")
+	cQuery += "   WHERE DTC_FILIAL = '" + xFilial("DTC") + "' "
+	cQuery += "     AND ( ( DTC_CLIREM = '" + SA1->A1_COD + "' AND DTC_LOJREM = '" + SA1->A1_LOJA + "' )   "
+	cQuery += "        OR ( DTC_CLIDES = '" + SA1->A1_COD + "' AND DTC_LOJDES = '" + SA1->A1_LOJA + "' )   "
+	cQuery += "        OR ( DTC_CLICON = '" + SA1->A1_COD + "' AND DTC_LOJCON = '" + SA1->A1_LOJA + "' )   "
+	cQuery += "        OR ( DTC_CLIDPC = '" + SA1->A1_COD + "' AND DTC_LOJDPC = '" + SA1->A1_LOJA + "' ) ) "
+	cQuery += "     AND D_E_L_E_T_ = ' ' "
+	cQuery := ChangeQuery(cQuery)
+	dbUseArea( .T., "TOPCONN", TCGENQRY(,,cQuery),cAliasTRB, .F., .T.)
+	If (cAliasTRB)->(!Eof())
+		If (cAliasTRB)->QUANT > 0
+			lRet := .F.
+		EndIf
+	EndIf
+	(cAliasTRB)->(DbCloseArea())
+	If FindFunction("ALIASINDIC") .And. AliasIndic("DW3")
+		cQuery := " SELECT "
+		cQuery += " COUNT(*) QUANT "
+		cQuery += "   FROM " + RetSqlName("DW3")
+		cQuery += "   WHERE DW3_FILIAL = '" + xFilial("DW3") + "' "
+		cQuery += "     AND DW3_CODCLI = '" + SA1->A1_COD    + "' " 
+		cQuery += "     AND DW3_LOJCLI = '" + SA1->A1_LOJA   + "' "
+		cQuery += "     AND D_E_L_E_T_ = ' ' "
+		cQuery := ChangeQuery(cQuery)
+		dbUseArea( .T., "TOPCONN", TCGENQRY(,,cQuery),cAliasTRB, .F., .T.)
+		If (cAliasTRB)->(!Eof())
+			If (cAliasTRB)->QUANT > 0
+				lRet := .F.
+			EndIf
+		EndIf
+	EndIf
+#ELSE
+	cIndex := CriaTrab(NIL,.F.)
+	cQuery := " DTC->DTC_FILIAL == '" + xFilial("DTC")  + "' "
+	cQuery += " .And. ( ( DTC->DTC_CLIREM == '" + SA1->A1_COD + "' .And. DTC->DTC_LOJREM == '" + SA1->A1_LOJA + "' )   "
+	cQuery += "    .Or. ( DTC->DTC_CLIDES == '" + SA1->A1_COD + "' .And. DTC->DTC_LOJDES == '" + SA1->A1_LOJA + "' )   "
+	cQuery += "    .Or. ( DTC->DTC_CLICON == '" + SA1->A1_COD + "' .And. DTC->DTC_LOJCON == '" + SA1->A1_LOJA + "' )   "
+	cQuery += "    .Or. ( DTC->DTC_CLIDPC == '" + SA1->A1_COD + "' .And. DTC->DTC_LOJDPC == '" + SA1->A1_LOJA + "' ) ) "
+	IndRegua('DTC',cIndex,'DTC_FILIAL+DTC_CLIREM+DTC_LOJREM',,cQuery) //-- "Selecionando Registros..."
+	If DTC->(!Eof())
+		lRet := .F.
+	EndIf
+	RetIndex("DTC")
+	If	File(cIndex+OrdBagExt())
+		Ferase(cIndex+OrdBagExt())
+	EndIf
+#ENDIF
+
+If !lRet
+	Help(" ",1,"TMSNODEL") //-- Nao sera possivel excluir o cliente, pois o mesmo esta em uso no SIGATMS.
+EndIf
+
+RestArea(aArea)
+
+Return lRet
+/*/
+ÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜ
+±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±
+±±ÚÄÄÄÄÄÄÄÄÄÄÂÄÄÄÄÄÄÄÄÄÄÂÄÄÄÄÄÄÄÂÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÂÄÄÄÄÄÄÂÄÄÄÄÄÄÄÄÄÄ¿±±
+±±³Funcao    ³A030CGC   ³ Autor ³ Sabrina Passini       ³ Data ³ 01.06.05 ³±±
+±±ÃÄÄÄÄÄÄÄÄÄÄÅÄÄÄÄÄÄÄÄÄÄÁÄÄÄÄÄÄÄÁÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÁÄÄÄÄÄÄÁÄÄÄÄÄÄÄÄÄÄ´±±
+±±³Descricao ³Validacao do campo A1_CGC. Qd Pessoa="J" nao permitir       ³±±
+±±³          ³entrada de CPF                                              ³±±
+±±ÃÄÄÄÄÄÄÄÄÄÄÅÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ´±±
+±±³Uso       ³ Cadastro de clientes                                       ³±±
+±±ÀÄÄÄÄÄÄÄÄÄÄÁÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÙ±±
+±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±
+ßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßß
+/*/   
+Function A030CGC(cTipPes)
+
+Local lRetorno := .T.
+
+If cTipPes == "F" .And. !(Len(AllTrim(M->A1_CGC))==11)
+	lRetorno := .F.
+ElseIf cTipPes == "J" .And. !(Len(AllTrim(M->A1_CGC))==14)  
+	Help(" ",1,"CGC")     
+	lRetorno := .F.
+EndIf
+
+Return lRetorno

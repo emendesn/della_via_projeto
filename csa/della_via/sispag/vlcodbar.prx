@@ -1,0 +1,186 @@
+#include "rwmake.ch"        
+
+/*/
+±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±
+±±ÚÄÄÄÄÄÄÄÄÄÄÂÄÄÄÄÄÄÄÄÄÄÂÄÄÄÄÄÄÄÂÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÂÄÄÄÄÄÄÂÄÄÄÄÄÄÄÄÄÄ¿±±
+±±³Fun‡…o    ³ VLCODBAR ³ Autor ³ Vicente Sementilli    ³ Data ³ 26/02/97 ³±±
+±±ÃÄÄÄÄÄÄÄÄÄÄÅÄÄÄÄÄÄÄÄÄÄÁÄÄÄÄÄÄÄÁÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÁÄÄÄÄÄÄÁÄÄÄÄÄÄÄÄÄÄ´±±
+±±³Descri‡…o ³ Calculo do modulo 10 e 11 sugerido pelo ITAU. Esta funcao  ³±±
+±±³          ³ somente e utilizada como validacao do campo E2_CODBAR.     ³±±
+±±³          ³                                                            ³±±
+±±³          ³ Esta rotina tambem tranforma o codigo digitado em codigo   ³±±
+±±³          ³ de barras se necessario                                    ³±±
+±±³          ³                                                            ³±±
+±±³          ³                                                            ³±±
+±±³          ³ O campo E2_CODBAR nao existe no padrao ele deve ser criado ³±±
+±±³          ³                                                            ³±±
+±±³          ³ Nome        Tipo   Tamanho   Validacao                     ³±±
+±±³          ³ -----------  --     ----     ----------------------------  ³±±
+±±³          ³ E2_CODBAR    C       44      U_VLCODBAR( )                 ³±±
+±±ÀÄÄÄÄÄÄÄÄÄÄÁÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÙ±±
+±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±
+/*/
+
+User Function VlCodbar()     
+
+_lRet := .F.
+
+If ValType(M->E2_CODBAR) == NIL
+	Return(.t.)        
+Endif
+
+_cStr := M->E2_CODBAR
+
+i := 0
+nMult := 2
+nModulo := 0
+cChar := SPACE(1)
+cDigito := SPACE(1)
+                 
+
+If len(AllTrim(_cStr)) < 44
+
+   /*/
+   ±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±
+   ±±ÚÄÄÄÄÄÄÄÄÄÄÂÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ¿±±
+   ±±³Descri‡…o ³ Calculo do modulo 10 sugerido pelo ITAU. Esta funcao       ³±±
+   ±±³          ³ somente e utilizada como validacao do campo E2_CODBAR.     ³±±
+   ±±³          ³ Verifica a digitacao do codigo de barras                   ³±±
+   ±±ÀÄÄÄÄÄÄÄÄÄÄÁÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÙ±±
+   ±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±
+   /*/
+
+   // Calcula DV1
+      
+   cDV1    := SUBSTR(_cStr,10, 1) 
+   cDV2    := SUBSTR(_cStr,21, 1) 
+   cDV3    := SUBSTR(_cStr,32, 1) 
+   
+   cCampo1 := SUBSTR(_cStr, 1, 9)
+   cCampo2 := SUBSTR(_cStr,11,10)
+   cCampo3 := SUBSTR(_cStr,22,10)
+
+   
+   nMult  := 2
+   nModulo:= 0
+   nVal   := 0
+   
+	For I := Len(cCampo1) to 1 Step -1
+	   	cChar := Substr(cCampo1,i,1)
+    	  if isAlpha(cChar)
+			Alert("Apenas sequencias numericas podem ser submetidas ao digito verificador")
+		    _lRet := .f.
+   	
+	      endif
+		  nModulo := Val(cChar)*nMult
+          If nModulo >= 10
+			nVal := NVAL + 1
+			nVal := nVal + (nModulo-10)
+          Else
+			nVal := nVal + nModulo	
+          EndIf	
+			nMult:= if(nMult==2,1,2)
+   Next        
+
+   nCalc_DV1 := 10 - (nVal % 10)
+
+   //
+   // Calcula DV2
+   //
+
+   nMult   := 2
+   nModulo := 0
+   nVal    := 0
+   
+	For i := Len(cCampo2) to 1 Step -1
+ 	  	cChar := Substr(cCampo2,i,1)
+     	if isAlpha(cChar)
+			Alert("Apenas sequencias numericas podem ser submetidas ao digito verificador")
+		    _lRet := .f.
+		endif        
+
+		nModulo := Val(cChar)*nMult
+
+		If nModulo >= 10
+			nVal := nVal + 1
+			nVal := nVal + (nModulo-10)
+		Else
+			nVal := nVal + nModulo	
+		EndIf	
+		nMult:= if(nMult==2,1,2)
+   Next        
+   nCalc_DV2 := 10 - (nVal % 10)
+
+   //
+   // Calcula DV3
+   //
+   nMult := 2
+   nModulo := 0
+   nVal := 0
+   
+   For i := Len(cCampo3) to 1 Step -1
+		cChar := Substr(cCampo3,i,1)
+		if isAlpha(cChar)
+			Alert("Apenas sequencias numericas podem ser submetidas ao digito verificador")
+	      _lRet := .f.
+		endif        
+		nModulo := Val(cChar)*nMult
+		If nModulo >= 10
+			nVal := nVal + 1
+			nVal := nVal + (nModulo-10)
+		Else
+			nVal := nVal + nModulo	
+		EndIf	
+		nMult:= if(nMult==2,1,2)
+   Next        
+   nCalc_DV3 := 10 - (nVal % 10)
+
+   if !(nCalc_DV1 == Val(cDV1) .and. nCalc_DV2 == Val(cDV2) .and. nCalc_DV3 == Val(cDV3) )
+      Alert("Digito verificador nao confere")
+      _lRet := .f.
+   else         
+      _lRet := .t.
+   endif                
+   
+Else  
+
+   /*/
+   ±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±
+   ±±ÚÄÄÄÄÄÄÄÄÄÄÂÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ¿±±
+   ±±³Descri‡…o ³ Calculo do modulo 11 sugerido pelo ITAU. Esta funcao       ³±±
+   ±±³          ³ somente e utilizada como validacao do campo E2_CODBAR.     ³±±
+   ±±³          ³ Verifica o codigo de barras grafico (Atraves de leitor)    ³±±
+   ±±ÀÄÄÄÄÄÄÄÄÄÄÁÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÙ±±
+   ±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±
+   /*/
+   cDigito := SubStr(_cStr,5,1)
+   _cStr    := Alltrim(SubStr(_cStr,1, 4)+ SUBSTR(_cStr,6,39))
+
+   If Len(_cStr) < 43
+        Alert("Falta digito verificador")
+        _lRet := .f.
+   Endif
+
+   For i := Len(_cStr) to 1 Step -1
+        cChar := Substr(_cStr,i,1)
+        if isAlpha(cChar)
+			Alert("Apenas sequencias numericas podem ser submetidas ao digito verificador")
+	        _lRet := .f.
+        endif        
+        nModulo := nModulo + Val(cChar)*nMult
+        nMult:= if(nMult==9,2,nMult+1)
+   Next        
+
+   nRest := 11 - (nModulo % 11)
+   nRest := if(nRest==10 .or. nRest==11,1,nRest)  
+
+   If nRest <> Val(cDigito)
+      Alert("Digito verificador nao confere")
+      _lRet := .f.
+   else         
+      _lRet := .t.
+   endif                
+
+Endif
+
+Return(_lRet)    

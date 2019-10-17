@@ -1,0 +1,2238 @@
+#INCLUDE "LOJA140.CH"
+#Include "FIVEWIN.Ch"
+
+/*/
+эээээээээээээээээээээээээээээээээээээээээээээээээээээээээээээээээээээээээээээ
+╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠
+╠╠зддддддддддбддддддддддбдддддддбдддддддддддддддддддддддбддддддбдддддддддд©╠╠
+╠╠ЁFun┤└o    Ё Loja140  Ё Autor Ё Antonio Maniero Jr.   Ё Data Ё 02.01.95 Ё╠╠
+╠╠цддддддддддеддддддддддадддддддадддддддддддддддддддддддаддддддадддддддддд╢╠╠
+╠╠ЁDescri┤└o Ё Exclus└o de Notas Fiscais                                  Ё╠╠
+╠╠цддддддддддедддддддддддддддддддддддддддддддддддддддддддддддддддддддддддд╢╠╠
+╠╠Ё Uso      Ё SigaLoja                                                   Ё╠╠
+╠╠цддддддддддадддддддддддддддддддддддддддддддддддддддддддддддддддддддддддд╢╠╠
+╠╠Ё ATUALIZACOES SOFRIDAS DESDE A CONSTRUCAO INICIAL.                     Ё╠╠
+╠╠цддддддддбддддддбддддддддбдддддддддддддддддддддддддддддддддддддддддддддд╢╠╠
+╠╠Ё  DATA  Ё BOPS ЁProgram.Ё MOTIVO DA ALTERACAO                          Ё╠╠
+╠╠цддддддддеддддддеддддддддедддддддддддддддддддддддддддддддддддддддддддддд╢╠╠
+╠╠Ё23/07/02Ё016840ЁEdilson ЁRemovida a declaracao Criavar(), onde a mesma Ё╠╠
+╠╠Ё        Ё      Ё        Ёgerava inconsistencia na geracao do numero do Ё╠╠
+╠╠Ё        Ё      Ё        Ёorcamento.                                    Ё╠╠
+╠╠Ё25/09/02Ё060215ЁEdilson ЁAcrescentada a verificacao da configuracao do Ё╠╠
+╠╠Ё        Ё      Ё        Ёcaixa, solicitando a senha do supervisor caso Ё╠╠
+╠╠Ё        Ё      Ё        Ёo caixa tenha sido configurado para o mesmo.  Ё╠╠
+╠╠Ё14/11/02Ё060812ЁEdilson ЁNa exclusao da NF gerada foi agregado o valor Ё╠╠
+╠╠Ё        Ё      Ё        Ёdos campos L1_VLRTOT e L1_VLRLIQ para os      Ё╠╠
+╠╠Ё        Ё      Ё        Ёcampos L1_VALBRUT e L1_VALMERC onde os mesmo  Ё╠╠
+╠╠Ё        Ё      Ё        Ёtem o valor alterado no instante da finaliza- Ё╠╠
+╠╠Ё        Ё      Ё        Ёcao do orcamento.                             Ё╠╠
+╠╠Ё21/02/03Ё062545ЁEdilson ЁInplementacao da verificacao de usuarios      Ё╠╠
+╠╠Ё        Ё      Ё        Ёfiscais e nao-fiscais na exclusЦo da NF.      Ё╠╠
+╠╠Ё29/04/03ЁMELHORЁFernandoЁInplementacao da exclusao de reserva e os     Ё╠╠
+╠╠Ё        Ё      Ё        Ёorcamentos nele amarrados.                    Ё╠╠
+╠╠Ё03/10/03Ё066902ЁIvan    ЁAjuste na atualiz. do SF3 verificar se NF de  Ё╠╠
+╠╠Ё        Ё      Ё        ЁSaida ou NF de Entrada. Atualiz apenas NFSaidaЁ╠╠
+╠╠Ё04/07/05Ё081261ЁMachima ЁIntegracao da rotina com o SIGACRD. Cancelar oЁ╠╠
+╠╠Ё        Ё      Ё        Ёcontrato na exclusao da NF ou orcamento       Ё╠╠
+╠╠Ё03/08/05Ё083747ЁGeronimoЁNa Exclusao restaura o L1_BLCRED  com "" para Ё╠╠
+╠╠Ё        Ё      Ё        Ёpermitir uma nova analise de estoque/credito  Ё╠╠
+╠╠юддддддддаддддддаддддддддадддддддддддддддддддддддддддддддддддддддддддддды╠╠
+╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠
+ъъъъъъъъъъъъъъъъъъъъъъъъъъъъъъъъъъъъъъъъъъъъъъъъъъъъъъъъъъъъъъъъъъъъъъъъъъъъъ
+/*/
+Function LOJA140
+
+Local cLabelOpcao   := STR0003  //"Exclus└o NF/Orc."
+Local cLock 		:= Substr(cUsuario,7,15)+cEstacao
+Local aCores 		:= {{'!Empty(L1_DOC).AND.!Empty(L1_SERIE).AND.L1_STATUS<>"D"',																						"BR_VERMELHO"},;
+{'Empty(L1_DOC).AND. Empty(L1_RESERVA).AND.dDataBase<=L1_DTLIM.AND.L1_STATUS<>"D"'	,															"BR_VERDE"},;
+{'Empty(L1_DOC).AND.!Empty(L1_RESERVA).AND.Empty(L1_DOCPED).AND.L1_STATUS<>"D"'	,							"BR_AMARELO"},;
+{'Empty(L1_DOC).AND. Empty(L1_RESERVA).AND.dDataBase>L1_DTLIM.AND.L1_STATUS<>"D"'	,															"BR_PRETO"},;
+{'Empty(L1_DOC).AND. L1_TIPO=="P".AND.!Empty(L1_DOCPED).AND.L1_STATUS<>"D"',									"BR_AZUL"},;
+{'L1_STATUS="D"',																																"BR_MARROM"}}
+
+//зддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддд©
+//Ё Faz o controle via LockByName para evitar que um usuАrio acesse       Ё
+//Ё 2 vezes uma rotina que use os perifИricos de automaГЦo, evitando assimЁ
+//Ё a concorrЙncia dos mesmos.                                            Ё
+//юддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддды
+If SetMDIChild( 0 ) .AND. !LockByName( cLock )
+	Return Nil
+Endif
+
+//здддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддд©
+//Ё Define Variaveis 										     Ё
+//юдддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддды
+Private cCadastro    := STR0001	  // Exclus└o N.F./Orcam.
+Private aTefDados    := {}
+Private lVendaRapida := .F.
+Private aRotina      := {}
+If cPaisLoc <> "BRA"
+	Private lNFManual  := .F.
+EndIf
+
+//здддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддд©
+//Ё Define Array contendo as Rotinas a executar do programa 	 Ё
+//Ё ----------- Elementos contidos por dimensao ------------	 Ё
+//Ё 1. Nome a aparecer no cabecalho 							 Ё
+//Ё 2. Nome da Rotina associada									 Ё
+//Ё 3. Usado pela rotina										 Ё
+//Ё 4. Tipo de Transa┤└o a ser efetuada							 Ё
+//Ё	 1 - Pesquisa e Posiciona em um Banco de Dados				 Ё
+//Ё	 2 - Exclui a nota fiscal/orcamento/pedido                   Ё
+//Ё	 3 - Anula nota fiscal (localizacoes)                        Ё
+//юдддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддды
+
+//зддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддд©
+//|  Pesquisa / Exclus└o NF/Orc.                                          |
+//юддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддды
+If cPaisLoc == "BRA"
+	aRotina := {{ STR0002 ,"AxPesqui"   , 0 , 1},;
+	{ STR0003 ,"lj140Exc"   , 0 , 5} }
+Else
+	If cPaisLoc == "SAL"
+		cCadastro   := OemToAnsi(STR0061)  //"Exclus└o Doc.Saida/Orcam."
+		cLabelOpcao := STR0062   //"Exclus└o Doc/Orc."
+	ElseIf cPaisLoc == "GUA"
+		cLabelOpcao := STR0065  //"Cancelar NF(NCC)"
+	EndIf
+	aRotina := {{ STR0002      ,"AxPesqui"    , 0 , 1},;  //Pesquisa
+	{ cLabelOpcao ,"lj140Exc"   , 0 , 5},;  //"Exclus└o NF/Orc."
+	{ STR0031     ,"lj140Anul"  , 0 , 5}}   //"Cancelar"
+EndIf
+
+AAdd(aRotina,{"Legenda","Lj140Leg",0,8})
+
+dbSelectArea("SL1")
+dbSetOrder(1)
+
+//здддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддд©
+//Ё Endere┤a a fun┤└o de BROWSE									 Ё
+//юдддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддды
+mBrowse(,,,,"SL1",,,,,, aCores )
+
+//здддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддд©
+//Ё Recupera a Integridade dos dados						     Ё
+//юдддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддды
+msUnlockAll( )
+Return( Nil )
+
+/*/
+эээээээээээээээээээээээээээээээээээээээээээээээээээээээээээээээээээээээээээээ
+╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠
+╠╠зддддддддддбддддддддддбдддддддбдддддддддддддддддддддддбддддддбдддддддддд©╠╠
+╠╠ЁFun┤└o    Ё lj140Exc Ё Autor Ё Antonio Maniero Jr.   Ё Data Ё 02.01.95 Ё╠╠
+╠╠цддддддддддеддддддддддадддддддадддддддддддддддддддддддаддддддадддддддддд╢╠╠
+╠╠ЁDescri┤└o Ё Programa de exclusao de notas fiscais                      Ё╠╠
+╠╠цддддддддддедддддддддддддддддддддддддддддддддддддддддддддддддддддддддддд╢╠╠
+╠╠ЁSintaxe   Ё lj140Exc(ExpC1,ExpN1,ExpN2)                                Ё╠╠
+╠╠цддддддддддедддддддддддддддддддддддддддддддддддддддддддддддддддддддддддд╢╠╠
+╠╠ЁParametrosЁ ExpC1 = Alias do arquivo                                   Ё╠╠
+╠╠Ё          Ё ExpN1 = Numero do registro                                 Ё╠╠
+╠╠Ё          Ё ExpN2 = Opcao selecionada                                  Ё╠╠
+╠╠цддддддддддедддддддддддддддддддддддддддддддддддддддддддддддддддддддддддд╢╠╠
+╠╠Ё Uso      Ё Generico                                                   Ё╠╠
+╠╠юддддддддддадддддддддддддддддддддддддддддддддддддддддддддддддддддддддддды╠╠
+╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠
+ъъъъъъъъъъъъъъъъъъъъъъъъъъъъъъъъъъъъъъъъъъъъъъъъъъъъъъъъъъъъъъъъъъъъъъъъъъъъъ
+/*/
+Function lj140Exc(cAlias,nReg,nOpcx)
+Local nCnt:=0
+Local lVendido:=.F.
+Local nOpca
+Local cNumPdv := Space(10)
+Local cNumPdvAtu := Space(4)
+Local oDlg
+Local oCheckNFMan
+Local lLj140CanT := (ExistTemplate("LJ140CAN"))
+Local lLj140Can  := (ExistBlock("LJ140CAN"))
+Local nUsado:=0
+Local cRet       :=space(10)
+Local cNumCupFis := Space(TamSX3("L1_NUMCFIS")[1])
+Local nDecs      := MsDecimais(SL1->L1_MOEDA)
+Local nPosVlrTot := 0,nPosDescPro:=0,nPosVlrUni:=0,nPosQuant:=0
+Local nY,nImpostos:=0,nImpsInc:=0,aPropImp:={}
+Local nRet   := 0
+Local cSerie := AllTrim(ljGetStation("SERIE"))
+Local lTitCarteira 		:= .T.				// Indica se o titulo esta em carteira (.T.) ou com algum portador (.F.)
+Local cDescMot := ""
+Local xRet
+Local nAbatimentos      := 0
+
+Private aHeader[0],aCampos:={}
+If cPaisLoc <> "BRA"
+	Private lAnulaSF3  := AtIsRotina("LJ140ANUL")
+	If cPaisLoc == "GUA"
+		Private cNumNFDev  := CriaVar("L1_DOC") //Numero da Nota de Credito a ser gerada
+		Private cSerieDev  := AllTrim(GetMV("MV_LJNFTRO"))
+		Private cMotivo    := Space(6)
+		Private lGeraNCC   := !lAnulaSF3
+		Private cTipo      := "D"
+		lAnulaSF3  := .T.
+	EndIf
+EndIf
+
+If FunName()='LOJA220'
+	
+	If !lFiscal
+		Return .T.
+	EndIf
+	nRet := IFStatus( nHdlECF, '5', @cRet )				// Verifica se o cupom estА aberto
+	If nRet == 7
+		MsgInfo(OemToAnsi(STR0024)) //'Cupom nao foi finalizado'
+		Return .T.
+	EndIf
+	nRet := IFPegCupom( nHdlECF, @cNumCupFis)
+	nRet := IFPegPDV( nHdlECF, @cNumPdvAtu )
+	if Empty(cNumPdvatu).OR.empty(cNumCupFis)
+		MsgInfo(OemToAnsi(STR0025)) //'Erro de comunicacao com a impressora fiscal'
+		Return .T.
+	EndIf
+	cNumCupFis := Repl('0',TamSX3("L1_NUMCFIS")[1]-Len(Alltrim(cNumCupFis))) + Alltrim(cNumCupFis)
+	cSerie     := cSerie+Space(TamSX3("L1_SERIE")[1]-Len(cSerie))
+	dbselectArea("SL1")
+	dbsetorder(2)
+	if !MsSeek(xFilial("SL1")+cSerie+cNumCupFis+cNumPdvAtu)
+		MsgInfo(OemToAnsi(STR0026)+cNumCupFis) //Nao foi encontrado registro do cupom :
+		Return .T.
+	EndIf
+EndIf
+
+//зддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддд©
+//Ё A ocorrencia 42 (ACS), verifica se o usu═rio poder═ ou n└o  Ё
+//Ё efetuar a exclusфo da nota fiscal. 						    Ё
+//юддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддды
+If !ChkPsw( 42 )
+	//здддддддддддддддддддддддддддддддддд©
+	//Ё Restaura a integridade da janela Ё
+	//юдддддддддддддддддддддддддддддддддды
+	dbSelectArea(cAlias)
+	Return .F.
+EndIf
+
+//зддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддд©
+//Ё Confere a configuracao do caixa, verificando se o mesmo     Ё
+//Ё possui permissao para o cancelamento do cupom.              Ё
+//юддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддды
+IF !LJProFile(8)
+	//здддддддддддддддддддддддддддддддддд©
+	//Ё Restaura a integridade da janela Ё
+	//юдддддддддддддддддддддддддддддддддды
+	dbSelectArea(cAlias)
+	Return .F.
+ENDIF
+//здддддддддддддддддддддддддддддддд©
+//Ё Verifica se Caixa esta Aberto  Ё
+//юдддддддддддддддддддддддддддддддды
+If !ljCxAberto()
+	Return( Nil )
+EndIf
+
+nOpcA 	 := 0
+lContinua := .F.
+
+//здддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддд©
+//Ё Verifica se a data da nota ┌ menor que a database, caso seja deveraЁ
+//Ё fazer a devolu┤фo da nota 										   Ё
+//юдддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддды
+
+If !Empty(SL1->L1_DOC)
+	SF2->( dbSetOrder(1) )
+	SF2->( MsSeek( xFilial("SF2") + SL1->L1_DOC + SL1->L1_SERIE ) )
+	
+	If (SF2->F2_EMISSAO) < (dDataBase)
+		Help(" ",1,"LJ140EXC")
+		Return( Nil )
+	EndIf
+ElseIf cPaisLoc == "GUA" .AND. lGeraNCC
+	//зддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддд©
+	//|    "Aten┤└o"###"Nao e permitido gerar Nota de Credito para cancelamento de orcamento."###"OK"           |
+	//юддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддды
+	Aviso(STR0006,STR0071,{STR0048})
+	Return NIL
+EndIf
+
+If Empty(SL1->L1_NUM)	// Verifica se Nao ┌ Devolucao
+	Help(" ",1,"NFDEVOL")
+	Return( Nil )
+ELse
+	If !Empty(SL1->L1_DOC)
+		If Month(SF2->F2_EMISSAO) <> Month(dDataBase) .OR. Year(SF2->F2_EMISSAO) <> Year(dDataBase)
+			Help(" ",1,"FORA_MES")
+			Return( Nil )
+		Endif
+	Endif
+EndIf
+
+//здддддддддддддддддддддддддддддддддддддддддддддддд©
+//Ё Verifica se o caixa pode excluir a Nota Fiscal Ё
+//юдддддддддддддддддддддддддддддддддддддддддддддддды
+If !Empty(SL1->L1_DOC)
+	If !lLj140Can		// Ponto de Entrada para n└o considerar tais condi┤oes
+		If __cUserID <> "000000" 		 //Se Administrador, pode excluir a nota
+			If xNumCaixa() <> SL1->L1_OPERADO
+				If !ChkPsw(42)
+					Help(" ",1,"OUTROCAIXA")
+					Return( Nil )
+				EndIf
+			EndIf
+		EndIf
+	EndIf
+EndIf
+
+//зддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддд©
+//Ё Tratamento para pedidos (reserva)                                           Ё
+//юддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддды
+If Empty( SL1->L1_DOCPED ) .AND. !Empty( SL1->L1_FILRES )
+	//зддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддд©
+	//|  "Este orcamento nЦo poderА ser excluido porque se trata de um orГamento com reserva."                  |
+	//юддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддды
+	MsgStop( STR0037 , STR0006 )
+	Return NIL
+EndIf
+
+//зддддддддддддддддддддддддддддддддддддддддддддддддд©
+//|  Ponto de Entrada para uso de Template          |
+//юддддддддддддддддддддддддддддддддддддддддддддддддды
+If lLj140CanT	// Executa um ponto de entrada para outras verifica┤■es
+	lLj140CanT := ExecTemplate("LJ140CAN",.F.,.F.)
+	if !lLj140CanT
+		Help(" ",1,"NO140CANC")
+		Return( Nil )
+	Endif
+Endif
+//зддддддддддддддддддддддддддддддддддддддддддддддддд©
+//|  Ponto de Entrada      							|
+//юддддддддддддддддддддддддддддддддддддддддддддддддды
+If lLj140Can	// Executa um ponto de entrada para outras verifica┤■es
+	lLj140Can := ExecBlock("LJ140CAN",.F.,.F.)
+	if !lLj140Can
+		Help(" ",1,"NO140CANC")
+		Return( Nil )
+	Endif
+Endif
+
+
+SL2->(dbSetOrder(1))
+SL2->(MsSeek(xFilial("SL2")+SL1->L1_NUM))
+While  !SL2->(Eof()) .AND. xFilial("SL2") + SL2->L2_NUM == xFilial("SL1") + SL1->L1_NUM
+	If SL2->L2_VENDIDO == "S"
+		lVendido:=.T.
+	EndIf
+	nCnt++
+	If SL2->L2_STATUS == "D"
+		Help(" ","1","JATROCADO")
+		Return( Nil )
+	EndIf
+	SL2->(dbSkip())
+End
+
+//зддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддд©
+//Ё Avisa o usuario sobre a geracao ou nao da Nota de Credito - Loc. Guatemala  Ё
+//юддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддды
+If cPaisLoc == "GUA" .AND. lVendido
+	If lGeraNCC
+		If !MsgYesNo(STR0066)  //"Esta operacao de cancelamento vai gerar uma Nota de Credito ao Cliente. Confirma?"
+			Return NIL
+		EndIf
+	Else
+		//зддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддд©
+		//|     "Esta operacao de cancelamento nao gera Nota de Credito."                                           |
+		//|     "Deve ser utilizada quando o pagamento da Nota Fiscal nao foi efetuado ou "                         |
+		//|     "na ocorrencia de erro na impressao do documento. Confirma?"                                        |
+		//юддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддды
+		If !MsgYesNo(STR0067+chr(13)+STR0068+chr(13)+STR0069)
+			Return NIL
+		EndIf
+	EndIf
+EndIf
+
+//зддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддд©
+//Ё Verifica se foi cupom fiscal e se ┌ a impressora que o emitiu Ё
+//юддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддды
+If !Empty(SL1->L1_PDV) .AND. lVendido .AND. FunName()<>'LOJA220'
+	cNumPdv := SL1->L1_PDV
+	If !lFiscal
+		
+		//зддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддд©
+		//|    Esta venda s╒ poder═ ser exclu║da pela impressora fiscal                                             |
+		//|    que efetuou a mesma. Numero da impressora que registrou a venda:                                     |
+		//|    Aten┤└o                                                                                              |
+		//юддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддды
+		
+		MsgStop(Oemtoansi(STR0004 + STR0005+cNumPdv),Oemtoansi(STR0006))
+		Return( Nil )
+	Else
+		
+		cNumPdvAtu := Space(10)
+		iRet := IFPegPDV( nHdlECF, @cNumPdvAtu )
+		
+		
+		If AllTrim(cNumPdv) <> AllTrim(cNumPdvAtu)
+			
+			//зддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддд©
+			//|   Esta venda foi efetuada por outro caixa                                                               |
+			//|   O PDV que efetuou a venda foi:                                                                        |
+			//|   Aten┤└o                                                                                               |
+			//юддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддды
+			
+			MsgStop(Oemtoansi(STR0007 + STR0008 + cNumPdv),Oemtoansi(STR0006))
+			Return( Nil )
+			
+		EndIf
+		
+	EndIf
+	
+	If lFiscal
+		
+		cNumAnt := Space(10)
+		If cPaisLoc == "ARG"
+			Aviso(STR0047,STR0049,{OemToAnsi(STR0048)})  //"Atencao"###"Para cancelar um cupom fiscal gerar uma Nota de Credito."###"OK"
+			Return(Nil)
+		Else
+			iRet := IFPegCupom( nHdlECF, @cNumAnt, "T" )
+			cNumAnt := StrZero(Val(cNumAnt),TamSX3("L1_NUMCFIS")[1])
+		EndIf
+		
+		If SL1->L1_NUMCFIS  == cNumAnt
+			lOk := .T.
+		Else
+			//зддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддд©
+			//|   Por se tratar de impressora fiscal, s╒ poder═ ser excluido o ёltimo                                   |
+			//|   Cupom vendido. (Vide conv┬nio ICMS - 156/96)                                                          |
+			//юддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддды
+			
+			MsgStop(Oemtoansi(STR0009)+Oemtoansi(STR0010))
+			Return Nil
+		EndIf
+	EndIf
+EndIf
+
+//здддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддд©
+//Ё Verifica se os titulos estao em carteira para exclusЦo. Se algum titulo estiverЁ
+//Ё com algum portador nao podera ser efetuada a exclusao do titulo.               Ё
+//юдддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддды
+lTitCarteira := .T.
+If !Empty(SL1->L1_DOC)
+	SE1->( dbSetOrder(2) )	// E1_FILIAL+E1_CLIENTE+E1_LOJA+E1_PREFIXO+E1_NUM+E1_PARCELA+E1_TIPO
+	SE1->( MsSeek(xFilial("SE1")+SL1->L1_CLIENTE+SL1->L1_LOJA+SL1->L1_SERIE+SL1->L1_DOC ))
+	While SE1->(!Eof()) .AND. ;
+		SE1->E1_FILIAL+SE1->E1_CLIENTE+SE1->E1_LOJA+SE1->E1_PREFIXO+SE1->E1_NUM == xFilial("SE1")+SL1->L1_CLIENTE+SL1->L1_LOJA+SL1->L1_SERIE+SL1->L1_DOC
+		
+		If !Empty(SE1->E1_PORTADO) .AND. !IsCaixaLoja(SE1->E1_PORTADO)
+			lTitCarteira := .F.
+		Endif
+		SE1->(dbSkip())
+	End
+Endif
+If !lTitCarteira
+	Help(" ",1,"FA040SITU")
+	Return Nil
+Endif
+
+//здддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддд©
+//Ё Salva a integridade dos campos de Bancos de Dados 			 Ё
+//юдддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддды
+dbSelectArea("Sx2")
+MsSeek("SL2")
+dbSelectArea("Sx3")
+dbSetOrder(1)
+MsSeek( "SL2" )
+While !Eof() .AND. (x3_arquivo == "SL2")
+	IF x3Uso(x3_usado) .AND. cNivel >= x3_nivel .AND. alltrim(x3_campo)<>"L2_NUM"
+		If cPaisLoc <> "BRA"
+			//Estes campos nao aparecerao em outros paises
+			If Alltrim(X3_CAMPO) == "L2_ICMSRET" .OR. Alltrim(X3_CAMPO) == "L2_BRICMS"
+				dbSkip()
+				Loop
+			Endif
+		Endif
+		
+		nUsado++
+		AADD(aHeader,{ TRIM(x3titulo()), x3_campo, x3_picture,;
+		x3_tamanho, x3_decimal, x3_valid,;
+		x3_usado, x3_tipo, x3_arquivo } )
+		Aadd( aCampos, x3_campo )
+		If cPaisLoc <> "BRA"
+			Do Case
+				Case Alltrim(X3_CAMPO)	==	"L2_VRUNIT"
+					nPosVlrUni := Len(aHeader)
+				Case Alltrim(X3_CAMPO)	==	"L2_VLRITEM"
+					nPosVlrTot := Len(aHeader)
+				Case Alltrim(X3_CAMPO)	==	"L2_QUANT"
+					nPosQuant  := Len(aHeader)
+				Case Alltrim(X3_CAMPO)	==	"L2_DESCPRO"
+					nPosDescPro:= Len(aHeader)
+			EndCase
+		Endif
+	EndIf
+	dbSkip( )
+End
+
+While .T.
+	nImpostos := 0
+	nImpsInc  := 0
+	//здддддддддддддддддддддддддддддддддддддддддддддддддддддд©
+	//Ё Verifica nivel do desconto.							 Ё
+	//юдддддддддддддддддддддддддддддддддддддддддддддддддддддды
+	dbSelectArea( "SX3" )
+	dbSetOrder( 2 )
+	MsSeek( "L1_DESCONT" )
+	dbSetOrder( 1 )
+	
+	//здддддддддддддддддддддддддддддддддддддддддддддддддддддд©
+	//Ё Aceita o cabe┤alho do Orcamento 							Ё
+	//юдддддддддддддддддддддддддддддддддддддддддддддддддддддды
+	M->L1_NUM     := SPACE( TamSX3( "L1_NUM" )[1] )
+	M->L1_DOC     := SL1->L1_DOC
+	M->L1_NROPCLI := SPACE( TamSX3( "L1_NROPCLI" )[1] )
+	M->L1_VLRTOT  := 0
+	M->L1_CLIENTE := GetMv( "MV_CLIPAD" )
+	M->L1_DESCONT := 0
+	M->L1_VEND	  := GetMv( "MV_VENDPAD" )
+	M->L1_DTLIM   := dDataBase
+	M->L1_VLRLIQ  := 0
+	M->L2_VALDESC := 0
+	M->L2_DESC	  := 0
+	
+	dbSelectArea( "SL1" )
+	
+	M->L1_NUM	  := SL1->L1_NUM
+	M->L1_NROPCLI := SL1->L1_NROPCLI
+	M->L1_VLRTOT  := SL1->L1_VLRTOT
+	M->L1_CLIENTE := SL1->L1_CLIENTE
+	M->L1_DESCONT := SL1->L1_DESCONT
+	M->L1_VEND	  := SL1->L1_VEND
+	M->L1_DTLIM   := SL1->L1_DTLIM
+	M->L1_VLRLIQ  := SL1->L1_VLRLIQ
+	M->L1_LOJA    := SL1->L1_LOJA
+	M->L1_VALISS  := SL1->L1_VALISS
+	
+	If SL1->(FieldPos("L1_ABTOPCC")) > 0
+		M->L1_ABTOPCC := SL1->L1_ABTOPCC
+	EndIf
+	
+	dbSelectArea( "SL2" )
+	dbSetOrder(1)
+	MsSeek( xFilial("SL2")+M->L1_NUM )
+	
+	Private aCols[nCnt][nUsado]
+	nUsado := 0
+	nCnt:=0
+	
+	While !Eof( ) .AND. L2_FILIAL+L2_NUM==xFilial("SL1")+M->L1_NUM .AND. SL2->L2_STATUS <> "D"
+		nCnt++
+		nUsado:=0
+		dbSelectArea("SX3")
+		MsSeek( "SL2" )
+		While !Eof() .AND. X3_ARQUIVO == "SL2"
+			If x3Uso(X3_USADO) .AND. cNivel >= X3_NIVEL .AND. AllTrim(X3_CAMPO) <> "L2_NUM"
+				If cPaisLoc <> "BRA"
+					//зддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддд©
+					//|    Estes campos nao devem aparecer em outros paises                                                     |
+					//юддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддды
+					
+					If Alltrim(X3_CAMPO) == "L2_ICMSRET" .OR. Alltrim(X3_CAMPO) == "L2_BRICMS"
+						dbSkip()
+						Loop
+					Endif
+				Endif
+				
+				nUsado++
+				If X3_CONTEXT <> "V"
+					aCOLS[nCnt][nUsado] := &("SL2->"+X3_CAMPO)
+				Else
+					aCOLS[nCnt][nUsado] := CriaVar(X3_CAMPO)
+				EndIf
+			EndIf
+			dbSkip( )
+		End
+		If cPaisLoc <> "BRA"
+			If nPosDescPro > 0
+				aCols[nCnt][nPosVlrTot] += aCols[nCnt][nPosDescPro]
+			EndIf
+			aCols[nCnt][nPosVlrUni] := Round(aCols[nCnt][nPosVlrTot]/aCols[nCnt][nPosQuant],nDecs)
+			aPropImp :=	TesImpInf(SL2->L2_TES)
+			For nY := 1	To Len(aPropImp)
+				If ( aPropImp[nY][3]=="1" )
+					nImpostos += SL2->(FieldGet(FieldPos("L2_"+Substr(aPropImp[nY][2],4,7) )))
+				ElseIf ( aPropImp[nY][3]=="3" )
+					nImpsInc  += SL2->(FieldGet(FieldPos("L2_"+Substr(aPropImp[nY][2],4,7) )))
+				Endif
+			Next nY
+		Endif
+		dbSelectArea( "SL2" )
+		dbSkip( )
+	End
+	
+	If Len(aCols) == 0
+		Help(" ","1","TROCADO")
+		SetCursor(0)
+		Return( Nil )
+	EndIf
+	
+	nOpca := 0
+	If cPaisloc <> "BRA"
+		M->L1_VLRLIQ := M->L1_VLRTOT-nImpostos+M->L1_DESCONT
+	Endif
+	
+	DEFINE MSDIALOG oDlg TITLE cCadastro From 9,0 TO 28,80 OF oMainWnd
+	@1.4,.8 Say OemToAnsi(STR0011)	// Or┤amento:
+	@1.4, 5 MSGet M->L1_NUM When .F.
+	
+	@1.4,10 Say OemToAnsi(STR0023)	// 'Documento    :'
+	@1.4,15 MSGet M->L1_DOC When .F.
+	
+	If cPaisLoc == "GUA" .AND. lGeraNCC
+		@ 20, 185 CHECKBOX oCheckNFMan VAR lNFManual PROMPT OemToAnsi(STR0072);	 //"NCC Manual?"
+		OF oDlg SIZE 60,08
+	EndIf
+	
+	@ 100, 005 TO 142, 125 OF oDlg PIXEL
+	@ 100, 127 TO 142, 235 OF oDlg PIXEL
+	@ 100, 237 TO 142, 317 OF oDlg PIXEL
+	
+	@ 105, 008 SAY xPadL(OemToAnsi(STR0012), 36) SIZE 36, 7 OF oDlg PIXEL	// Seu Pedido:
+	@ 105, 038 MSGET M->L1_NROPCLI When .F. SIZE 30, 08 OF oDlg PIXEL
+	@ 117, 008 SAY xPadL(OemToAnsi(STR0013), 24) SIZE 30, 7 OF oDlg PIXEL	// Cliente:
+	@ 117, 038 MSGET M->L1_CLIENTE When .F. SIZE 85, 08 OF oDlg PIXEL
+	@ 129, 008 SAY xPadL(OemToAnsi(STR0014), 31) SIZE 31, 7 OF oDlg PIXEL	// Vendedor:
+	@ 129, 038 MSGET M->L1_VEND When .F. SIZE 30, 08 OF oDlg PIXEL
+	
+	@ 105, 130 SAY xPadL(OemToAnsi(STR0015), 66) SIZE 66, 7 OF oDlg PIXEL	// Total de Mercadorias:
+	@ 117, 130 SAY xPadL(OemToAnsi(STR0016), 36) SIZE 36, 7 OF oDlg PIXEL	// Desconto:
+	
+	If cPaisLoc == "BRA"
+		@ 117, 185 MSGET M->L1_DESCONT When .F. Picture "@E 999,999.99" SIZE 46, 08 OF oDlg PIXEL
+	Else
+		@ 117, 185 MSGET M->L1_DESCONT When .F. Picture PesqPict("SL1","L1_DESCONT") SIZE 50, 08 OF oDlg PIXEL
+	EndIf
+	
+	If cPaisLoc == "BRA"
+		
+		@ 105, 240 SAY xPadL(OemToAnsi(STR0017), 25) SIZE 25, 7 OF oDlg PIXEL	// L║quido:
+		@ 117, 240 SAY xPadL(OemToAnsi(STR0018), 28) SIZE 25, 7 OF oDlg PIXEL	// Validade:
+		
+		nAbatimentos := 0
+		
+		If SL1->(FieldPos("L1_ABTOPCC")) > 0
+			M->L1_VLRLIQ -= M->L1_ABTOPCC
+			nAbatimentos += M->L1_ABTOPCC
+		EndIf
+		
+		If ( Posicione("SA1",1,xFilial("SA1")+M->L1_CLIENTE+M->L1_LOJA,"SA1->A1_RECISS") == "1" .AND. GetNewPar("MV_DESCISS", .F.) )
+			M->L1_VLRLIQ -= M->L1_VALISS
+			nAbatimentos += M->L1_VALISS
+		EndIf
+		
+		@ 105, 185 MSGET M->L1_VLRTOT When .F. Picture "@E 999,999.99" SIZE 46, 08 OF oDlg PIXEL
+		@ 105, 270 MSGET M->L1_VLRLIQ When .F. Picture "@E 999,999.99" SIZE 46, 08 OF oDlg PIXEL
+		@ 117, 270 MSGET M->L1_DTLIM  When .F.                         SIZE 46, 08 OF oDlg PIXEL
+		@ 129, 130 Say xPadL(OemToAnsi(STR0076), 66) Size 66, 7 OF oDlg PIXEL   // Abatimentos:
+		@ 129, 185 MSGET nAbatimentos When .F. Picture "@E 999,999.99" SIZE 50, 08 OF oDlg PIXEL
+		
+	Else
+		
+		@ 105, 240 SAY xPadL(OemToAnsi(STR0018), 28) SIZE 28, 7 OF oDlg PIXEL	// Validade:
+		@ 129, 130 SAY xPadL(OemToAnsi(STR0017), 25) SIZE 25, 7 OF oDlg PIXEL	// L║quido:
+		
+		@ 105, 185 MSGET M->L1_VLRLIQ When .F. Picture PesqPict("SL1","L1_VLRLIQ") SIZE 50, 08 OF oDlg PIXEL
+		@ 129, 185 MSGET M->L1_VLRTOT When .F. Picture PesqPict("SL1","L1_VLRTOT") SIZE 50, 08 OF oDlg PIXEL
+		@ 105, 267 MSGET M->L1_DTLIM When .F. SIZE 49, 08 OF oDlg PIXEL
+		
+		@ 117, 240 SAY xPadL(OemToAnsi(STR0027), 28) SIZE 28, 7 OF oDlg PIXEL	// Imp. Inc.:
+		@ 117, 267 MSGET nImpsInc When .F. Picture PesqPict("SL1","L1_VALIMP1") SIZE 49, 08 OF oDlg PIXEL
+		
+		@ 129, 240 SAY xPadL(OemToAnsi(STR0028), 28) SIZE 28, 7 OF oDlg PIXEL 	// Imp. Disc.:
+		@ 129, 267 MSGET nImpostos When .F. Picture PesqPict("SL1","L1_VALIMP1") SIZE 49, 08 OF oDlg PIXEL
+		
+	Endif
+	
+	oGet := MSGetDados():New(34,5,100,315,nOpcx,,,"")
+	ACTIVATE MSDIALOG oDlg ON INIT EnchoiceBar(oDlg,{|| nOpca := 1,oDlg:End()},{|| nOpca := 2,oDlg:End()})
+	
+	If nOpcA == 1
+		//здддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддд©
+	    //ЁFuncao para exclusao do historico do pontuacao do Cliente.                 Ё
+	    //юдддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддды
+	
+		If FindFunction("lj140EXF") //Funcao utilizada no Venda Assistida (CRDXFUNE.PRW)
+			LJ140EXF()
+		EndIf
+		
+		If (ExistTemplate("LJ140EXC"))
+			ExecTemplate("LJ140EXC",.F.,.F.)
+		EndIf
+		If (ExistBlock("LJ140EXC"))
+			ExecBlock("LJ140EXC",.F.,.F.)
+		EndIf
+		
+		//здддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддд©
+		//ЁDeterminar a numeracao e o motivo da NCC - Loc. Guatemala                 Ё
+		//юдддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддды
+		If cPaisLoc == "GUA" .AND. lVendido
+			If lGeraNCC .AND. !Lj140Manual()
+				Return NIL
+			EndIf
+			If !Lj021MotDev(@cDescMot)
+				Return NIL
+			EndIf
+			If lGeraNCC
+				If !LJ021Nota(.T.)
+					Return NIL
+				EndIf
+			EndIf
+		EndIf
+		
+		Begin Transaction
+		
+		If !lj140chkres(lVendido)
+			Return Nil
+		Endif
+		If lVendido
+			xRet  := lj140Grava(,cDescMot)
+		EndIf
+		//зддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддд©
+		//|     No estado da Amazonia nao e permitido reutilizaГЦo de orcamento de um cupom cancelado.              |
+		//юддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддды
+		If !lVendido .OR. FunName() = "LOJA220" .OR. LjAnalisaLeg(7)[1]
+			If !LjAnalisaLeg(6)[1] .OR. FunName() = "LOJA220" .OR. cPaisLoc <> "BRA"
+				lj140ExcOrc()
+			Else
+				If lFiscal
+					If Lj140ICOrc(aCols)
+						lj140ExcOrc()
+					Else
+						MsgStop( STR0030 + Chr(10)+ Chr(13) + ; 		//"Existem problemas com a impressora fiscal"
+						STR0059, STR0047) 						//"NЦo foi possМvel imprimir e cancelar o orГamento!" //AtenГЦo
+					EndIf
+				Else
+					MsgStop(STR0060 + Chr(10)+ Chr(13) + ;				//"Para cancelar o orcamento o usuario deve ser fiscal"
+					STR0063 + Chr(10)+ Chr(13) + ;			//"Por exigencia da LegislaГЦo Vigente no Estado, para todo orГamento cancelado, "
+					STR0064, STR0047)					    //"deve ser impresso um cupom fiscal e seu cancelamento"
+				EndIf
+			EndIf
+		ENDIF
+		
+		//зддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддд©
+		//|     Verifica se o Siga Loja esta integrado com o GestЦo Hospitalar                                      |
+		//юддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддды
+		If GetNewPar("MV_LOJAHSP",.F.)
+			HS_ExclRAt(M->L1_NUM, lVendido)
+		EndIf
+		
+		End Transaction
+		
+		If cPaisLoc == "GUA" .AND. lGeraNCC .AND. IIf(ValType(xRet)=="L",xRet,.F.)
+			Lj021Imprime()
+			//зддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддд©
+			//|      "Aten┤└o"###"Foi gerada a Nota de Credito "###"Ok"                                                 |
+			//юддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддды
+			Aviso(STR0006,STR0070+AllTrim(cSerieDev)+"-"+cNumNFDev,{STR0048})
+		EndIf
+	Else
+		dbSelectArea("SL1")
+	End
+	Exit
+End
+Return nOpca
+
+/*/
+эээээээээээээээээээээээээээээээээээээээээээээээээээээээээээээээээээээээээээээ
+╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠
+╠╠зддддддддддбддддддддддбдддддддбдддддддддддддддддддддддбддддддбдддддддддд©╠╠
+╠╠ЁFun┤└o    Ёlj140GravaЁ Autor Ё Antonio Maniero Jr.   Ё Data Ё 02/01/95 Ё╠╠
+╠╠цддддддддддеддддддддддадддддддадддддддддддддддддддддддаддддддадддддддддд╢╠╠
+╠╠ЁDescri┤└o ЁAtualiza┤└o de arquivos.                                    Ё╠╠
+╠╠цддддддддддедддддддддддддддддддддддддддддддддддддддддддддддддддддддддддд╢╠╠
+╠╠ЁSintaxe   Ёlj140Grava( )                                               Ё╠╠
+╠╠цддддддддддедддддддддддддддддддддддддддддддддддддддддддддддддддддддддддд╢╠╠
+╠╠ЁUso       ЁLOJA140                                                     Ё╠╠
+╠╠цддддддддддеддддддбддддддддбдддддддддддддддддддддддддддддддддддддддддддд╢╠╠
+╠╠Ё DATA     Ё BOPS ЁPrograd.ЁALTERACAO                                   Ё╠╠
+╠╠цддддддддддеддддддеддддддддедддддддддддддддддддддддддддддддддддддддддддд╢╠╠
+╠╠Ё 20/07/05 Ё083898ЁHanna C ЁGera um registro no SF3 com NF Cancelada,   Ё╠╠
+╠╠Ё          Ё      Ё        Ёcaso este ainda nao exista, somente se nao  Ё╠╠
+╠╠Ё          Ё      Ё        Ёutilizar Mapa Resumo (MAPARES <> "O")       Ё╠╠
+╠╠Ё 26/09/05 Ё086909ЁHanna C ЁDe acordo com o BOPS 083898, gerar SF3      Ё╠╠
+╠╠Ё          Ё      Ё        Ёquando o MV_MAPARES == "N"                  Ё╠╠
+╠╠Ё          Ё      Ё        Ё                                            Ё╠╠
+╠╠Ё 29/09/05 Ё084541ЁMagh M. ЁNao estava atualizando o Saldo Bancario pq  Ё╠╠
+╠╠Ё          Ё      Ё        Ёo registro do SE5 era excluido linhas antes Ё╠╠
+╠╠Ё          Ё      Ё        Ёda chamada da funcao AtuSalBco()            Ё╠╠
+╠╠Ё 03/11/05 Ё088403ЁHenry F ЁAlteracao para considerar os campos do SL1  Ё╠╠
+╠╠Ё          Ё      Ё        Ёna geracao do SF3 (L1_DOC, L1_SERIE, L1_PDV Ё╠╠
+╠╠юддддддддддаддддддаддддддддадддддддддддддддддддддддддддддддддддддддддддды╠╠
+╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠
+ъъъъъъъъъъъъъъъъъъъъъъъъъъъъъъъъъъъъъъъъъъъъъъъъъъъъъъъъъъъъъъъъъъъъъъъъъъъъъ
+/*/
+Function lj140Grava(lJob,cDescMot)
+Local nContador	   := 0
+Local aCheques 	   := {}
+Local lVendTef 	   := .F.
+Local lTefOk       := .T.
+Local cChave
+Local cNumNota     := SL1->L1_DOC
+Local cSerNota     := SL1->L1_SERIE
+Local aParc        := {}
+Local nI           := 0
+Local cChaveSE1    := ""
+Local cNumNfCup    := ""
+Local cSerNfCup    := ""
+Local lNfCup       := .F.
+Local lMvFisNota   := GetMv("MV_FISNOTA")
+Local lCrdxInt     := CrdxInt()                //Controla se tem integracao com SIGACRD
+Local cCpoTroco    := ""
+Local aItensSD2    := {}
+Local aItensSF2    := {}
+Local aRetCrd      := {}                       //Array  de retorno do cancelamento do contrato - integracao SIGACRD
+Local cTESSaida    := ""
+Local cCondPag     := ""
+Local lFoundNF     := .F.
+Local lBaixaAut    := .F.
+Local lCartao      := .T.
+Local lLjD1TesT    := (ExistBlock("LJD1TesT"))						//Verifica a existencia do PE para tratamento de TES
+Local lCancelouCRD := .F.                                      // Indica se o contrato ja foi cancelado
+Local cTESTroca	   := GetMv("MV_TESTROCA")							//TES padrao para o processo de troca
+Local aOtimizacao  := {}						//Array utilizada na MATXFIS
+Local lDelSE5      := .F. //variavel que verificara se o SE5 foi excluido                               
+Local lAchouSF2	   := .F.											// Variavel de retorno se encontrou o SF2 ou nao
+
+Default lJob       := .F.
+Default cDescMot   := ""
+
+If Type("LANULASF3")=="U"
+	Private lAnulaSF3 := .F.
+EndIf
+
+cChave := LJPREFIXO() + SL1->L1_DOC
+iRet := 0
+
+//зддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддд©
+//|   Caso lJob seja true significa que a rotina esta sendo executada atraves                               |
+//|   de um Job. Com certeza se trata de um usuario fiscal e todas as validacoes                            |
+//|   fiscais foram realizadas, no Front Office.                                                            |
+//юддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддды
+If !lJob
+	If lFiscal
+		If Empty( SL1->L1_PDV ) .AND. !lMvFisNota
+			MsgInfo(OemToAnsi(STR0035)) //'UsuАrio nЦo altorizado a excluir NF'
+			Return( .F. )
+		Endif
+	Else
+		If !Empty( SL1->L1_PDV )
+			MsgInfo(OemToAnsi(STR0036)) //'UsuАrio nЦo altorizado a excluir Cupon Fiscal'
+			Return( .F. )
+		Endif
+	Endif
+EndIf
+
+
+If !lJob .AND. lUsatef .AND. SL1->L1_VENDTEF == "S"
+	lVendTef := .T.
+	If !Lj010Autor("TEF-EXC")
+		Return NIL
+	EndIf
+ElseIf !lJob .AND. !lUsatef .AND. SL1->L1_VENDTEF == "S"
+	lVendTef := .F.
+	Help(" ",1,"NOUSERTEF")
+	Return NIL
+EndIf
+
+//здддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддд©
+//Ё Atualiza┤└o de Contas a Receber e Saldo de Caixa			 Ё
+//юдддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддды
+If Substr(SL1->L1_CONFVEN,6,1) <> "N"  // - Posicao de Geracao Titulo Financeiro
+	cCondPag  := AllTrim(SL1->L1_CONDPG)
+	If cPaisLoc <> "BRA" .AND. cCondPag <> "CN"
+		SE4->(DbSetOrder(1))
+		If SE4->(MsSeek(xFilial("SE4")+cCondPag))
+			If SE4->(FieldPos( "E4_BXTITAV" )) > 0
+				lBaixaAut := SE4->E4_BXTITAV == "1"
+			Endif
+		EndIf
+	EndIf
+	dbSelectArea("SE1")
+	dbSetOrder(1)
+	If MsSeek(xFilial("SE1")+ cChave )
+		dbSelectArea("SE1")
+		While !Eof() .AND. xFilial("SE1")==SE1->E1_FILIAL .AND. cChave == E1_PREFIXO+E1_NUM
+			//здддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддд©
+			//Ё Inserido origem para evitar que selecione registro incluido  Ё
+			//Ё por outro modulo                                             Ё
+			//юдддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддды
+			If AllTrim(Upper(SE1->E1_ORIGEM))$"LOJA010/LOJA220/LOJA701/RPC"
+				//зддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддд©
+				//| Inseri IsMoney para considerar titulos pagos em qualq. moeda em dinheiro- J. Aurelio-Localiz.-08/07/02  |
+				//юддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддды
+				If Round(NoRound(E1_VALOR,3),2) <> Round(NoRound(E1_SALDO,3),2) .AND. !IsMoney(E1_TIPO) .AND.;
+					!lBaixaAut
+					Help(" ",1,"TITULOBAIXADO")
+					Return .F.
+				EndIf
+				If SE1->E1_TIPO $ IIF(Type('MVCHEQUES')=='C',MVCHEQUES,MVCHEQUE)
+					Aadd( aCheques , SE1->E1_PREFIXO+SE1->E1_NUM )
+				EndIf
+			EndIf
+			dbSkip( )
+		End
+	EndIf
+EndIf
+
+dbSelectArea( "SF2" )
+dbSetOrder(1)
+lAchouSF2	:=	MsSeek( xFilial("SF2") + cNumNota + SL1->L1_SERIE )
+
+//зддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддд©
+//| Verifica se existe NF para o cupom. Caso exista armazena o numero e a serie para futura exclusao...     |
+//юддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддды
+If ((lJob .OR. lFiscal) .AND. (SF2->F2_ECF == "S")) .AND. !Empty(SF2->F2_NFCUPOM) .AND. lAchouSF2
+	cSerNfCup := SubStr(SF2->F2_NFCUPOM,1,TamSx3("F2_SERIE")[1])
+	cNumNfCup := SubStr(SF2->F2_NFCUPOM,4,TamSx3("F2_DOC")[1])
+EndIf
+
+//здддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддд©
+//Ё Verifica se cheque ja' foi depositado                        Ё
+//юдддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддды
+If Substr(SL1->L1_CONFVEN,1,1)  <> "N" // Posicao de Aceitacao de Numero de Cheque
+	dbSelectArea("SEF")
+	dbSetOrder(3)
+	If Len(aCheques) > 0  // 24/05/96			// aCheques[] prefixo+titulo
+		If !Empty(SL1->L1_CHEQUES) .AND. MsSeek(xFilial("SL1")+aCheques[1])
+			nContador := 1
+			While !Eof() .AND. xFilial("SEF")==SEF->EF_FILIAL .AND. nContador <= Len(aCheques)
+				If !Empty(SEF->EF_DEPOSIT)
+					Help(" ",1,"CHEQUEMOV")
+					Return .F.
+				EndIf
+				nContador++
+				dbSkip()
+			End
+		EndIf
+	EndIf  // Fim de Len(acheques)
+EndIf
+
+If lFiscal .AND. (SF2->F2_ECF == "S") .AND. lAchouSF2
+	//здддддддддддддддддддддддддддддддддддддддддддддддддддддддддд©
+	//Ё Cancelamento do ёltimo Cupom Fiscal						 Ё
+	//юдддддддддддддддддддддддддддддддддддддддддддддддддддддддддды
+	If IFCancCup( nhdlECF ) <> 0
+		//зддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддд©
+		//|    "N└o foi possМvel efetuar a exclus└o"                                                                |
+		//|    "Existem problemas com a impressora fiscal"                                                          |
+		//юддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддды
+		MsgInfo(OemToAnsi(STR0029) + Chr(10) + Chr(13) + OemToAnsi(STR0030))
+		Return NIL
+	EndIf
+EndIf
+
+If Substr(SL1->L1_CONFVEN,1,1)  <> "N" // Posicao de Aceitacao de Numero de Cheque
+	If Len(aCheques) > 0  // 24/05/96			// aCheques[] prefixo+titulo
+		//здддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддд©
+		//Ё Atualiza┤└o dos arquivos. 											  Ё
+		//юдддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддды
+		If !Empty(SL1->L1_CHEQUES) .AND. MsSeek(xFilial("SEF")+aCheques[1])
+			nContador := 1
+			While !Eof() .AND. xFilial("SEF")==SEF->EF_FILIAL .AND. nContador <= len(aCheques)
+				lAvanca := .T.
+				If SEF->EF_CART == "R"
+					Reclock( "SEF",.F.,.T.)
+					dbDelete()
+					MSUnLock()
+					dbSkip( )
+				ENDIF
+				nContador++
+			End
+		EndIf
+	EndIf  // Fim de Len(acheques)
+EndIf
+
+//зддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддд©
+//|  Se usar o Tef ira excluir a venda na administradora antes                                              |
+//юддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддды
+If !lJob .AND. lVendTef
+	lTefOk := LOJA010T( "X" )
+	If ! Valtype(lTefOK) == "L"
+		lTefOK := .F.
+	Endif
+	If ! lTefOk
+		Help(" ",1,"TEFOK")
+		LOJA010T( "F", "N" )
+		Return NIL
+	EndIf
+EndIf
+
+If lTefOk
+	If !lJob .AND. lVendTef
+		RecLock("SL1",.F.)
+		SL1->L1_DOCCANC := aTefDados[1][6]
+		SL1->L1_DATCANC := aTefDados[1][12]
+		SL1->L1_HORCANC := aTefDados[1][7]
+		MsUnLock()
+	EndIf
+	
+	//зддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддд©
+	//Ё Antes de Excluir Comissao - Verifica o Parametro de Geracao de Comissao - 19/12/95Ё
+	//юддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддды
+	If Substr(SL1->L1_CONFVEN,11,1) <> "N" // Posicao do Parametro de Geracao de Comissao
+		
+		dbSelectArea("SE3")
+		If MsSeek(xFilial("SE3")+ cChave )
+			While !Eof() .AND. !Empty(SL1->L1_VEND) .AND.;
+				cChave == SE3->E3_PREFIXO + SE3->E3_NUM
+				
+				If !Empty( SE3->E3_DATA )
+					Help( " ",1,"A140COMIS")
+					dbSkip()
+					Loop
+				EndIf
+				//здддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддд©
+				//Ё Atualiza┤└o de Comiss■es												  Ё
+				//юдддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддды
+				RecLock("SE3",.F.,.T.)
+				dbDelete( )
+				MSUnLock()
+				dbSkip()
+			End
+		EndIf
+	EndIf
+	
+	cNumNota := SL1->L1_DOC
+	cSerNota := SL1->L1_SERIE
+	While .T.
+		//зддддддддддддддддддддддддддддддддддддддддд©
+		//Ё Atualiza┤└o dos Arquivos do Faturamento Ё
+		//юддддддддддддддддддддддддддддддддддддддддды
+		
+		//зддддддддддддддддддддддддддддддддддддддддд©
+		//Ё Pontos de Entrada  						Ё
+		//юддддддддддддддддддддддддддддддддддддддддды
+		If ExistTemplate("LJ140DEL")
+			ExecTemplate("LJ140DEL",.F.,.F.)
+		EndIf
+		
+		If ExistBlock("LJ140DEL")
+			ExecBlock("LJ140DEL",.F.,.F.)
+		EndIf
+		
+		dbSelectArea("SF3")
+		dbSetOrder(5)
+		If MsSeek( xFilial("SF3") + cSerNota + cNumNota )
+			While !Eof() .AND. xFilial("SF3")+cSerNota+cNumNota == SF3->F3_FILIAL+SF3->F3_SERIE+SF3->F3_NFISCAL
+				//зддддддддддддддддддддддддддддддддддддддддд©
+				//Ё Excluir apenas Nota Fiscal de Saida	    Ё
+				//юддддддддддддддддддддддддддддддддддддддддды
+				If !(Substr(SF3->F3_CFO,1,1) >= "5")
+					dbSkip()
+				Endif
+				RecLock("SF3",.F.)
+				If IIf(cPaisLoc<>"BRA",lAnulaSF3,.T.)
+					SF3->F3_DTCANC := dDatabase
+					SF3->F3_OBSERV := "NF CANCELADA"
+					If cPaisLoc == "GUA"
+						SF3->F3_OBSERV   := cDescMot
+					EndIf
+				Else
+					DbDelete()
+				EndIf
+				MsUnLock()
+				dbSkip()
+			End
+		Else
+			//зддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддд©
+			//| Caso nao tenha sido gerado F3, deve registrar o cancelmento desta NF, sempre que o MV_MAPARES == "N"  |
+			//юддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддды
+			If cPaisLoc == "BRA" .AND. ( Empty(SL1->L1_PDV) .And. !Empty(SL1->L1_DOC+SL1->L1_SERIE) ) .AND. lAchouSF2
+				//зддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддд©
+				//Ё Carrega a Nota Fiscal SF3 referente a Notas Fiscais de EntradaЁ
+				//юддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддды
+				MaFisIniNF(2,SF2->(Recno()),@aOtimizacao,"SF2",.T.)
+				//зддддддддддддддддддддддддддддддддддддддддддддддддддддддддд©
+				//Ё Inicializa a gravacao nas funcoes Fiscais               Ё
+				//юддддддддддддддддддддддддддддддддддддддддддддддддддддддддды
+				MaFisWrite()
+				//зддддддддддддддддддддддддддддддддддддддддддддддддддддддддд©
+				//Ё Efetua a gravacao dos registros referente a Nota no SF3 Ё
+				//юддддддддддддддддддддддддддддддддддддддддддддддддддддддддды
+				dbSelectArea("SF2")
+				
+				MaFisAtuSF3(1,"S",SF2->(Recno()),"SF2")
+				RecLock("SF3",.F.)
+				SF3->F3_DTCANC	:= dDatabase
+				SF3->F3_OBSERV	:= "NF CANCELADA"
+				SF3->(MsUnLock())
+				MaFisEnd()
+
+			Endif
+		EndIf
+		
+		dbSelectArea("SD2")
+		dbSetOrder(3)
+		If MsSeek(xFilial("SD2")+cNumNota+cSerNota)
+			While !Eof() .AND.	(xFilial("SD2") == D2_FILIAL) .AND.;
+				(D2_DOC == cNumNota .AND. D2_SERIE == cSerNota)
+				
+				//зддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддд©
+				//|    Considerar somente os itens de NF                                                                    |
+				//юддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддды
+				If cPaisLoc <> "BRA"
+					If SD2->D2_TIPODOC <> "01"
+						DbSkip()
+						Loop
+					EndIf
+				EndIf
+				
+				If lNfCup .OR. (SD2->D2_PDV == SL1->L1_PDV)
+					cTESSaida  := SD2->D2_TES
+					If !lNfCup .AND. SF4->(MsSeek(xFilial("SF4")+SD2->D2_TES))
+						If SF4->F4_ESTOQUE == "S"
+							If SB2->( MsSeek(cFilial + SD2->D2_COD + SD2->D2_LOCAL ) )
+								
+								//здддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддд©
+								//|     Verifica se o cliente utiliza tratamento especМfico para o controle de TES         |
+								//юдддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддды
+								If lLjD1TesT
+									aRet := ExecBlock("LJD1TesT",.F.,.F.,{cTESTroca,SD2->D2_COD,0})
+									If ValType(aRet) == "A"
+										cTESTroca := aRet[1]
+									EndIf
+								EndIf
+								
+								RecLock("SD2",.F.)
+								Replace D2_TES With cTESTroca
+								
+								aCMSaida := PegaCusD2()
+								
+								B2AtuComD2( aCMSaida, 1,,.F.)
+								SB2->(MsUnLock())
+								
+								If !( SD2->D2_TIPO $ "DBCIP" )
+									dbSelectArea("SB3")
+									dbSetOrder(1)
+									If ( MsSeek(xFilial("SB3")+SD2->D2_COD) )
+										RecLock("SB3")
+									Else
+										RecLock("SB3",.T.)
+										SB3->B3_FILIAL := xFilial("SB3")
+										SB3->B3_COD    := SD2->D2_COD
+									EndIf
+									FieldPut(FieldPos("B3_Q"+StrZero(Month(SD2->D2_EMISSAO),2)),FieldGet(FieldPos("B3_Q"+StrZero(Month(SD2->D2_EMISSAO),2)))-SD2->D2_QUANT)
+									SB3->B3_MES := SD2->D2_EMISSAO
+									MsUnLock()
+								EndIf
+								
+							EndIf
+						EndIf
+					EndIf
+					
+					dbSelectArea( "SD2" )
+					
+					If cPaisLoc == "GUA"
+						Aadd(aItensSD2,{SD2->D2_ITEM,SD2->D2_COD,SD2->D2_UM,SD2->D2_SEGUM,;
+						SD2->D2_QUANT,SD2->D2_PRCVEN,SD2->D2_TOTAL,SD2->D2_LOCAL,;
+						cTESSaida,SD2->D2_CF,SD2->D2_CLIENTE,SD2->D2_LOJA,;
+						SD2->D2_GRUPO,SD2->D2_PRUNIT,SD2->D2_DOC,SD2->D2_SERIE,;
+						SD2->D2_CUSTO1,SD2->D2_CUSTO2,SD2->D2_CUSTO3,SD2->D2_CUSTO4,;
+						SD2->D2_CUSTO5})
+					EndIf
+					
+					RecLock("SD2",.F.,.T.)
+					dbDelete()
+					MsUnlock()
+				EndIf
+				dbSkip()
+			End
+		EndIf
+		
+		dbSelectArea("SF2")
+		dbSetOrder(1)
+		If MsSeek(xFilial("SF2")+cNumNota+cSerNota)
+			If cPaisLoc <> "BRA"
+				lFoundNF  := .F.
+				While !Eof() .AND. xFilial("SF2") == SF2->F2_FILIAL .AND. cNumNota+cSerNota ==;
+					SF2->F2_DOC + SF2->F2_SERIE .AND. !lFoundNF
+					
+					//зддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддд©
+					//|    Verifica se eh NF                                                                                    |
+					//юддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддды
+					If SF2->F2_TIPODOC <> "01"
+						DbSkip()
+						Loop
+					EndIf
+					
+					lFoundNF  := .T.
+				End
+			EndIf
+			cNumNota := SF2->F2_NEXTDOC
+			//зддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддд©
+			//|    Exclui a Nf gerada para um determinado cupom, caso a mesma exista...                                 |
+			//юддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддды
+			If Empty(cNumNota) .AND. !Empty(cNumNfCup)
+				cNumNota := cNumNfCup
+				cSerNota := cSerNfCup
+				cNumNfCup:= ""
+				cSerNfCup:= ""
+				lNfCup   := .T.
+			EndIf
+			If cPaisLoc <> "BRA"
+				//зддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддд©
+				//|     Armazenar os dados dos itens para gerar a NCC - Loc. Guatemala                                      |
+				//юддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддды
+				
+				Aadd(aItensSF2,{SF2->F2_DOC,SF2->F2_SERIE,SF2->F2_CLIENTE,SF2->F2_LOJA,;
+				SF2->F2_VALBRUT,SF2->F2_VALMERC,SF2->F2_MOEDA,SF2->F2_TXMOEDA})
+				//здддддддддддддддддддддддддддддддддддддддддддддддддд©
+				//ЁCancela a baixa dos titulos com pagamento a vista.Ё
+				//юдддддддддддддддддддддддддддддддддддддддддддддддддды
+				SE4->(DbSetOrder(1))
+				SE4->(MsSeek(xFilial("SE4")+SF2->F2_COND))
+				//зддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддд©
+				//|     Estornar a baixa dos titulos baixados automaticamente                                           |
+				//юддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддды
+				CaBxAutSE1(SF2->F2_COND,"SE1")
+			EndIf
+			RecLock("SF2",.F.,.T.)
+			dbDelete()
+			MsUnlock()
+		Else
+			cNumNota := Space(TamSx3("L1_DOC")[1])
+		EndIf
+		
+		If !Empty(cNumNota)
+			Loop
+		Endif
+		Exit
+	End
+	
+	If Substr(SL1->L1_CONFVEN,6,1) <> "N"
+		dbSelectArea("SE1")
+		If MsSeek(xFilial("SE1")+cChave)
+			SAE->( dbSetOrder( 1 ) )
+			While !Eof() .AND. xFilial("SE1")==SE1->E1_FILIAL .AND. cChave == SE1->(E1_PREFIXO+E1_NUM)
+				
+				lCartao := .F.
+				
+				//здддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддд©
+				//ЁSe a origem for pelo financeiro, nao efetua a exclusao do titulo    Ё
+				//юдддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддды
+				If "FIN"$SE1->E1_ORIGEM
+					SE1->(DbSkip())
+					Loop
+				Endif
+				
+				//зддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддд©
+				//|    Se o tМtulo nЦo for do cliente verifica se И de alguma administradora financeira,                    |
+				//|    se for nЦo roda a rotina de atualizaГЦo do calso do cliente e pula para o prСximo registro.          |
+				//юддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддды
+				If SL1->L1_CLIENTE+SL1->L1_LOJA <> SE1->E1_CLIENTE + SE1->E1_LOJA
+					If SAE->( MsSeek( xFilial( "SAE" ) + SubStr( SE1->E1_CLIENTE,1,3 ) ) )
+						lCartao := .T.
+					EndIf
+				EndIf
+				
+				If !IsMoney(E1_TIPO) .AND. ! lCartao .AND. ! (GetMv( "MV_CLIPAD" )+GetMv( "MV_LOJAPAD" ) == SL1->L1_CLIENTE+SL1->L1_LOJA)
+					SA1->(DbSetOrder(1))
+					SA1->(MsSeek(xFilial("SA1")+SL1->L1_CLIENTE+SL1->L1_LOJA))
+					AtuSaldup("-",SE1->E1_VALOR,SE1->E1_MOEDA,SE1->E1_TIPO,,SE1->E1_EMISSAO)
+				Endif
+				
+				//зддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддд©
+				//|   Eh necessario armazenar as parcelas para o tratamento do SE5                                          |
+				//юддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддды
+				If cPaisLoc <> "BRA"
+					AAdd(aParc,{SE1->E1_PARCELA,SE1->E1_TIPO})
+					If GetMV("MV_LJTRLOC")  //Rotina de Troco localizada ativa
+						cChaveSE1 := SE1->E1_PREFIXO+SE1->E1_NUM+SE1->E1_PARCELA+Space(Len(SE5->E5_TIPO))+;
+						SE1->E1_CLIENTE+SE1->E1_LOJA
+						//зддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддд©
+						//|   Excluir os registros de troco correspondentes                                                 |
+						//юддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддды
+						DbSelectArea("SE5")
+						DbSetOrder(7)
+						If MsSeek(xFilial("SE5")+cChaveSE1)
+							While !Eof() .AND. xFilial("SE5") == SE5->E5_FILIAL .AND. cChaveSE1 == SE5->E5_PREFIXO+;
+								SE5->E5_NUMERO+SE5->E5_PARCELA+SE5->E5_TIPO+SE5->E5_CLIFOR+SE5->E5_LOJA
+								
+								If SE5->E5_MOEDA <> "TC" .OR. SE5->E5_TIPODOC <> "VL" .OR.;
+									SE5->E5_RECPAG <> "P"
+									DbSkip()
+									Loop
+								EndIf
+								
+
+								//зддддддддддддддддддддддддддддддддддддддддддддддддд©
+								//ЁSe for dinheiro devera atualizar o Saldo BancarioЁ
+								//юддддддддддддддддддддддддддддддддддддддддддддддддды								
+								If IsMoney(SE1->E1_TIPO) 		
+ 									//зддддддддддддддддддддддддддддддд©
+									//Ё Atualiza saldo do BANCO Caixa Ё
+									//юддддддддддддддддддддддддддддддды
+									AtuSalBco(SE5->E5_BANCO,SE5->E5_AGENCIA,SE5->E5_CONTA,dDataBase,SE5->E5_VALOR,"-")			
+							    	lDelSE5:= .T.
+							    Endif	                                  
+							    
+								RecLock("SE5",.F.)
+								DbDelete()
+								MsUnlock()
+								DbSkip()
+							End
+						EndIf
+					EndIf
+				Else
+					//здддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддд©
+					//|    Excluir os registros de movimentaГЦo bancaria - Integridade Referencial                   |
+					//юдддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддды
+					cChaveSE1 := SE1->E1_PREFIXO+SE1->E1_NUM+SE1->E1_PARCELA+SE1->E1_TIPO+SE1->E1_CLIENTE+SE1->E1_LOJA
+					
+					DbSelectArea("SE5")
+					DbSetOrder(7)
+					If MsSeek(xFilial("SE5")+cChaveSE1)
+						While !Eof() .AND. xFilial("SE5") == SE5->E5_FILIAL .AND. ;
+							cChaveSE1 == SE5->E5_PREFIXO+SE5->E5_NUMERO+SE5->E5_PARCELA+SE5->E5_TIPO+SE5->E5_CLIFOR+SE5->E5_LOJA
+				
+							
+
+							//здддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддд©
+							//ЁSe for dinheiro devera atualizar o Saldo Bancario antes de excluir o registro do SE5Ё
+							//юдддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддды					
+							If IsMoney(SE1->E1_TIPO)
+								//зддддддддддддддддддддддддддддддд©
+								//Ё Atualiza saldo do BANCO Caixa Ё
+								//юддддддддддддддддддддддддддддддды
+								AtuSalBco(SE5->E5_BANCO,SE5->E5_AGENCIA,SE5->E5_CONTA,dDataBase,SE5->E5_VALOR,"-")
+								lDelSE5:= .T.
+				            Endif
+				
+							RecLock("SE5",.F.)
+							DbDelete()
+							MsUnlock()
+							DbSkip()
+						End
+					EndIf
+					
+					//зддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддд©
+					//|    Excluir registro do Contas a Pagar (quando houver Taxa de ISS)                                       |
+					//юддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддды
+					dbSelectArea("SE2")
+					dbSetOrder(1)
+					If MsSeek(xFilial("SE2")+SE1->E1_PREFIXO+SE1->E1_NUM+SE1->E1_PARCELA+"TX")
+						If Alltrim(SE2->E2_NATUREZ) == "ISS"
+							RecLock("SE2",.F.)
+							DbDelete()
+							MsUnlock()
+						Endif
+					Endif
+					
+				EndIf
+				If lCrdxInt .AND. !lCancelouCRD .AND. SE1->(FieldPos("E1_NUMCRD")) > 0
+					If !Empty(SE1->E1_NUMCRD)
+						aRetCrd      := aClone(CrdxVenda( "3"  ,{"",""}  ,SE1->E1_NUMCRD  ,.F.  ,;
+						NIL  ,NIL ))
+						lCancelouCRD := .T.
+					EndIf
+				EndIf
+				Reclock("SE1")
+				SE1->(dbDelete())
+				MSUnLock()
+				SE1->(dbSkip())
+			End
+		EndIf
+		                                       
+		
+
+		//зддддддддддддддддддддддддддддддддддддддддддддддддддддд©
+		//ЁSe for Dinheiro e SE5 nao estiver sido excluido acimaЁ
+		//юддддддддддддддддддддддддддддддддддддддддддддддддддддды		
+		If SL1->L1_DINHEIRO <> 0 .AND. !lDelSE5
+			dbSelectArea("SE5")
+			dbSetOrder(2)
+			If cPaisLoc == "BRA"
+				If MsSeek(xFilial() + "LJ" + cChave + Space(TamSX3("E5_PARCELA")[1]) + GetMv("MV_SIMB1") + " ")
+					RecLock("SE5",.F.,.T.)
+					dbDelete()
+					MsUnlock()
+					//зддддддддддддддддддддддддддддддд©
+					//Ё Atualiza saldo do BANCO Caixa Ё
+					//юддддддддддддддддддддддддддддддды
+					AtuSalBco(SE5->E5_BANCO,SE5->E5_AGENCIA,SE5->E5_CONTA,dDataBase,SE5->E5_VALOR,"-")
+					
+				EndIf
+			Else
+				//зддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддд©
+				//|Devido ao tratamento de multi-moeda uma venda pode gerar mais de um registro em Mov. Bancario p/ dinheiro|
+				//юддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддды
+				For nI := 1 To Len(aParc)
+					If MsSeek(xFilial() + "LJ" + cChave + aParc[nI,1] + aParc[nI,2])
+						//зддддддддддддддддддддддддддддддд©
+						//Ё Atualiza saldo do BANCO Caixa Ё
+						//юддддддддддддддддддддддддддддддды
+						AtuSalBco(SE5->E5_BANCO,SE5->E5_AGENCIA,SE5->E5_CONTA,dDataBase,SE5->E5_VALOR,"-")
+						RecLock("SE5",.F.,.T.)
+						dbDelete()
+						MsUnlock()
+					EndIf
+				Next nI
+			EndIf
+			dbSetOrder(1)
+		EndIf
+		
+		//здддддддддддддддддддддддддддддддддддддд©
+		//Ё Realiza a exclusao do SE1 apos o SE5 Ё
+		//юдддддддддддддддддддддддддддддддддддддды
+		dbSelectArea("SE1")
+		If MsSeek(xFilial("SE1")+cChave)
+			While !Eof() .AND. xFilial("SE1")==SE1->E1_FILIAL .AND. cChave == SE1->(E1_PREFIXO+E1_NUM)
+				//здддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддд©
+				//ЁSe a origem for pelo financeiro, nao efetua a exclusao do titulo    Ё
+				//юдддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддды
+				If "FIN"$SE1->E1_ORIGEM
+					SE1->(DbSkip())
+					Loop
+				Endif
+				
+				Reclock("SE1")
+				dbDelete()
+				MSUnlock()
+				dbSkip()
+			End
+		EndIf
+	EndIf
+	
+	//здддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддд©
+	//ЁVerifica se existe amarracao com lay-away e faz a reabertura se necessarioЁ
+	//юдддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддды
+	If cPaisLoc$"EUA|POR"
+		dbSelectArea("SL2")
+		dbSetOrder(1)
+		MsSeek( xFilial("SL2")+SL1->L1_NUM )
+		
+		dbSelectArea("SLP")
+		dbSetOrder(4)
+		
+		While xFilial("SL2")+SL1->L1_NUM == SL2->L2_FILIAL+SL2->L2_NUM
+			If MsSeek(xFilial("SLP")+SL2->L2_NUM+SL2->L2_ITEM)
+				a800AbreLW(SL2->L2_NUM,SL2->L2_ITEM)
+			EndIf
+			SL2->(dbSkip())
+		End
+	EndIf
+	//здддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддд©
+	//ЁGerar Nota de Credito ao Cliente - Loc. Guatemala                         Ё
+	//юдддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддды
+	If cPaisLoc == "GUA" .AND. lGeraNCC
+		For nI := 1 to Len(aItensSF2)
+			Lj140GeraNCC(aItensSF2,aItensSD2,nI)
+		Next nI
+	EndIf
+	
+	dbSelectArea( "SL2" )
+	dbSetOrder(1)
+	MsSeek( xFilial("SL2")+SL1->L1_NUM )
+	nContador := 0
+	While !Eof( ) .AND. xFilial("SL2") == SL2->L2_FILIAL .AND. SL2->L2_NUM == SL1->L1_NUM
+		
+		nContador++
+		
+		dbSelectArea("SL2")
+		Reclock( "SL2",.F.,.T.)
+		Replace L2_DOC     with ""
+		Replace L2_SERIE   With ""
+		Replace L2_PDV     With ""
+		Replace L2_VENDIDO with " "
+		If SL1->L1_JUROS > 0
+			Replace L2_VLRITEM With (((L2_PRCTAB * L2_QUANT) - L2_VALDESC) - L2_DESCPRO)
+			Replace L2_VRUNIT  With (L2_VLRITEM/L2_QUANT)
+		EndIf
+		dbSkip()
+	End
+	Reclock( "SL1" ,.F.,.T.)
+	
+	Replace L1_DOC      with ""
+	Replace L1_SERIE    with ""
+	Replace L1_PDV      with ""
+	Replace L1_EMISNF   with Ctod(" ")
+	Replace L1_TIPO     with ""
+	Replace L1_VALBRUT  with SL1->L1_VLRTOT
+	Replace L1_VALMERC  with SL1->L1_VLRLIQ
+	Replace L1_DINHEIRO with 0
+	Replace L1_CHEQUES  with 0
+	Replace L1_CARTAO   with 0
+	Replace L1_CONVENI  with 0
+	Replace L1_VALES    with 0
+	Replace L1_FINANC   with 0
+	Replace L1_OUTROS   with 0
+	Replace L1_VLRDEBI  with 0
+	Replace L1_VENDTEF  with ""
+	Replace L1_NUMCFIS  with ""
+	Replace L1_OPERADO  with ""
+	Replace L1_BLCRED   with ""
+	If lCrdxInt .AND. SL1->(FieldPos("L1_CONTRA")) > 0
+		Replace L1_CONTRA  with ""
+	Endif
+	//зддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддд©
+	//   Zera os campos de troco...                                                                             |
+	//юддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддды
+	If cPaisLoc <> "BRA"
+		For nI := 1 To MoedFin()
+			cCpoTroco := "L1_TROCO"+AllTrim(Str(nI))
+			If SL1->(FieldPos(cCpoTroco)) > 0
+				SL1->(FieldPut(FieldPos(cCpoTroco),0))
+			EndIf
+		Next nI
+	EndIf
+	MsUnlock()
+	
+	SEF->(DbSetOrder(1))
+	SE1->(DbSetOrder(1))
+	dbCommitAll()
+	
+	If ExistBlock("LOJA140")
+		ExecBlock("LOJA140",.F.,.F.)
+	EndIf
+EndIf
+Return .T.
+
+
+/*/
+эээээээээээээээээээээээээээээээээээээээээээээээээээээээээээээээээээээээээээээ
+╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠
+╠╠зддддддддддбддддддддддбдддддддбдддддддддддддддддддддддбддддддбдддддддддд©╠╠
+╠╠ЁFun┤└o    Ё lj140Exc Ё Autor Ё Mario Angelo          Ё Data Ё 04.04.95 Ё╠╠
+╠╠цддддддддддеддддддддддадддддддадддддддддддддддддддддддаддддддадддддддддд╢╠╠
+╠╠ЁDescri┤└o Ё Programa de exclusao de Orcamentos                         Ё╠╠
+╠╠цддддддддддедддддддддддддддддддддддддддддддддддддддддддддддддддддддддддд╢╠╠
+╠╠ЁSintaxe   Ё lj140ExcOrc(ExpC1)                                         Ё╠╠
+╠╠цддддддддддедддддддддддддддддддддддддддддддддддддддддддддддддддддддддддд╢╠╠
+╠╠ЁParametrosЁ ExpC1 - Filial utilizada para exclusao (reservas)          Ё╠╠
+╠╠цддддддддддедддддддддддддддддддддддддддддддддддддддддддддддддддддддддддд╢╠╠
+╠╠ЁUso       Ё Generico                                                   Ё╠╠
+╠╠цддддддддддеддддддбддддддддбдддддддддддддддддддддддддддддддддддддддддддд╢╠╠
+╠╠Ё  DATA    Ё BOPS ЁProgram.Ё MOTIVO DA ALTERACAO                        Ё╠╠
+╠╠цддддддддддеддддддеддддддддедддддддддддддддддддддддддддддддддддддддддддд╢╠╠
+╠╠Ё03/08/05  Ё083747ЁGeronimoЁMelhoria p/ na exclusao de venda com reservaЁ╠╠
+╠╠Ё          Ё      Ё        Ёexcluir a venda mas nao excluir orcamento   Ё╠╠
+╠╠юддддддддддаддддддаддддддддадддддддддддддддддддддддддддддддддддддддддддды╠╠
+╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠
+ъъъъъъъъъъъъъъъъъъъъъъъъъъъъъъъъъъъъъъъъъъъъъъъъъъъъъъъъъъъъъъъъъъъъъъъъъъъъъ
+/*/
+Function lj140ExcOrc( cFilRes )
+Local cFilL2    := SL2->( xFilial( "SL2" ) )
+Local cFilE1    := SE1->( xFilial( "SE1" ) )
+Local cFilL4    := SL4->( xFilial( "SL4" ) )
+Local cParcela  := IIf(GetMV("MV_1DUP")=="1","1","A")
+Local aRetCrd   := {}                       //Array  de retorno do cancelamento do contrato - integracao SIGACRD
+Local lCrdxInt  := CrdxInt()                //Controla se tem integracao com SIGACRD
+
+Default cFilRes := cFilAnt
+
+If !Empty( cFilL2 )
+	cFilL2 := cFilRes
+EndIf
+If !Empty( cFilE1 )
+	cFilE1 := cFilRes
+EndIf
+If !Empty( cFilL4 )
+	cFilL4 := cFilRes
+EndIf
+
+dbSelectArea( "SL2" )
+If MsSeek( cFilL2+SL1->L1_NUM )
+	While !Eof() .AND. cFilL2==L2_FILIAL .AND. L2_NUM == SL1->L1_NUM
+		//зддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддд©
+		//Ё Excluo o orcamento quando se trata de uma venda com reserva                               Ё
+		//юддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддды
+		IF Empty( SL1->L1_DOCPED)
+			Reclock( "SL2" ,.F.)
+			dbDelete()
+			MsUnlock()
+		Else
+			//здддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддд©
+			//Ё Nao excluo o orcamento quando se trata de uma venda com reserva, apenas limpo os campos da reserva Ё
+			//юдддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддды
+			Reclock( "SL2" ,.F.)
+			SL2->L2_FILRES		:= SPACE(TamSx3("L2_FILRES")[1])
+			SL2->L2_ORCRES		:= SPACE(TamSx3("L2_ORCRES")[1])
+			MsUnlock()
+		EndIf
+		dbSkip()
+	End
+EndIf
+
+dbSelectArea("SE1")
+dbSetOrder(1)
+If MsSeek(cFilE1+Space(3)+SL1->L1_NUM+cParcela+Substr(MVPROVIS,1,3))
+	While !Eof() .AND. cFilE1==E1_FILIAL .AND. E1_NUM == SL1->L1_NUM .AND. E1_TIPO == Substr(MVPROVIS,1,3)
+		Reclock("SE1",.F.)
+		dbDelete()
+		MsUnlock()
+		dbSkip()
+	End
+Endif
+
+//зддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддд©
+//|     Se usar os modulos de gestao de concessionarias chama a funcao que grava os relacionamentos.        |
+//юддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддды
+If GetMv("MV_VEICULO") == "S"
+	If !Empty(SL1->L1_VEICTIP) .AND. !Empty(SL1->L1_VEIPESQ)
+		FG_DEVLOJA(SL1->L1_VEICTIP,SL1->L1_VEIPESQ,"","")
+	EndIf
+EndIf
+
+If lCrdxInt .AND. SL1->(FieldPos("L1_CONTRA")) > 0
+	If !Empty(SL1->L1_CONTRA)
+		aRetCrd      := aClone(CrdxVenda( "3"  ,{"",""}  ,SL1->L1_CONTRA  ,.F.  ,;
+		NIL  ,NIL ))
+	EndIf
+EndIf
+
+//зддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддд©
+//Ё Nao excluo o orcamento quando se trata de uma venda com reserva                           Ё
+//юддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддды
+IF Empty( SL1->L1_DOCPED)
+	dbSelectArea( "SL4" )
+	If MsSeek( cFilL4+SL1->L1_NUM )
+		While !Eof() .AND. cFilL4==L4_FILIAL .AND. L4_NUM == SL1->L1_NUM
+			Reclock("SL4",.F.)
+			dbDelete()
+			MsUnlock()
+			dbSkip()
+		End
+	EndIf
+EndIf
+
+//зддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддд©
+//Ё Nao excluo o orcamento quando se trata de uma venda com reserva                           Ё
+//Ё Apenas retorno seus campos ao conteudo original para permitir a reutilizacao do orcamento Ё
+//юддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддды
+dbSelectArea( "SL1" )
+IF Empty( SL1->L1_DOCPED)
+	Reclock( "SL1" ,.F.)
+	dbDelete()
+	MsUnlock()
+Else
+	Reclock( "SL1" ,.F.)
+	SL1->L1_PDV		:= SPACE(TamSx3("L1_PDV")[1])
+	SL1->L1_EMISNF	:= CTOD("")
+	SL1->L1_TIPO	:= SPACE(TamSx3("L1_TIPO")[1])
+	SL1->L1_OPERADO	:= SPACE(TamSx3("L1_OPERADO")[1])
+	SL1->L1_DOCPED	:= SPACE(TamSx3("L1_DOCPED")[1])
+	SL1->L1_SERPED	:= SPACE(TamSx3("L1_SERPED")[1])
+	MsUnlock()
+Endif
+
+
+//здддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддд©
+//ЁInclusao de chamada de Ponto de Entrada - Template.                       Ё
+//юдддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддды
+
+If ExistTemplate("LOJA140B")
+	ExecTemplate("LOJA140B",.F.,.F.)
+EndIf
+
+If ExistBlock("LOJA140B")
+	ExecBlock("LOJA140B",.F.,.F.)
+EndIf
+
+Return .T.
+
+/*
+эээээээээээээээээээээээээээээээээээээээээээээээээээээээээээээээээээээээээээээ
+╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠
+╠╠иммммммммммямммммммммммкммммммяммммммммммммммммммммкммммммяммммммммммммм╩╠╠
+╠╠╨Programa  Ёlj140chkres╨Autor ЁAndre Alves Veiga   ╨ Data Ё  09/04/01   ╨╠╠
+╠╠лммммммммммьмммммммммммйммммммоммммммммммммммммммммйммммммоммммммммммммм╧╠╠
+╠╠╨Desc.     ЁNo cancelamento da venda verifica se ha reservas em aberto  ╨╠╠
+╠╠╨          Ё                                                            ╨╠╠
+╠╠лммммммммммьмммммммммммммммммммммммммммммммммммммммммммммммммммммммммммм╧╠╠
+╠╠╨Uso       Ё AP6                                                        ╨╠╠
+╠╠хммммммммммомммммммммммммммммммммммммммммммммммммммммммммммммммммммммммм╪╠╠
+╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠
+ъъъъъъъъъъъъъъъъъъъъъъъъъъъъъъъъъъъъъъъъъъъъъъъъъъъъъъъъъъъъъъъъъъъъъъъъъъъъъ
+*/
+Function lj140chkres(lVendido)
+Local nX
+Local aReservas 	:= {}
+Local nPosProduto 	:= aScan(aHeader,{|x| Alltrim(Upper(x[2]))=="L2_PRODUTO"})
+Local nPosDescPro 	:= aScan(aHeader,{|x| Alltrim(Upper(x[2]))=="L2_DESCRI"})
+Local nPosLocal  	:= aScan(aHeader,{|x| Alltrim(Upper(x[2]))=="L2_LOCAL"})
+Local nPosReserva  	:= aScan(aHeader,{|x| Alltrim(Upper(x[2]))=="L2_RESERVA"})
+Local nPosLojaRes  	:= aScan(aHeader,{|x| Alltrim(Upper(x[2]))=="L2_LOJARES"})
+Local cLojaLocal	:= ""
+Local cLojaReserva	:= ""
+Local lRet	 		:= .T.
+Local cTexto 		:= If(lVendido,STR0032,STR0033) //"do orГamento"###"da venda"
+Local nRegs         := Len(aCols)
+Local cOrcPai       := ""
+Local nCntRes       := 0
+Local lLjPrdRes		:= ExistBlock("LJPRDRES")
+Local lLjPrdResT	:= ExistTemplate("LJPRDRES")
+Local aLjPrdRes		:= {}  	// Retorno do P.E. LJPRDRES
+
+
+//зддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддд©
+//Ё Ponto de entrada para tratamento do cСdigo e descricao do produto             Ё
+//Ё Retorno a posicao da aCols que contem o codigo e a descricao do produto       Ё
+//юддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддды
+If lLjPrdResT
+	aLjPrdRes := ExecTemplate("LJPRDRES",.F.,.F.,{nPosProduto,nPosDescPro} )
+	If ValType(aLjPrdRes) == "A" .AND. Len(aLjPrdRes) >= 2
+		nPosProduto	:= aLjPrdRes[1]
+		nPosDescPro	:= aLjPrdRes[2]
+	Endif
+Endif
+
+If lLjPrdRes
+	aLjPrdRes := ExecBlock("LJPRDRES",.F.,.F.,{nPosProduto,nPosDescPro} )
+	If ValType(aLjPrdRes) == "A" .AND. Len(aLjPrdRes) >= 2
+		nPosProduto	:= aLjPrdRes[1]
+		nPosDescPro	:= aLjPrdRes[2]
+	Endif
+Endif
+
+//здддддддддддддддддддддддддддддддддддддддддд©
+//ЁPega o codigo da loja local               Ё
+//юдддддддддддддддддддддддддддддддддддддддддды
+dbSelectArea("SLJ")
+dbSetOrder(3)
+If MsSeek(xFilial("SLJ")+SM0->M0_CODIGO+SM0->M0_CODFIL)
+	cLojaLocal := SLJ->LJ_CODIGO
+Endif
+
+//здддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддд©
+//ЁVerifica se o foi feito Reserva para este orcamento, e se o mesmo veio pela venda assistida Ё
+//юдддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддды
+
+If !Empty( SL1->L1_DOCPED )
+	
+	cOrcPai := SL1->L1_NUM
+	SL1->( dbSetOrder( 1 ) )
+	
+	For nX := 1 to nRegs
+		If !Empty( GDFieldGet("L2_ORCRES",nX) )
+			nCntRes := aScan(aReservas,{|ExpA1| ExpA1[1]+ExpA1[2] == GDFieldGet("L2_FILRES",nX) + GDFieldGet("L2_ORCRES",nX)})
+			If nCntRes == 0
+				AAdd( aReservas, {GDFieldGet("L2_FILRES",nX), GDFieldGet("L2_ORCRES",nX)} )
+				nCntRes := Len( aReservas )
+			EndIf
+		EndIf
+		
+		SL1->( MsSeek( aReservas[nCntRes][1]+aReservas[nCntRes][2] )) //Filial da reserva + orcamento da reserva
+		If SL1->L1_TIPO == "V"
+			//зддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддд©
+			//|"Este pedido possui orcamentos finalizados, favor efetuar a devolucao do pedido pela rotina de trocas (LOJA020)" |
+			//юддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддды
+			MsgStop( STR0038, STR0006)
+			SL1->( MsSeek( xFilial("SL1")+cOrcPai ))
+			Return .F.
+		EndIf
+	Next nX
+	
+	For nX := 1 to Len( aReservas )
+		If SL1->( MsSeek( aReservas[nX][1]+aReservas[nX][2] ))
+			lj140ExcOrc( aReservas[nX][1] )
+		EndIf
+	Next nX
+	
+	SL1->(MsSeek( xFilial( "SL1" ) + cOrcPai ))
+Else
+	For nX := 1 to nRegs
+		If !Empty(aCols[nX][nPosReserva])
+			cLojaReserva := Iif(Empty(aCols[nX][nPosLojaRes]),cLojaLocal,aCols[nX][nPosLojaRes])
+			aAdd(aReservas, {aCols[nX][nPosReserva],cLojaReserva,aCols[nX][nPosProduto],aCols[nX][nPosLocal]} )
+		Endif
+	Next nX
+	
+	If !Empty(aReservas)
+		If !(LjCancRes(aReservas))
+			lRet := MsgYesNo(STR0034 + cTexto + "?") //"NЦo foi possМvel cancelar a reserva. Deseja continuar a exclusЦo "
+		Endif
+	Endif
+EndIf
+
+
+
+Return lRet
+
+/*/
+эээээээээээээээээээээээээээээээээээээээээээээээээээээээээээээээээээээээээээээ
+╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠
+╠╠зддддддддддбддддддддддбдддддддбдддддддддддддддддддддддбддддддбдддддддддд©╠╠
+╠╠ЁFun┤└o    Ё lj140AnulЁ Autor Ё Fernando Machima      Ё Data Ё 03.12.02 Ё╠╠
+╠╠цддддддддддеддддддддддадддддддадддддддддддддддддддддддаддддддадддддддддд╢╠╠
+╠╠ЁDescri┤└o Ё Programa de anulacao de notas fiscais                      Ё╠╠
+╠╠цддддддддддедддддддддддддддддддддддддддддддддддддддддддддддддддддддддддд╢╠╠
+╠╠ЁSintaxe   Ё lj140Anul(ExpC1,ExpN1,ExpN2)                               Ё╠╠
+╠╠цддддддддддедддддддддддддддддддддддддддддддддддддддддддддддддддддддддддд╢╠╠
+╠╠ЁParametrosЁ ExpC1 = Alias do arquivo                                   Ё╠╠
+╠╠Ё          Ё ExpN1 = Numero do registro                                 Ё╠╠
+╠╠Ё          Ё ExpN2 = Opcao selecionada                                  Ё╠╠
+╠╠цддддддддддедддддддддддддддддддддддддддддддддддддддддддддддддддддддддддд╢╠╠
+╠╠Ё Uso      Ё Generico                                                   Ё╠╠
+╠╠юддддддддддадддддддддддддддддддддддддддддддддддддддддддддддддддддддддддды╠╠
+╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠
+ъъъъъъъъъъъъъъъъъъъъъъъъъъъъъъъъъъъъъъъъъъъъъъъъъъъъъъъъъъъъъъъъъъъъъъъъъъъъъ
+/*/
+Function lj140Anul(cAlias,nReg,nOpcx)
+
+Lj140Exc(cAlias,nReg,nOpcx)
+
+Return .T.
+
+//здддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддд©
+//ЁFuncao de legenda da tela											   Ё
+//юдддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддды
+Function Lj140Leg
+Local aLegenda := { {"BR_VERDE",	STR0039},; //"OrГamentos em aberto"
+{"BR_VERMELHO",	STR0040},; //"Vendas efetuadas"
+{"BR_AMARELO",	STR0041},; //"Orcamentos com reservas"
+{"BR_AZUL",		STR0042},; //"Pedidos encerrados"
+{"BR_PRETO",	STR0043},; //"Orcamentos em aberto vencidos"
+{"BR_MARROM",	STR0044} } //"DevoluГУes pendentes"
+BrwLegenda(STR0045,STR0046,aLegenda) //"Orcamentos"###"Legenda"
+Return .T.
+
+/*/
+эээээээээээээээээээээээээээээээээээээээээээээээээээээээээээээээээээээээээээээ
+╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠
+╠╠зддддддддддбдддддддддддбдддддддбдддддддддддддддддддддддбддддддбдддддддддд©╠╠
+╠╠ЁFun┤└o    Ё lj140ICOrcЁ Autor Ё Adrianne Furtado      Ё Data Ё 05.03.04 Ё╠╠
+╠╠цддддддддддедддддддддддадддддддадддддддддддддддддддддддаддддддадддддддддд╢╠╠
+╠╠ЁDescri┤└o Ё Programa de impressao e cancelamento de orГamentos		   Ё╠╠
+╠╠цддддддддддеддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддд╢╠╠
+╠╠ЁSintaxe   Ё lj140ICOrc(ExpA1)                                           Ё╠╠
+╠╠цддддддддддеддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддд╢╠╠
+╠╠ЁParametrosЁ ExpA1 = array de registros do orcamento                     Ё╠╠
+╠╠юддддддддддаддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддды╠╠
+╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠
+ъъъъъъъъъъъъъъъъъъъъъъъъъъъъъъъъъъъъъъъъъъъъъъъъъъъъъъъъъъъъъъъъъъъъъъъъъъъъъъ
+/*/
+Function Lj140ICOrc(aCols)
+Local cCodProd
+Local cDescriProd
+Local cQuant
+Local cVrUnit
+Local cDesconto
+Local cVlrItem
+Local cSitTrib
+Local cFormaPgtos
+Local cNomeForma
+Local cMensagem
+Local nAliquota
+Local nRet
+Local nX
+Local cTpSolCf := GetMV("MV_TPSOLCF")                  //Parametro para validacao do tipo de cliente para o calculo do solidario
+Local cUnidMed := " "
+
+MsgStop(STR0050 + Chr(10)+ Chr(13) + ; 		//"Esse cupom sera cancelado de forma "
+STR0051 + Chr(10)+ Chr(13) + ; 		//"automatica. Conforme lei estadual  "
+STR0052, STR0047)					//"vigente que regulamenta pre-venda. " // Atencao
+
+//здддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддд©
+//Ё Abre o cupom fiscal                                          Ё
+//юдддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддды
+nRet :=IFAbreCup( nHdlEcf )
+
+//здддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддд©
+//Ё Imprime os itens                                             Ё
+//юдддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддды
+if nRet == 0
+	dbSelectArea("SL2")
+	dbSetOrder(1)
+	MsSeek(xFilial("SL2")+SL1->L1_NUM)
+	//здддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддд©
+	//Ё Varre o aCols para imprimir os itens                          Ё
+	//юдддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддды
+	For nX = 1 to Len (aCols)
+		
+		SB1->(MsSeek(xFilial("SB1")+SL2->L2_PRODUTO))
+		
+		//здддддддддддддддддд©
+		//ЁPosiciona o SF4   Ё
+		//юдддддддддддддддддды
+		SF4->(MsSeek(xFilial("SF4")+SL2->L2_TES))
+		
+		//здддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддд©
+		//Ё Verifica a situacao tributaria do item                       Ё
+		//юдддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддды
+		If SF4->F4_ISS == "S"					// Servico
+			cSitTrib := "S" + AllTrim (Str( Iif(SB1->B1_ALIQISS>0,SB1->B1_ALIQISS,GetMv("MV_ALIQISS")),5,2 ))
+			
+		ElseIf SB1->B1_PICMRET > 0 .AND. SA1->A1_TIPO $ cTpSolCf
+			cSitTrib := "F"						// Substituicao tributaria (Icms Solidario)
+			
+		ElseIf SF4->F4_BASEICM > 0 .AND. SF4->F4_BASEICM < 100
+			cSitTrib := "T" + Alltrim(Str( SB0->B0_ALIQRED,5,2 ))		  // com reducao de Icms na Base
+			
+		ElseIf SF4->F4_LFICM == "I"			// Isento
+			cSitTrib := "I"
+			
+		ElseIf SF4->F4_LFICM == "N"			// N└o sujeito a ICMS
+			cSitTrib := "N"
+			
+		Else									// Com ICMS
+			nAliquota := AliqIcms("N","S",SA1->A1_TIPO,"I")
+			cSitTrib := "T" + Alltrim(Str(nAliquota,5,2))
+			
+		EndIf
+		
+		//здддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддд©
+		//Ё Trata as variaveis para o registro do item                   Ё
+		//юдддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддды
+		cCodProd 		:= aCols[nX][gdFieldPos("L2_PRODUTO")]
+		cDescriProd		:= SubStr(aCols[nX][gdFieldPos("L2_DESCRI")] + Space(30),1,30)
+		cQuant 			:= StrZero(aCols[nX][gdFieldPos("L2_QUANT")],7,2)
+		cVrUnit			:= Str(aCols[nX][gdFieldPos("L2_VRUNIT")],10,4)
+		cDesconto		:= Str(aCols[nX][gdFieldPos("L2_VALDESC")],8,2)
+		cVlrItem		:= Str(Val(cVrUnit) * Val(cQuant),11,2)
+		cUnidMed        := SB1->B1_UM
+		
+		//здддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддд©
+		//Ё Imprime o item                                               Ё
+		//юдддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддды
+		nRet := IFRegItem( nHdlECF, cCodProd, cDescriProd, cQuant, cVrUnit, cDesconto, cSitTrib, cVlrItem, cUnidMed )
+		If nRet == 1
+			MsgStop(STR0053, STR0047) 			//"Falha em Registrar item" // Atencao
+			Return .F.
+		Endif
+		
+		dbSelectArea("SL2")
+		dbSkip()
+	Next nX
+Else
+	MsgStop(STR0054, STR0047) 				//"Problemas na abertura do cupom" //Atencao
+	Return .F.
+EndIf
+
+If SL1->L1_DESCONT > 0
+	nRet := IfDescTot( nHdlECF, Alltrim(Str(SL1->L1_DESCONT,10,2)))
+EndIf
+
+If nRet == 1
+	MsgStop(STR0055, STR0047) 			//"Falha no registro do desconto no total" //Atencao
+	Return .F.
+EndIf
+
+//здддддддддддддддддд©
+//ЁPosiciona o SL4   Ё
+//юдддддддддддддддддды
+SL4->(MsSeek(xFilial("SL4")+SL1->L1_NUM))
+
+//зддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддд©
+//ЁMonta a string cFormaPgtos para enviar para o ECF                Ё
+//юддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддды
+cFormaPgtos := ''
+nTotalPgtos := 0
+While (nTotalPgtos < SL1->L1_VLRLIQ) .AND. (SL4->L4_NUM == SL1->L1_NUM)
+	If Trim(SL4->l4_FORMA) == ''
+		cNomeForma := Alltrim(Tabela("24",GetMV("MV_SIMB1"),.F.))
+	ElseIf Trim(SL4->L4_FORMA) == 'R$'
+		cNomeForma := Alltrim(Tabela("24",AllTrim(SL4->L4_FORMA),.F.))
+		
+	ElseIf Trim(SL4->L4_FORMA) == 'CH'
+		cNomeForma := Alltrim(Tabela("24",AllTrim(SL4->L4_FORMA),.F.))
+		
+	ElseIf GetMv("MV_LJPAGTO") == 1									//Busca da Tabela 24 do SX5
+		cNomeForma := Alltrim(Tabela("24",AllTrim(SL4->L4_FORMA),.F.))
+		
+	Else
+		cNomeForma := Trim(Substr(SL4->L4_ADMINIS,7,14))
+		
+	EndIf
+	
+	cFormaPgtos += Trim(cNomeForma) + "|" + Alltrim(Str(SL4->L4_VALOR)) + "|"
+	nTotalPgtos += SL4->L4_VALOR
+	SL4->(dbSkip())
+End Do
+
+//зддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддд©
+//ЁEnvia as formas de pagamento para o ECF                          Ё
+//юддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддды
+nRet := IFPagto( nHdlECF, cFormaPgtos  )
+If nRet == 1
+	MsgStop(STR0056, STR0047) 						//"Falha no registro de pagamento"
+	Return .F.
+EndIf
+
+//зддддддддддддддддддддддддддддддддддддддддддддддддд©
+//Ё Fecha o cupom e imprime a mensagem promocional  Ё
+//юддддддддддддддддддддддддддддддддддддддддддддддддды
+cMensagem := STR0011  + SL1->L1_NUM + Chr(10)+ Chr(13) + ; 	//"Or┤amento:"
+STR0050 + Chr(10)+ Chr(13) + ; 					//"Esse cupom sera cancelado de forma "
+STR0051 + Chr(10)+ Chr(13) + ; 					//"automatica. Conforme lei estadual  "
+STR0052											//"vigente que regulamenta pre-venda. "
+
+nRet := IFFechaCup( nHdlECF, cMensagem )
+If nRet == 1
+	MsgStop(STR0057, STR0047) 						//"Falha no fechamento do cupom" // Atencao
+	Return .F.
+EndIf
+
+nRet := IfCancCup(nHdlECF)
+If nRet == 1
+	MsgStop(STR0058, STR0047) 	 					//"Falha no cancelamento do cupom"
+	Return .F.
+EndIf
+
+Return .T.
+
+/*/
+эээээээээээээээээээээээээээээээээээээээээээээээээээээээээээээээээээээээээээээ
+╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠
+╠╠зддддддддддбдддддддддддбдддддддбдддддддддддддддддддддддбддддддбдддддддддд©╠╠
+╠╠ЁFun┤└o    ЁLj140GeraNCЁ Autor Ё Fernando Machima      Ё Data Ё 03.05.04 Ё╠╠
+╠╠цддддддддддедддддддддддадддддддадддддддддддддддддддддддаддддддадддддддддд╢╠╠
+╠╠ЁDescri┤└o Ё Gerar Nota de Credito para o cancelamento - Loc. Guatemala  Ё╠╠
+╠╠цддддддддддеддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддд╢╠╠
+╠╠ЁSintaxe   Ё Lj140GeraNCC(ExpA1,ExpA2,ExpN1)                             Ё╠╠
+╠╠цддддддддддеддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддд╢╠╠
+╠╠ЁParametrosЁ ExpA1 = array com os dados da NF cancelada                  Ё╠╠
+╠╠ЁParametrosЁ ExpA2 = array com os dados dos itens da NF cancelada        Ё╠╠
+╠╠ЁParametrosЁ ExpN1 = iteracao                                            Ё╠╠
+╠╠юддддддддддаддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддды╠╠
+╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠
+ъъъъъъъъъъъъъъъъъъъъъъъъъъъъъъъъъъъъъъъъъъъъъъъъъъъъъъъъъъъъъъъъъъъъъъъъъъъъъъ
+/*/
+Static Function Lj140GeraNCC(aItensSF2,aItensSD2,nI)
+
+Local cEstado  := ""
+Local cItemOri := ""
+Local cItem    := ""
+Local cCampo   := ""
+Local cTESNCC  := ""
+Local nX, nY
+Local nItem    := 0
+Local nTamItem := TamSX3("D1_ITEM")[1]
+Local nTotItens:= 0
+Local nPosCols := 1
+Local nPosRow  := 0
+Local nPosCpo  := 0
+Local nValImps := 0
+Local aTesImpInf  := {}
+Local aImps    := {}
+Local aCustoDev:= {}
+Local aGetBook := {}
+Local aLivro   := {}
+Local aImpVarSF1 := {}
+
+Private aImpVarSD1 := {0,0,0,0,0,{}}
+
+SA1->(DbSetOrder(1))
+If SA1->(MsSeek(xFilial("SA1")+aItensSF2[nI][3]+aItensSF2[nI][4]))
+	cEstado  := SA1->A1_EST
+EndIf
+
+RecLock("SF1",.T.)
+Replace F1_FILIAL	With xFilial("SF1")
+Replace F1_DOC   	With cNumNFDev
+Replace F1_SERIE	With cSerieDev
+Replace F1_FORNECE 	With aItensSF2[nI][3]
+Replace F1_LOJA	 	With aItensSF2[nI][4]
+Replace F1_EMISSAO 	With dDataBase
+Replace F1_DTDIGIT 	With dDataBase
+Replace F1_TIPO	 	With "D"
+Replace F1_ESPECIE 	With "NCC"
+Replace F1_EST 	 	With cEstado
+Replace F1_FORMUL  	With "S"
+Replace F1_MOEDA  	With aItensSF2[nI][7]
+Replace F1_TXMOEDA 	With aItensSF2[nI][8]
+Replace F1_TIPODOC 	With "04"
+Replace F1_VALMERC 	With aItensSF2[nI][6]
+Replace F1_VALBRUT 	With aItensSF2[nI][5]
+If cPaisLoc == "GUA"
+	Replace F1_MOTIVO 	With cMotivo
+	If FieldPos("F1_MANUAL") > 0
+		Replace F1_MANUAL With Iif(lNFManual,"S","N")
+	EndIf
+EndIf
+
+For nX := 1 to Len(aItensSD2)
+	nTotItens  += aItensSD2[nX][7]
+Next nX
+
+nItem  := 1
+While aItensSD2[nItem][15] == aItensSF2[nI][1] .AND. ;
+	aItensSD2[nItem][16] == aItensSF2[nI][2]
+	
+	cItem  :=  StrZero(nItem,nTamItem)
+	
+	SB1->(DbSetOrder(1))
+	SB1->(MsSeek(xFilial("SB1")+aItensSD2[nItem][2]))
+	
+	SF4->(DbSetOrder(1))
+	SF4->(MsSeek(xFilial("SF4")+aItensSD2[nItem][9]))
+	cTESNCC  := IIf(!Empty(SF4->F4_TESNCC),SF4->F4_TESNCC,GetMV("MV_TESTROC"))
+	SF4->(MsSeek(xFilial("SF4")+cTESNCC))
+	
+	aCustoDev := {aItensSD2[nItem][17]/aItensSD2[nItem][5],;
+	aItensSD2[nItem][18]/aItensSD2[nItem][5],;
+	aItensSD2[nItem][19]/aItensSD2[nItem][5],;
+	aItensSD2[nItem][20]/aItensSD2[nItem][5],;
+	aItensSD2[nItem][21]/aItensSD2[nItem][5]}
+	
+	//зддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддд©
+	//Ё Calcular os impostos variaveis                              Ё
+	//юддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддды
+	aImpVarSD1 := {0,0,0,0,0,{}}
+	aImpVarSD1[1] := aItensSD2[nItem][5]
+	aImpVarSD1[2] := aItensSD2[nItem][6]
+	aImpVarSD1[3] := aItensSD2[nItem][7]
+	nPosRow  := nItem
+	CalcTesxIp("E",nTotItens,aItensSD2[nItem][14],aItensSD2[nItem][2],nPosCols,nPosRow,"RAPIDA")
+	
+	Reclock("SD1",.T.)
+	Replace D1_FILIAL  	With xFilial("SD1")
+	Replace D1_COD 	 	With aItensSD2[nItem][2]
+	Replace D1_UM		With aItensSD2[nItem][3]
+	Replace D1_SEGUM		With aItensSD2[nItem][4]
+	Replace D1_GRUPO	    With aItensSD2[nItem][13]
+	Replace D1_TIPO	 	With "D"
+	Replace D1_ORIGLAN	With "LO"
+	Replace D1_TP		With SB1->B1_TIPO
+	Replace D1_NUMSEQ  	With ProxNum()
+	Replace D1_QUANT	    With aItensSD2[nItem][5]
+	Replace D1_VUNIT	    With aItensSD2[nItem][6]
+	Replace D1_TOTAL	    With aItensSD2[nItem][7]
+	Replace D1_TES 	 	With cTESNCC
+	Replace D1_FORNECE 	With aItensSD2[nItem][11]
+	Replace D1_LOJA	 	With aItensSD2[nItem][12]
+	Replace D1_DOC 	 	With cNumNFDev
+	Replace D1_SERIE	    With cSerieDev
+	Replace D1_EMISSAO 	With dDataBase
+	Replace D1_DTDIGIT 	With dDataBase
+	Replace D1_NFORI	    With aItensSD2[nItem][15]
+	Replace D1_SERIORI 	With aItensSD2[nItem][16]
+	Replace D1_ITEMORI   With aItensSD2[nItem][1]
+	Replace D1_NUMCQ   	With xNumCaixa()
+	Replace D1_LOCAL	    With aItensSD2[nItem][8]
+	Replace D1_ITEM	 	With cItem
+	Replace D1_CF		With aItensSD2[nItem][10]
+	Replace D1_ESPECIE   With "NCC"
+	Replace D1_FORMUL  	With "S"
+	Replace D1_TIPODOC 	With "04"
+	Replace D1_CUSTO     With aCustoDev[1]
+	Replace D1_CUSTO2    With aCustoDev[2]
+	Replace D1_CUSTO3    With aCustoDev[3]
+	Replace D1_CUSTO4    With aCustoDev[4]
+	Replace D1_CUSTO5    With aCustoDev[5]
+	
+	//   Replace D1_DESC    	With aCols[nC][nPosDesc]
+	//   Replace D1_VALDESC 	With aCols[nC][nPosValDesc]
+	
+	//зддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддд©
+	//Ё Gravar os impostos variaveis no detalhe da Nota de Credito  Ё
+	//юддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддды
+	For nX := 1 To Len(aImpVarSD1[6])
+		If Substr(aImpVarSD1[6,nX,7],3,7) == "_BASIMP"
+			cCampo   := "D1"+Substr(aImpVarSD1[6,nX,7],3,8)
+			nPosCpo  := FieldPos(cCampo)
+			FieldPut(nPosCpo,aImpVarSD1[6,nX,3])
+		EndIf
+		
+		If Substr(aImpVarSD1[6,nX,6],3,7) == "_VALIMP"
+			cCampo   := "D1"+Substr(aImpVarSD1[6,nX,6],3,8)
+			nPosCpo  := FieldPos(cCampo)
+			FieldPut(nPosCpo,aImpVarSD1[6,nX,4])
+			//зддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддд©
+			//|    Soma os impostos discriminados                                                                       |
+			//юддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддды
+			If Substr(aImpVarSD1[6,nX,5],2,1) == "1"
+				nValImps  += aImpVarSD1[6,nX,4]
+			EndIf
+		EndIf
+	Next nX
+	MsUnlock()
+	
+	//зддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддд©
+	//Ё Gerar os impostos variaveis para gravar no cabecalho da NCC Ё
+	//юддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддды
+	For nX := 1 To Len( aImpVarSD1[6] )
+		If (nY := aScan( aImpVarSF1,{|x| x[1] == aImpVarSD1[6,nX,8] } )) == 0
+			AAdd( aImpVarSF1, { aImpVarSD1[6,nX,8], 0.00, aImpVarSD1[6,nX,2], aImpVarSD1[6,nX,1] } )
+			nY := Len( aImpVarSF1 )
+		EndIf
+		aImpVarSF1[ nY,2 ] += aImpVarSD1[6,nX,4]
+		
+		If (nY := aScan( aImpVarSF1,{|x| x[1] == aImpVarSD1[6,nX,9] } )) == 0
+			AAdd( aImpVarSF1, { aImpVarSD1[6,nX,9], 0.00, aImpVarSD1[6,nX,2], aImpVarSD1[6,nX,1] } )
+			nY := Len( aImpVarSF1 )
+		EndIf
+		aImpVarSF1[ nY,2 ] += aImpVarSD1[6,nX,3]
+	Next nX
+	
+	SA1->(DbSetOrder(1))
+	SA1->(MsSeek(xFilial("SA1")+SF1->F1_FORNECE+SF1->F1_LOJA))
+	
+	//зддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддд©
+	//Ё Gerar o registro do Livro Fiscal                            Ё
+	//юддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддды
+	aLivro := GetBook(@aGetBook, aImpVarSD1, "V", aItensSF2[nI][8], aLivro, "E" )
+	
+	nItem++
+	If nItem > Len(aItensSD2)
+		Exit
+	EndIf
+End
+
+//зддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддд©
+//Ё Gravar os impostos variaveis no cabecalho da Nota de CreditoЁ
+//юддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддды
+For nX := 1 To Len(aImpVarSF1)
+	aImpVarSF1[nX,1] := "F1"+Substr(aImpVarSF1[nX,1],3,8)
+Next nX
+RecLock("SF1",.F.)
+For nX := 1 To Len(aImpVarSF1)
+	If (aImpVarSF1[nX,2] > 0)
+		nPosCpo := FieldGet(FieldPos(aImpVarSF1[nX,1]))+aImpVarSF1[nX,2]
+		SF1->( FieldPut( FieldPos( aImpVarSF1[nX,1] ),nPosCpo ) )
+	EndIf
+Next nX
+SF1->F1_VALBRUT  := nTotItens + nValImps
+MsUnLock()
+
+//здддддддддддддддддддддддддддддддддддддддддддддддддддддддддддд©
+//Ё Gravar Registro nos Livros Fiscais...			           Ё
+//юдддддддддддддддддддддддддддддддддддддддддддддддддддддддддддды
+For nX := 2 To Len( aLivro )
+	RecLock( "SF3",.T. )
+	For nY := 1 To Len( aLivro[1] )
+		SF3->( FieldPut(FieldPos(aLivro[1,nY]),aLivro[nX,nY]) )
+	Next nY
+	Replace F3_FILIAL  With xFilial("SF3")
+	Replace F3_FORMUL  With "S"
+	Replace F3_ESPECIE With "NCC"
+	Replace F3_TIPO    With "D"
+	Replace F3_CLIEFOR With aItensSF2[nI][3]
+	Replace F3_LOJA	  With aItensSF2[nI][4]
+	MsUnLock()
+Next nX
+
+Return .T.
+
+/*/
+эээээээээээээээээээээээээээээээээээээээээээээээээээээээээээээээээээээээээээээ
+╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠
+╠╠зддддддддддбдддддддддддбдддддддбдддддддддддддддддддддддбддддддбдддддддддд©╠╠
+╠╠ЁFun┤└o    ЁLj140ManualЁ Autor Ё Fernando Machima      Ё Data Ё 22.06.04 Ё╠╠
+╠╠цддддддддддедддддддддддадддддддадддддддддддддддддддддддаддддддадддддддддд╢╠╠
+╠╠ЁDescri┤└o Ё Pede confirmacao para NCC Manual                            Ё╠╠
+╠╠цддддддддддеддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддд╢╠╠
+╠╠ЁSintaxe   Ё Lj140Manual()                                               Ё╠╠
+╠╠цддддддддддеддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддд╢╠╠
+╠╠ЁUso       ЁLOJA140                                                      Ё╠╠
+╠╠юддддддддддаддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддды╠╠
+╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠
+ъъъъъъъъъъъъъъъъъъъъъъъъъъъъъъъъъъъъъъъъъъъъъъъъъъъъъъъъъъъъъъъъъъъъъъъъъъъъъъ
+/*/
+Function Lj140Manual()
+
+Local lRet   := .T.
+Local nOpcao := 1
+
+If cPaisLoc == "GUA" .AND. lNFManual
+	nOpcao := Aviso(STR0006,STR0073,{STR0074,STR0075}) //"Aten┤└o"###"Sera gravada uma Nota de Credito MANUAL. Confirma a operacao?"###"Confirma"###"Cancela"
+	If nOpcao == 2
+		lRet  := .F.
+	EndIf
+EndIf
+
+Return (lRet)

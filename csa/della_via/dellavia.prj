@@ -1,0 +1,201 @@
+Group Della Via
+   Version=7.0
+   VSSDB=
+   HasProperties=1
+   Properties
+      BeforeApply=
+      AfterApply=
+      Icon=
+      ID=
+      Version=
+      PalmName=
+      OutPut=
+   End
+   ProjectsCount=2
+   Project Projeto Della Via
+      FoldersCount=8
+      Folder Faturamento
+         VSSPath=Definições
+         FilesCount=3
+         File \my projects\Della Via\RFATR01.PRW
+             Type=T
+         End
+         File \my projects\Della Via\RFATA01.prw
+             Type=T
+         End
+         File \my projects\Della Via\Mt089.PRW
+             Type=T
+         End
+      End
+      Folder Importação
+         VSSPath=Nova Pasta3
+         FilesCount=3
+         File \my projects\Della Via\arqrecep.prw
+             Type=T
+         End
+         File \my projects\Della Via\AcertaSAD.prw
+             Type=T
+         End
+         File \my projects\Della Via\IE_Cli.prw
+             Type=T
+         End
+      End
+      Folder Configurador
+         VSSPath=Nova Pasta4
+         FilesCount=2
+         File \my projects\Della Via\rcfga03.PRW
+             Type=T
+         End
+         File \my projects\Della Via\Sispag\rfine10.prw
+             Type=T
+         End
+      End
+      Folder LP Faturamento
+         VSSPath=Nova Pasta5
+         FilesCount=2
+         File \my projects\Della Via\DV_LP650.prw
+             Type=T
+         End
+         File \my projects\Della Via\DV_CC650.prw
+             Type=T
+         End
+      End
+      Folder Financeiro
+         VSSPath=Nova Pasta6
+         FilesCount=4
+         File \my projects\Controladoria\AGESAFRA.PRW
+             Type=T
+         End
+         File \my projects\Controladoria\sisp422.prW
+             Type=T
+         End
+         File \Controladoria bkp\FTI_FINA470.prw
+             Type=T
+         End
+         File \my projects\Control\Fa200pos.prw
+             Type=T
+         End
+      End
+      Folder Estoque
+         VSSPath=Nova Pasta6
+         FilesCount=3
+         File \my projects\Della Via\A260Loc.prw
+             Type=T
+         End
+         File \my projects\Della Via\A261Loc.prw
+             Type=T
+         End
+         File \my projects\materiais\SF1100I.prw
+             Type=T
+         End
+      End
+      Folder Call Center
+         VSSPath=Nova Pasta7
+         FilesCount=2
+         File \my projects\Della Via\TK280SU5.prw
+             Type=T
+         End
+         File \my projects\Della Via\TmkUser.prw
+             Type=T
+         End
+      End
+      Folder Sispag
+         VSSPath=Nova Pasta8
+         FilesCount=29
+         File \my projects\Della Via\Sispag\vlcodbar.prx
+             Type=T
+         End
+         File \my projects\Della Via\Sispag\CODBAR.PRG
+             Type=T
+         End
+         File \my projects\Della Via\Sispag\codbarvl.prx
+             Type=T
+         End
+         File \my projects\Della Via\Sispag\CodBarVl2.prw
+             Type=T
+         End
+         File \my projects\Della Via\Sispag\digver.prx
+             Type=T
+         End
+         File \my projects\Della Via\Sispag\f240arq.prw
+             Type=T
+         End
+         File \my projects\Della Via\Sispag\f240sum.prw
+             Type=T
+         End
+         File \my projects\Della Via\Sispag\fa300oco.prw
+             Type=T
+         End
+         File \my projects\Della Via\Sispag\nomebco.prx
+             Type=T
+         End
+         File \my projects\Della Via\Sispag\rfine01.prw
+             Type=T
+         End
+         File \my projects\Della Via\Sispag\rfine02.prw
+             Type=T
+         End
+         File \my projects\Della Via\Sispag\rfine03.prw
+             Type=T
+         End
+         File \my projects\Della Via\Sispag\rfine04.prw
+             Type=T
+         End
+         File \my projects\Della Via\Sispag\rfine05.prw
+             Type=T
+         End
+         File \my projects\Della Via\Sispag\rfine06.prw
+             Type=T
+         End
+         File \my projects\Della Via\Sispag\rfine07.prw
+             Type=T
+         End
+         File \my projects\Della Via\Sispag\rfine08.prw
+             Type=T
+         End
+         File \my projects\Della Via\Sispag\rfine09.prw
+             Type=T
+         End
+         File \my projects\Della Via\Sispag\rfine10.prw
+             Type=T
+         End
+         File \my projects\Della Via\Sispag\rfine11.prw
+             Type=T
+         End
+         File \my projects\Della Via\Sispag\rfine12.prw
+             Type=T
+         End
+         File \my projects\Della Via\Sispag\rfine13.prw
+             Type=T
+         End
+         File \my projects\Della Via\Sispag\rfine20.prw
+             Type=T
+         End
+         File \my projects\Della Via\Sispag\rfine21.prw
+             Type=T
+         End
+         File \my projects\Della Via\Sispag\sisp001.prw
+             Type=T
+         End
+         File \my projects\Della Via\Sispag\sisp002.prx
+             Type=T
+         End
+         File \my projects\Della Via\Sispag\sisp003.prx
+             Type=T
+         End
+         File \my projects\Della Via\Sispag\valimp.prx
+             Type=T
+         End
+         File \my projects\Della Via\Sispag\campfree.prx
+             Type=T
+         End
+      End
+   End
+   Project Sigaloja
+      FoldersCount=1
+      Folder Pontos de Entrada
+         VSSPath=Nova Pasta1
+         FilesCount=0
+      End
+   End
+End

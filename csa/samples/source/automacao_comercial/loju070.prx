@@ -1,0 +1,1354 @@
+#INCLUDE "Rwmake.ch"
+#INCLUDE "LOJR0701.CH"
+#DEFINE LJ_MAXNUM	19			// BOPS 2135 - Data Width Error
+/*/
+ÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜ
+±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±
+±±ÚÄÄÄÄÄÄÄÄÄÄÂÄÄÄÄÄÄÄÄÄÄÂÄÄÄÄÄÄÄÂÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÂÄÄÄÄÄÄÂÄÄÄÄÄÄÄÄÄÄ¿±±
+±±³Fun‡…o    ³ LojR070	³ Autor ³ Raul Capeleti         ³ Data ³ 21.12.94 ³±±
+±±ÃÄÄÄÄÄÄÄÄÄÄÅÄÄÄÄÄÄÄÄÄÄÁÄÄÄÄÄÄÄÁÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÁÄÄÄÄÄÄÁÄÄÄÄÄÄÄÄÄÄ´±±
+±±³Descri‡…o ³ Mapa de Vendas                                             ³±±
+±±ÃÄÄÄÄÄÄÄÄÄÄÅÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ´±±
+±±³Sintaxe e ³ LojR070(void)                                              ³±±
+±±ÃÄÄÄÄÄÄÄÄÄÄÅÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ´±±
+±±³Parametros³ Nao tem                                                    ³±±
+±±ÃÄÄÄÄÄÄÄÄÄÄÅÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ´±±
+±±³ Uso      ³ Generico                                                   ³±±
+±±ÃÄÄÄÄÄÄÄÄÄÄÁÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ´±±
+±±³ ATUALIZACOES SOFRIDAS DESDE A CONSTRUCAO INICIAL.                     ³±±
+±±ÃÄÄÄÄÄÄÄÄÄÄÄÄÄÄÂÄÄÄÄÄÄÄÄÂÄÄÄÄÄÄÂÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ´±±
+±±³ PROGRAMADOR  ³ DATA   ³ BOPS ³	MOTIVO DA ALTERACAO                   ³±±
+±±ÃÄÄÄÄÄÄÄÄÄÄÄÄÄÄÅÄÄÄÄÄÄÄÄÅÄÄÄÄÄÄÅÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ´±±
+±±³ Edilson      ³11/12/01³011952³  Foi alterado o parametro da funcao    ³±±
+±±³              ³        ³      ³PesqPictQT de 10 para 12 posicoes, onde ³±±
+±±³              ³        ³      ³a mesma encontrava-se truncando os      ³±±
+±±³              ³        ³      ³campos totais de quantidade.            ³±±
+±±³ Edilson      ³11/12/01³011952³  Foi alterado a pesquisa para a chamada³±±
+±±³              ³        ³      ³do Grupo de Produtos da tabela SX5 para ³±±
+±±³              ³        ³      ³a tabela SBM.                           ³±±
+±±³ Edilson      ³19/12/01³011952³  Foi substituida a funcao PesqPictQt() ³±±
+±±³              ³        ³      ³nas funcoes de totais e sub-totais      ³±±
+±±³              ³        ³      ³evitando que estes campos sejam         ³±±
+±±³              ³        ³      ³truncados nna emissao do relatorio.     ³±±
+±±³ Edilson      ³17/01/02³012000³  Foi realizado o acerto para a pesq.   ³±±
+±±³              ³        ³      ³e totalizacao por filiais na emissao do ³±±
+±±³              ³        ³      ³relatorio.                              ³±±
+±±³ Edilson      ³23/01/02³XXXXXX³  Realizado acerto na pesquisa de       ³±±
+±±³              ³        ³      ³arquivos exclusivos e compartilhados.   ³±±
+±±³ Edilson      ³06/03/02³013819³  Incluido no titulo do relatorio os    ³±±
+±±³              ³        ³      ³parametros setados no instante da       ³±±
+±±³              ³        ³      ³emissao do mesmo.                       ³±±
+±±³ Edilson      ³06/03/02³013820³  Alterado o ponto de verificacao da    ³±±
+±±³              ³        ³      ³variavel lEnd permitindo ao usuario o   ³±±
+±±³              ³        ³      ³cancelamento do mesmo durante a Processo³±±
+±±³ Fernando S.  ³02/08/02³059144³  Retirado a coluna de desconto propor- ³±±
+±±³              ³        ³      ³cional, pois os seus valores serao acu- ³±±
+±±³              ³        ³      ³mulados no desconto por item.           ³±±
+±±ÀÄÄÄÄÄÄÄÄÄÄÄÄÄÄÁÄÄÄÄÄÄÄÄÁÄÄÄÄÄÄÁÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÙ±±
+±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±
+ßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßß
+/*/
+User Function LojU070()
+LOCAL cDesc1 := STR0001  // Imprime a rela‡„o das vendas considerando os parametros solicitados :
+LOCAL cDesc2 := STR0002  // Por Data de Venda, por Vendedor, por Produto, por Tipo, por Grupo de
+LOCAL cDesc3 := STR0003  // Produtos , por Clientes e por Caixa .
+LOCAL nA := 0
+LOCAL nB := 0
+LOCAL aRegs := {}
+
+// Protege rotina para que seja usada apenas no SIGALOJA / Front Loja
+If !AmIIn(12,23)
+	Return(.F.)
+EndIf
+
+PRIVATE wnrel
+PRIVATE tamanho:="G"
+PRIVATE cString:="SL1"
+PRIVATE titulo := STR0006  //Relacao de Vendas
+PRIVATE nLastKey := 0
+
+// Zebrado / Administracao
+PRIVATE aReturn := { STR0004, 1, STR0005, 1, 2, 1, "",1 }
+PRIVATE nomeprog:="LOJR070"
+PRIVATE cPerg := "LJR071"
+
+Pergunte( cPerg, .F. )
+
+/*
+ÚÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ¿
+³ Variaveis utilizadas para parametros ³
+ÃÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ´
+³ mv_par01 -> Data Inicial             ³
+³ mv_par02 -> Data Final               ³
+³ mv_par03 -> Vendedor Inicial         ³
+³ mv_par04 -> Vendedor Final           ³
+³ mv_par05 -> Produto Inicial          ³
+³ mv_par06 -> Produto Final            ³
+³ mv_par07 -> Tipo Inicial             ³
+³ mv_par08 -> Tipo Final               ³
+³ mv_par09 -> Grupo Inicial            ³
+³ mv_par10 -> Grupo Final              ³
+³ mv_par11 -> Cliente Inicial          ³
+³ mv_par12 -> Cliente Final            ³
+³ mv_par13 -> Caixa Inicial            ³
+³ mv_par14 -> Caixa Final              ³
+³ mv_par15 -> Totaliza Filiais         ³
+³ mv_par16 -> Inclui Devolucao         ³
+³ mv_par17 -> Da Filial                ³
+³ mv_par18 -> Ate Filial               ³
+³ mv_par19 -> Tipo Relatorio           ³
+³ mv_par20 -> Qual Moeda               ³
+³ mv_par21 -> Outras Moedas            ³
+ÀÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÙ*/
+
+wnrel := "LOJR070"            //Nome Default do relatorio em Disco
+
+// Por Data  / Por Vendedor / Por Produto / Por Tipo
+// Por Grupo / Por Cliente  / Por Caixa
+aOrd	:= {STR0007,STR0008,STR0009,STR0010,STR0011,STR0012,STR0013}
+wnrel := SetPrint(cString,wnrel,cPerg,@titulo,cDesc1,cDesc2,cDesc3,.F.,aOrd,,Tamanho,,.F.)
+
+If nLastKey != 27
+	SetDefault(aReturn,cString)
+   
+	If nLastKey != 27	
+		RptStatus({|lEnd| LJR070Imp(@lEnd,wnRel,cString)},Titulo)	
+	EndIf
+	
+End
+
+Return( Nil )
+
+/*/
+ÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜ
+±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±
+±±ÚÄÄÄÄÄÄÄÄÄÄÂÄÄÄÄÄÄÄÄÄÄÂÄÄÄÄÄÄÄÂÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÂÄÄÄÄÄÄÂÄÄÄÄÄÄÄÄÄÄ¿±±
+±±³Fun‡…o    ³ LjR070IMP³ Autor ³ Mario Angelo          ³ Data ³ 08.05.96 ³±±
+±±ÃÄÄÄÄÄÄÄÄÄÄÅÄÄÄÄÄÄÄÄÄÄÁÄÄÄÄÄÄÄÁÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÁÄÄÄÄÄÄÁÄÄÄÄÄÄÄÄÄÄ´±±
+±±³Descri‡…o ³ Impressao do Mapa de Vendas                                ³±±
+±±ÃÄÄÄÄÄÄÄÄÄÄÅÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ´±±
+±±³ Uso      ³ Sigaloja                                                   ³±±
+±±ÀÄÄÄÄÄÄÄÄÄÄÁÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÙ±±
+±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±
+ßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßß
+/*/
+Static Function LJR070Imp(lEnd,wnRel,cString)
+LOCAL Cbtxt,CbCont,cabec1
+LOCAL cabec2    := Replicate(" ", 220 )
+LOCAL limite    := 220
+LOCAL cCond1
+LOCAL cCabec1,cCabec2,cCabec3,cCabec4,cCabec5,cCabec6,cCabec7
+LOCAL aCampos   := {}
+LOCAL nOrdem    := 0
+Local aTam      := {}
+Local cIndex,cIndex1,cCondx
+Local nContador := 0
+Local cFilAtu
+Local cFilTmp
+
+//ÚÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ¿
+//³ Variaveis utilizadas para acumuladores de venda           ³
+//ÀÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÙ
+Local nQuant    := 0
+Local nDescItem := 0
+Local nAcresItem:= 0
+Local nValorRec	:= 0
+Local nValIcms	:= 0
+
+Local nFilQuant    := 0
+Local nFilDescItem := 0
+Local nFilAcresItem:= 0
+Local nFilValorRec := 0
+Local nFilValIcms  := 0
+
+Local nGerQuant    := 0
+Local nGerDescItem := 0
+Local nGerAcresItem:= 0
+Local nGerValorRec := 0
+Local nGerValIcms  := 0
+
+//ÚÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ¿
+//³ Variaveis utilizadas para acumuladores de devolucao       ³
+//ÀÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÙ
+Local nDQuant    := 0
+Local nDDescItem := 0
+Local nDAcresItem:= 0
+Local nDValorRec := 0
+Local nDValIcms  := 0
+
+Local nDFilQuant	:= 0
+Local nDFilDescItem := 0
+Local nDFilAcresItem:= 0
+Local nDFilValorRec := 0
+Local nDFilValIcms  := 0
+
+Local nDGerQuant    := 0
+Local nDGerDescItem := 0
+Local nDGerAcresItem:= 0
+Local nDGerValorRec := 0
+Local nDGerValIcms  := 0
+
+//ÚÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ¿
+//³ Variaveis utilizadas para Impressao do Cabecalho e Rodape ³
+//ÀÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÙ
+Cbtxt 	:= ""
+cbcont	:= 0
+li 		:= 80
+m_pag 	:= 1
+
+cCabec1 := STR0014 // Data 	N.Fisc Ser Vend.	Nome Vend.	Client Nome Cliente		 Grupo Tipo Produto			   Descricao		  UN		Quantidade	  Valor Unitario	  Desconto Item	 Desc.Proproc. 	Valor Recebido 		Valor Icms CP. Fi OL
+cCabec2 := STR0015 // Vended Nome Vend.	  Data	 N.Fisc Ser Client Nome Cliente		 Grupo Tipo Produto			 Descricao		  UN		Quantidade	  Valor Unitario	  Desconto Item	 Desc.Proproc. 	Valor Recebido 		Valor Icms CP. Fi OL
+cCabec3 := STR0016 // Cod. Produto	  Descricao 			Data	  NF		Ser Vended Nome Vend.  Client Nome Cliente		Grupo Tipo UN		Quantidade	  Valor Unitario	  Desconto Item	 Desc.Proproc. 	Valor Recebido 		Valor Icms CP. Fi OL
+cCabec4 := STR0017 // Tipo Cod. Produto	 Descricao			  Data	 NF	  Ser Vended Nome Vend.  Client Nome Cliente 	  Grupo UN		Quantidade	  Valor Unitario	  Desconto Item	 Desc.Proproc. 	Valor Recebido 		Valor Icms CP. Fi OL
+cCabec5 := STR0018 // Grupo	 Data 	N.Fis  Ser Vended Nome Vend.	Client Nome Cliente		 Tipo Produto			 Descricao		  UN		Quantidade	  Valor Unitario	  Desconto Item	 Desc.Proproc. 	Valor Recebido 		Valor Icms CP. Fi OL
+cCabec6 := STR0019 // Client Nome Cliente 	  Tipo	 Data 	NF 	 Ser Vended Nome Vend.	Grupo Produto			 Descricao		  UN		Quantidade	  Valor Unitario	  Desconto Item	 Desc.Proproc. 	Valor Recebido 		Valor Icms CP. Fi OL
+cCabec7 := STR0020 // Caixa  Nome Cliente 	  Tipo	 Data 	NF 	 Ser Vended Nome Vend.	Grupo Produto			 Descricao		  UN		Quantidade	  Valor Unitario	  Desconto Item	 Desc.Proproc. 	Valor Recebido 		Valor Icms CP. Fi OL
+
+nOrdem := aReturn[8]
+
+IF nOrdem == 1
+	cCond1 := "FILIAL+DTOS(DTEMI)+STATUS"
+	titulo += STR0021 + " ( " + DTOC(Mv_Par01) + " - " + DTOC(Mv_Par02) + " )"//  - Por Data ( XX/XX/XXXX - XX/XX/XXXX )
+	cabec1 := cCabec1
+Elseif nOrdem == 2
+	cCond1 := "FILIAL+STATUS+VENDED"
+	titulo += STR0022 + " ( " + Mv_Par03 + " - " + Mv_Par04 + " )"	 //  - Por Vendedor ( XXXXXX - XXXXXX )
+	cabec1 := cCabec2
+Elseif nOrdem == 3
+	cCond1 := "FILIAL+STATUS+PROD"
+	titulo += STR0023 + " ( " + Mv_Par05 + " - " + Mv_Par06 + " )"	 //  - Por Produto ( XXXXXXXXXXXXXXX - XXXXXXXXXXXXXXX )
+	cabec1 := cCabec3
+Elseif nOrdem == 4
+	cCond1 := "FILIAL+TIPO+STATUS"
+       	titulo += STR0024 + " ( " + Mv_Par07 + " - " + Mv_Par08 + " )"	 //  - Por Tipo ( XX - XX )
+	cabec1 := cCabec4
+Elseif nOrdem == 5
+	cCond1 := "FILIAL+GRUPO+STATUS"
+    	titulo += STR0025 + " ( " + Mv_Par09 + " - " + Mv_Par10 + " )"	 //  - Por Grupo ( XXXX - XXXX )
+	cabec1 := cCabec5
+Elseif nOrdem == 6
+	cCond1 := "FILIAL+CLIENTE+STATUS"
+	titulo += STR0026 + " ( " + Mv_Par11 + " - " + Mv_Par12 + " )"	 //  - Por Cliente ( XXXXXX - XXXXXX)
+	cabec1 := cCabec6
+Elseif nOrdem == 7
+	cCond1 := "FILIAL+CAIXA+STATUS"
+	titulo += STR0027 + " ( " + Mv_Par13 + " - " + Mv_Par14 + " )"	 //  - Por Caixa ( XXX - XXX )
+	cabec1 := cCabec7
+Endif
+
+aTam:=TamSX3("L1_LOJA")
+AADD(aCampos,{"LOJA" ,"C",aTam[1],aTam[2]})
+aTam:=TamSX3("L1_EMISNF")
+AADD(aCampos,{"DTEMI" ,"D",aTam[1],aTam[2]})
+aTam:=TamSX3("L1_DOC")
+AADD(aCampos,{"N_FISCAL" ,"C",aTam[1],aTam[2]})
+aTam:=TamSX3("L1_SERIE")
+AADD(aCampos,{"SERIE" ,"C",aTam[1],aTam[2]})
+aTam:=TamSX3("L1_VEND")
+AADD(aCampos,{"VENDED" ,"C",aTam[1],aTam[2]})
+aTam:=TamSX3("A3_NREDUZ")
+AADD(aCampos,{"NOME" ,"C",aTam[1],aTam[2]})
+aTam:=TamSX3("L1_CLIENTE")
+AADD(aCampos,{"CLIENTE" ,"C",aTam[1],aTam[2]})
+aTam:=TamSX3("A1_NREDUZ")
+AADD(aCampos,{"NOM_CLI" ,"C",aTam[1],aTam[2]})
+aTam:=TamSX3("B1_TIPO")
+AADD(aCampos,{"TIPO" ,"C",aTam[1],aTam[2]})
+aTam:=TamSX3("L2_PRODUTO")
+AADD(aCampos,{"PROD" ,"C",aTam[1],aTam[2]})
+aTam:=TamSX3("L2_DESCRI")
+AADD(aCampos,{"DESCRI" ,"C",aTam[1],aTam[2]})
+aTam:=TamSX3("L2_QUANT")
+AADD(aCampos,{"QUANT" ,"N",aTam[1],aTam[2]})
+aTam:=TamSX3("L2_UM")
+AADD(aCampos,{"UNIDA" ,"C",aTam[1],aTam[2]})
+aTam:=TamSX3("L2_VRUNIT")
+AADD(aCampos,{"UNIT" ,"N",LJ_MAXNUM,aTam[2]})
+aTam:=TamSX3("L2_VALDESC")
+AADD(aCampos,{"DESC" ,"N",LJ_MAXNUM,aTam[2]})
+aTam:=TamSX3("L2_VLRITEM")
+AADD(aCampos,{"TOTAL" ,"N",LJ_MAXNUM,aTam[2]})
+aTam:=TamSX3("L2_VALICM")
+AADD(aCampos,{"ICMS" ,"N",LJ_MAXNUM,aTam[2]})
+aTam:=TamSX3("B1_GRUPO")
+AADD(aCampos,{"GRUPO" ,"C",aTam[1],aTam[2]})
+aTam:=TamSX3("L1_CONDPG")
+AADD(aCampos,{"COND" ,"C",aTam[1],aTam[2]})
+aTam:=TamSX3("L1_OPERADO")
+AADD(aCampos,{"CAIXA" ,"C",aTam[1],aTam[2]})
+aTam:=TamSX3("L1_FILIAL")
+AADD(aCampos,{"FILIAL" ,"C",aTam[1],aTam[2]})
+aTam:=TamSX3("L2_STATUS")
+AADD(aCampos,{"STATUS" ,"C" ,aTam[1],aTam[2]})
+//Acrescimo
+aTam:=TamSX3("L2_VLRITEM")
+AADD(aCampos,{"ACRES" ,"N",LJ_MAXNUM,aTam[2]})
+// Outra Loja
+AADD(aCampos,{"OL"    ,"C",1,0 } )
+
+If cPaisLoc != "BRA"
+	AADD(aCampos,{"TES" ,"C",3,0})
+	aTam:=TamSX3("L2_VALIMP1")
+	AADD(aCampos,{"IMPOSTOS","N",aTam[1],aTam[2]})
+	Aadd(aCampos,{"TIPOIMP", "C", 3, 0 } )
+EndIf
+
+cNomeArq:=CriaTrab(aCampos)
+
+dbUseArea( .T.,, cNomeArq, "TRB", if(.F. .OR. .F., !.F., NIL), .F. )
+cIndex	 := CriaTrab(nil,.f.)
+
+IndRegua("TRB",cIndex,cCond1,,,STR0028)
+dbClearIndex()
+
+cIndex1	 := CriaTrab(nil,.f.)
+cCondx	 :="SERIE+N_FISCAL+PROD+STATUS"
+IndRegua("TRB",cIndex1,cCondx,,,STR0028)
+dbClearIndex()
+
+dbSelectArea("TRB")
+dbSetIndex(cIndex+OrdBagExt())
+dbSetIndex(cIndex1+OrdBagExt())
+dbSetOrder(1)
+
+//ÚÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ¿
+//³ Monta IndRegua para SL1                           ³
+//ÀÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÙ
+dbSelectArea("SL1")
+cIndL1 := CriaTrab(nil,.f.)
+cChavL1:= IndexKey()
+IndRegua("SL1",cIndL1,cChavL1,,LR070CHEC(),STR0028)
+nIndL1 := RetIndex("SL1")
+dbSelectArea("SL1")
+#IFNDEF TOP
+	dbSetIndex(cIndL1+OrdBagExt())
+#ENDIF
+dbSetOrder(nIndL1+1)
+
+//ÚÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ¿
+//³ Verifica se totaliza as filiais  ³
+//ÀÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÙ
+If Mv_Par15 == 2
+	cFilDe := cFilAnt
+	cFilAte:= cFilAnt
+ELSE
+	cFilDe := Mv_Par17	// Todas as filiais
+	cFilAte:= Mv_Par18
+Endif
+
+dbSelectArea("SL1")
+dbSeek( cFilDe ,.T.)
+
+WHILE SL1->( !Eof() ) .And. SL1->L1_FILIAL <= cFilAte
+	
+	If SL1->L1_CLIENTE < Mv_Par11 .or. SL1->L1_CLIENTE > Mv_Par12
+		dbSkip()
+		Loop
+	Endif
+	
+	dbSelectArea("SL2")
+	dbSetOrder(1)
+	dbSeek( SL1->L1_FILIAL + SL1->L1_NUM )
+	
+	If cPaisloc <> "BRA" .AND. Mv_Par21 == 2 .aND. mV_pAR20 <> sl1->l1_moeda // NAO IMPRIME EM MOEDA DIFERENTE DA ATUAL
+		SL1->(DbSkip())
+		Loop
+	EndIf
+	
+	WHILE SL2->( ! Eof() ) .And. SL1->L1_FILIAL == SL2->L2_FILIAL .And. SL1->L1_NUM == L2_NUM
+		
+		dbSelectArea( "SF4" )
+		dbSeek( xFilial("SF4") + SL2->L2_TES )
+		IF SF4->F4_DUPLIC != "S"
+			dbSelectArea("SL2")
+			dbSkip( )
+			Loop
+		Endif
+		
+		dbSelectarea("SL2")
+		
+		//ÚÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ¿
+		//³ Verifica se as condicoes serao satisfeitas	  ³
+		//ÀÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÙ
+		If SL2->L2_PRODUTO < Mv_Par05 .Or. SL2->L2_PRODUTO > Mv_Par06
+			dbSkip()
+			Loop
+		EndIf
+		
+		//ÚÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ¿
+		//³ Posiciona no produto                          ³
+		//ÀÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÙ
+		dbSelectarea("SB1")
+		dbSetOrder(1)
+		cFilTmp := IIF( EMPTY( xFilial("SB1") ), xFilial("SB1"), SL1->L1_FILIAL )
+		dbSeek( cFilTmp + SL2->L2_PRODUTO)
+
+		//ÚÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ¿
+		//³ Filtra Fabricante                             ³
+		//ÀÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÙ
+		If !Empty(Mv_Par22)
+			IF !Upper(Rtrim(Mv_Par22)) == Upper(Rtrim(SB1->B1_FABRIC))
+				dbSelectarea("SL2")
+				dBsKIP()
+				Loop
+			Endif
+		Endif		
+		
+		//ÚÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ¿
+		//³ Posiciona na Condicao de Pagto                ³
+		//ÀÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÙ
+		dbSelectarea("SE4")
+		dbSetOrder(1)
+		cFilTmp := IIF( EMPTY( xFilial("SE4") ), xFilial("SE4"), SL1->L1_FILIAL )
+		dbSeek( cFilTmp + SL1->L1_CONDPG)
+		
+		//ÚÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ¿
+		//³ Posiciona no registro do vendedor             ³
+		//ÀÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÙ
+		dbSelectarea("SA3")
+		dbSetOrder(1)
+		cFilTmp := IIF( EMPTY( xFilial("SA3") ), xFilial("SA3"), SL1->L1_FILIAL )
+		dbSeek( cFilTmp + SL1->L1_VEND)
+		
+		//ÚÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ¿
+		//³ Posiciona no registro do cliente              ³
+		//ÀÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÙ
+		dbSelectarea("SA1")
+		dbSetOrder(1)
+		cFilTmp := IIF( EMPTY( xFilial("SA1") ), xFilial("SA1"), SL1->L1_FILIAL )
+		dbSeek( cFilTmp + SL1->L1_CLIENTE + SL1->L1_LOJA)
+		
+		If SB1-> B1_TIPO < Mv_Par07 .Or. SB1-> B1_TIPO > Mv_Par08 .Or. ;
+			SB1-> B1_GRUPO < Mv_Par09 .Or. SB1-> B1_GRUPO > Mv_Par10
+			dbSelectArea("SL2")
+			dbSKIP()
+			Loop
+		EndIf
+		
+		GravaTrab()
+		dbSelectArea("SL2")
+		dbSkip()
+	EndDo
+	dbSelectArea("SL1")
+	dbSkip()
+EndDo
+
+//ÚÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ¿
+//³ Verifica devolucoes de outra loja             ³
+//ÀÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÙ
+If Mv_Par16 = 1
+	//ÚÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ¿
+	//³ Monta IndRegua para SF1                           ³
+	//ÀÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÙ
+	dbSelectArea("SF1")
+	cIndL1  := CriaTrab(nil,.f.)
+	cChavL1 := IndexKey()
+	IndRegua( "SF1", cIndL1, cChavL1, , lr070che2(), STR0028 )
+	nIndL1 := RetIndex("SF1")
+	dbSelectArea("SF1")
+	#IFNDEF TOP
+		dbSetIndex(cIndL1+OrdBagExt())
+	#ENDIF
+	dbSetOrder(nIndL1+1)
+	dbSeek( cFilDe ,.T.)
+	
+	While SF1->( !Eof() ) .And. SF1->F1_FILIAL <= cFilAte
+		
+		IF cPaisloc <> "BRA" .And. Mv_Par21 == 2 .And. Mv_Par20 <> SF1->F1_MOEDA // nao imprime em moeda diferente da atual
+			SF1->(DbSkip())
+			Loop
+		ENDIF
+		
+		dbSelectArea("SD1")
+		dbSetOrder(1)
+		dbSeek( SF1->F1_FILIAL + SF1->F1_DOC + SF1->F1_SERIE )
+		
+		//ÚÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ¿
+		//³ Posiciona no registro de fornecedores         ³
+		//ÀÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÙ
+		dbSelectArea("SA2")
+		dbSetOrder(1)
+		cFilTmp := IIF( EMPTY( xFilial("SA2") ), xFilial("SA2"), SF1->F1_FILIAL )
+		dbSeek( cFilTmp + SF1->F1_FORNECE)
+		
+		dbSelectArea("SD1")
+		WHILE SD1->( ! EoF() ) .And. SF1->F1_FILIAL == SD1->D1_FILIAL .And. SF1->F1_DOC == SD1->D1_DOC .And. SF1->F1_SERIE == SD1->D1_SERIE
+			
+			IF ! SD1->D1_TIPO == "D"
+				dbSkip()
+				Loop
+			EndIf
+			
+			//ÚÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ¿
+			//³ Verifica se as condicoes serao satisfeitas	  ³
+			//ÀÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÙ
+			If SubStr( SD1->D1_NUMCQ, 1, 3 ) < Mv_Par13 .Or.;
+				SubStr( SD1->D1_NUMCQ, 1, 3 ) > Mv_Par14
+				dbSkip()
+				Loop
+			EndIf
+			
+			//ÚÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ¿
+			//³ Verifica se as condicoes serao satisfeitas	  ³
+			//ÀÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÙ
+			If SD1->D1_COD < Mv_Par05 .or. SD1->D1_COD > Mv_Par06
+				dbSkip()
+				Loop
+			EndIf
+			
+			//ÚÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ¿
+			//³ Posiciona no produto                          ³
+			//ÀÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÙ
+			dbSelectarea("SB1")
+			dbSetOrder(1)
+			cFilTmp := IIF( EMPTY( xFilial("SB1") ), xFilial("SB1"), SF1->F1_FILIAL )
+			dbSeek( cFilTmp + SD1->D1_COD)
+			
+			If SB1->B1_TIPO < Mv_Par07 .Or. SB1->B1_TIPO  > Mv_Par08 .Or.;
+				SB1->B1_GRUPO < Mv_Par09 .Or. SB1->B1_GRUPO > Mv_Par10
+				dbSelectArea("SD1")
+				dbSkip()
+				Loop
+			EndIf
+			
+			//ÚÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ¿
+			//³ Posiciona na Condicao de Pagto                ³
+			//ÀÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÙ
+			dbSelectarea("SE4")
+			dbSetOrder(1)
+			cFilTmp := IIF( EMPTY( xFilial("SE4") ), xFilial("SE4"), SF1->F1_FILIAL )
+			dbSeek( cFilTmp + SF1->F1_COND)
+			
+			GravaTra2()
+			dbSelectArea("SD1")
+			dbSkip()
+		EndDo
+		dbSelectArea( "SF1" )
+		dbSkip()
+	EndDo
+EndIf
+
+//ÚÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ¿
+//³ Inicia a impressao do relatorio.              ³
+//ÀÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÙ
+dbSelectArea("TRB")
+dbSetorder(1)
+dbGotop()
+
+SetRegua(RecCount())
+While !Eof()
+	
+	cFilAtu := TRB->FILIAL
+	
+	IF lEnd
+		Exit
+	EndIf
+	
+	While !Eof() .and. TRB->FILIAL == cFilAtu
+		
+		cParam:=&cCond1
+		nContador := If( nOrdem # 3, 0, nContador )
+
+		IF lEnd
+			Exit
+		EndIf
+		
+		If Empty( Substr(cParam,3,4) )	 .And. nOrdem # 5 .And. nOrdem # 2		// Campo da quebra em branco
+			dbSkip()
+			Loop
+		Endif
+		
+		While &cCond1 = cParam .and. !Eof()
+			
+			IncRegua()
+			
+			IF lEnd
+				// CANCELADO PELO OPERADOR
+				@PROW()+1,001 PSAY STR0029
+				Exit
+			EndIf
+			
+			If li >= 58
+				cabec(titulo,cabec1,cabec2,nomeprog,tamanho,GetMv("MV_COMP"))
+			Endif
+			
+			If !Empty(TRB->STATUS)
+				nContador++
+			EndIf
+			
+			If nContador == 1
+				li++
+				@ li,080 PSay STR0036
+				li++
+			EndIf
+			
+			If !Empty(TRB->STATUS)
+				nDQuant	   += QUANT
+				nDDescItem += DESC
+				nDAcresItem+= ACRES
+				nDValorRec += TOTAL
+				If cPaisLoc == "BRA"
+					nDValIcms+=ICMS
+				Else
+					nDValIcms+=IMPOSTOS
+				EndIf
+			ELSE
+				nQuant	   += QUANT
+				nDescItem  += DESC
+				nAcresItem += ACRES
+				nValorRec  += TOTAL
+				If cPaisLoc == "BRA"
+					nValIcms+=ICMS
+				Else
+					nValIcms+=IMPOSTOS
+				Endif
+			EndIf
+			
+			If	Mv_Par19 == 1		// Analitico
+				Detalha(nOrdem)
+				li++
+			Endif
+			dbSkip()
+		EndDo
+		
+		If (nDescItem+nAcresItem+nValorRec+nValIcms) > 0
+			SubTot(nDescItem,nAcresItem,nValorRec,nValIcms,nOrdem,cParam,nQuant)
+			nFilQuant    += nQuant
+			nFilDescItem += nDescItem
+			nFilAcresItem+= nAcresItem
+			nFilValorRec += nValorRec
+			nFilValIcms  += nValIcms
+			nQuant    := 0
+			nDescItem := 0
+			nAcresItem:= 0
+			nValorRec := 0
+			nValIcms  := 0
+		Endif
+		
+		If (nDDescItem+nDAcresItem+nDValorRec+nDValIcms) > 0
+			SubTotDev(nDDescItem,nDAcresItem,nDValorRec,nDValIcms,nOrdem,cParam,nDQuant)
+			nDFilQuant    += nDQuant
+			nDFilDescItem += nDDescItem
+			nDFilAcresItem+= nDAcresItem
+			nDFilValorRec += nDValorRec
+			nDFilValIcms  += nDValIcms
+			nDQuant     := 0
+			nDDescItem := 0
+			nDAcresItem:= 0
+			nDValorRec := 0
+			nDValIcms  := 0
+		EndIf
+		li++
+	Enddo
+	
+	If Mv_Par15 == 1
+		ImpTotFil(nFilDescItem,nFilAcresItem,nFilValorRec,nFilValIcms,nDFilDescItem,;
+		nDFilAcresItem,nDFilValorRec,nDFilValIcms,cFilAtu,nFilQuant,nDFilQuant)
+	Endif
+	nGerQuant    += nFilQuant
+	nGerDescItem += nFilDescItem
+	nGerAcresItem+= nFilAcresItem
+	nGerValorRec += nFilValorRec
+	nGerValIcms  += nFilValIcms
+	nFilQuant    := 0
+	nFilDescItem := 0
+	nFilAcresItem:= 0
+	nFilValorRec := 0
+	nFilValIcms  := 0
+	
+	nDGerQuant    += nDFilQuant
+	nDGerDescItem += nDFilDescItem
+	nDGerAcresItem+= nDFilAcresItem
+	nDGerValorRec += nDFilValorRec
+	nDGerValIcms  += nDFilValIcms
+	
+	nDFilQuant    := 0
+	nDFilDescItem := 0
+	nDFilAcresItem:= 0
+	nDFilValorRec := 0
+	nDFilValIcms  := 0
+	
+	dbSelectArea("TRB")
+Enddo
+
+If li != 80
+	ImpTot(nGerDescItem,nGerAcresItem,nGerValorRec,nGerValIcms,nDGerDescItem,;
+	nDGerAcresItem,nDGerValorRec,nDGerValIcms,nGerQuant,nDGerQuant)
+Endif
+
+Set Device To Screen
+
+dbSelectArea("TRB")
+dbCloseArea()
+Ferase( cNomeArq + GetDBExtension() )
+Ferase( cIndex  + OrdBagExt())
+Ferase( cIndex1 + OrdBagExt())
+
+RetIndex("SL1")
+RetIndex("SF1")
+
+If aReturn[5] = 1
+	Set Printer TO
+	dbCommitAll()
+	ourspool(wnrel)
+Endif
+MS_FLUSH()
+Return( Nil )
+
+/*/
+ÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜ
+±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±
+±±ÚÄÄÄÄÄÄÄÄÄÄÂÄÄÄÄÄÄÄÄÄÄÂÄÄÄÄÄÄÄÂÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÂÄÄÄÄÄÄÂÄÄÄÄÄÄÄÄÄÄ¿±±
+±±³Fun‡…o    ³Detalha	³ Autor ³ Raul C. Capeleti      ³ Data ³ 22.12.94 ³±±
+±±ÃÄÄÄÄÄÄÄÄÄÄÅÄÄÄÄÄÄÄÄÄÄÁÄÄÄÄÄÄÄÁÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÁÄÄÄÄÄÄÁÄÄÄÄÄÄÄÄÄÄ´±±
+±±³Descri‡…o ³Imprime a linha de detalhe do relatorio de acordo com a     ³±±
+±±³          ³condicao de ordem                                           ³±±
+±±ÃÄÄÄÄÄÄÄÄÄÄÅÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ´±±
+±±³Sintaxe   ³Detalha(ExpN1)                                              ³±±
+±±ÃÄÄÄÄÄÄÄÄÄÄÅÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ´±±
+±±³Parametros³Ordem do Relatorio.                                         ³±±
+±±ÃÄÄÄÄÄÄÄÄÄÄÅÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ´±±
+±±³ Uso      ³ LojR070                                                    ³±±
+±±ÀÄÄÄÄÄÄÄÄÄÄÁÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÙ±±
+±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±
+ßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßß
+/*/
+Static Function Detalha( nOrdem )
+if nOrdem = 1
+	/*/
+	P	Data	 N.Fisc        Ser Vend.  Nome Vend.  Clien. Nome Cliente 	   Grupo Tipo Produto		  Descricao		  UN Quantidade	 Valor Unit.  Desc.It. Desc.Proproc.  Acrescimo  Valor Rec.          Valor Icms
+	E	Date     Invoice       Ser Ass.   Name Cust.  Customer Name            Group Type Product         Description     UN Qtty        Unit Vlr.    It.Desc. Prop.Desc.     Item Incr. Receiv. Value    Tax  Value    CP. Fi OL
+	S	Fecha    Factura       Ser Vend.  Nom. Vend.  Client Nom. Cliente      Grupo Tipo Producto        Descripcion     UN Cantidade   Vlr Unit.    Desc.It. Desc.Prop.     Acres.Item Valor Recibido   Impuestos     CP. Sc OL
+	01234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789
+	0		  1			2 	   	  3		    4 		  5			6		  7 	    8	      9			0 		  1			2	 	  3 		4		  5			6 		  7			8		  9 		0		  1			2 		  3
+	0																									100																									200
+	/*/
+	@ li,000 PSay DTEMI
+	@ li,009 PSay SubStr(N_FISCAL,1,TamSx3("L1_DOC")[1])
+	@ li,023 PSay SubStr(SERIE,1,3)
+	@ li,027 PSay SubStr(VENDED,1,6)
+	@ li,034 PSay Substr(NOME,1,11)
+	@ li,046 PSay Substr(CLIENTE,1,6)
+	@ li,053 PSay Substr(NOM_CLI,1,17)
+	@ li,071 PSay Substr(GRUPO,1,5)
+	@ li,077 PSay Substr(TIPO,1,4)
+	@ li,082 PSay Substr(PROD,1,15)
+	@ li,098 PSay Substr(DESCRI,1,15)
+	
+elseif nOrdem =2
+	/*/
+	P	Vended Nome Vend. Data	   N.Fisc        Ser Client Nome Cliente      Grupo  Tip Produto         Descricao        UN Quantidade  Valor Unit.  Desc.It. Desc.Proproc.  Acrescimo  Valor Rec.          Valor Icms
+	E   Assist Ass. Name  Date     Invoice       Ser Custom Name              Group  Typ Product         Description      UN Qtty        Unit. Vlr.   It.Descr Prop.Desc.     Item Incr. Receiv. Value    Tax  Value    CP. Fi OL
+	S   Vend.  Nom. Vend. Fecha    Factuta       Ser Client Nom. Cliente      Grupo  Tip Producto        Descripcion      UN Canti.      Vlr Unit.    Desc.It. Desc.Prop.     Acres.Item Valor Recibido   Impuestos     CP. Sc OL
+	01234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789
+	0		  1			2 	   	  3		    4 		  5			6		  7 	    8	      9			0 		  1			2	 	  3 		4		  5			6 		  7			8		  9 		0		  1			2 		  3
+	0																									100																									200
+	/*/
+	@ li,000 PSay SubStr(VENDED,1,6)
+	@ li,007 PSay SubStr(NOME,1,10)
+	@ LI,018 PSay DTEMI
+	@ li,027 PSay SubStr(N_FISCAL,1,TamSx3("L1_DOC")[1])
+	@ li,041 PSay Substr(SERIE,1,3)
+	@ li,045 PSay Substr(CLIENTE,1,6)
+	@ li,052 PSay Substr(NOM_CLI,1,17)
+	@ li,070 PSay Substr(GRUPO,1,5)
+	@ li,077 PSay Substr(TIPO,1,4)
+	@ li,081 PSay Substr(PROD,1,15)
+	@ li,097 PSay Substr(DESCRI,1,15)
+	
+elseif nOrdem = 3
+	/*/
+	P	Cod. Produto    Descricao      Data     NF		      Ser Vended Nome Vend.	 Client Nome Cliente      Grupo Tipo  UN Quantidade  Valor Unit.  Desc.It. Desc.Proproc.  Acrescimo  Valor Rec.          Valor Icms
+	E   Product Code    Description    Date     Invoice       Ser Assis. Ass. Name   Cust.  Customer Name     Group Type  UN Qtty        Unit Vlr.    It.Descr Prop.Desc.     Item Incr. Receiv. Value    Tax  Value    CP. Fi OL
+	S   Cod. Producto   Descripcion    Fecha    Factura       Ser Vend.  Nom. Vend.  Client Nom. Cliente      Grupo Tipo  UN Canti.      Vlr Unit.    Desc.It. Desc.Prop.     Acres.Item Valor Recibido   Impuestos     CP. Sc OL
+	01234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789
+	0		  1			2 	   	  3		    4 		  5			6		  7 	    8	      9			0 		  1			2	 	  3 		4		  5			6 		  7			8		  9 		0		  1			2 		  3
+	0																									100																									200
+	/*/
+	@ li,000 PSay SubStr(PROD,1,15)
+	@ li,016 PSay SubStr(DESCRI,1,15)
+	@ li,031 PSay DTEMI
+	@ li,040 PSay SubStr(N_FISCAL,1,TamSx3("L1_DOC")[1])
+	@ li,054 PSay Substr(SERIE,1,3)
+	@ li,058 PSay Substr(VENDED,1,6)
+	@ li,065 PSay Substr(NOME,1,11)
+	@ li,077 PSay Substr(CLIENTE,1,6)
+	@ li,084 PSay Substr(NOM_CLI,1,17)
+	@ li,102 PSay Substr(GRUPO,1,5)
+	@ li,108 PSay Substr(TIPO,1,4)
+	
+Elseif nOrdem = 4
+	/*/
+	P	Tipo Cod. Produto    Descricao      Data     NF            Ser Vended Nome Vend.  Client Nome Cliente      Grupo  UN Quantidade  Valor Unit.  Desc.It. Desc.Proproc.  Acrescimo  Valor Rec.          Valor Icms
+	E   Type Product Code    Description    Date     Invoice       Ser Assis. Ass. Name   Cust.  Customer Name     Group  UN Qtty        Unit Vlr.    It.Descr Prop.Desc.     Item Incr. Receiv. Value    Tax  Value    CP. Fi OL
+	S   Tipo Cod. Producto   Descripcion    Fecha    Factura       Ser Vend.  Nom. Vend.  Client Nom. Cliente      Grupo  UN Canti.      Vlr Unit.    Desc.It. Desc.Prop.     Acres.Item Valor Recibido   Impuestos     CP. Sc OL
+	01234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789
+	0		  1			2 	   	  3		    4 		  5			6		  7 	    8	      9			0 		  1			2	 	  3 		4		  5			6 		  7			8		  9 		0		  1			2 		  3
+	0																									100																									200
+	/*/
+	@ li,000 PSay SubStr(TIPO,1,4)
+	@ li,005 PSay SubStr(PROD,1,15)
+	@ li,021 PSay SubStr(DESCRI,1,15)
+	@ li,036 PSay DTEMI
+	@ li,045 PSay SubStr(N_FISCAL,1,TamSx3("L1_DOC")[1])
+	@ li,059 PSay Substr(SERIE,1,3)
+	@ li,063 PSay Substr(VENDED,1,6)
+	@ li,070 PSay Substr(NOME,1,11)
+	@ li,082 PSay Substr(CLIENTE,1,6)
+	@ li,089 PSay Substr(NOM_CLI,1,17)
+	@ li,107 PSay Substr(GRUPO,1,5)
+	
+elseif nOrdem = 5
+	/*/
+	P	Grup Data     N.Fis         Ser Vended Nome Vend.  Client Nome Cliente 		Tipo Produto         Descricao        UN Quantidade  Valor Unit.  Desc.It. Desc.Proproc.  Acrescimo  Valor Rec.          Valor Icms
+	E   Grou Date     Invoice       Ser Ass.   Name Cust.  Custo. Name              Type Product         Description      UN Qtty        Unit Vlr.    It.Descr Prop.Desc.     Item Incr. Receiv. Value    Tax  Value    CP. Fi OL
+	S   Grup Fecha    Factura       Ser Vend.  Nom. Vend.  Client Nom. Cliente      Tipo Producto        Descripcion      UN Canti.      Vlr Unit.    Desc.It. Desc.Prop.     Acres.Item Valor Recibido   Impuestos     CP. Sc OL
+	01234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789
+	0		  1			2 	   	  3		    4 		  5			6		  7 	    8	      9			0 		  1			2	 	  3 		4		  5			6 		  7			8		  9 		0		  1			2 		  3
+	0																									100																									200
+	/*/
+	@ li,000 PSay SubStr(GRUPO,1,5)
+	@ li,006 PSay DTEMI
+	@ li,017 PSay SubStr(N_FISCAL,1,TamSx3("L1_DOC")[1])
+	@ li,028 PSay SubStr(SERIE,1,3)
+	@ li,032 PSay Substr(VENDED,1,6)
+	@ li,039 PSay Substr(NOME,1,11)
+	@ li,051 PSay Substr(CLIENTE,1,6)
+	@ li,058 PSay Substr(NOM_CLI,1,17)
+	@ li,076 PSay Substr(TIPO,1,4)
+	@ li,081 PSay Substr(PROD,1,15)
+	@ li,097 PSay Substr(DESCRI,1,15)
+	
+elseif nOrdem = 6
+	/*/
+	P	Client Nome Cliente		 Tip Data     NF            Ser Vended Nome Vend.  Grupo Produto         Descricao        UN Quantidade  Valor Unit.  Desc.It. Desc.Proproc.  Acrescimo  Valor Rec.          Valor Icms
+	E   Client Customer Name     Typ Date     Invoice       Ser Ass.   Name        Group Product         Description      UN Qtty        Unit Vlr.    It.Descr Prop.Desc.     Item Incr. Receiv. Value    Tax  Value    CP. Fi OL
+	S   Client Nom. Cliente      Tip Fecha    Factura       Ser Vend.  Nom. Vend.  Grupo Producto        Descripcion      UN Canti.      Vlr Unit.    Desc.It. Desc.Prop.     Acres.Item Valor Recibido   Impuestos     CP. Sc OL
+	01234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789
+	0		  1			2 	   	  3		    4 		  5			6		  7 	    8	      9			0 		  1			2	 	  3 		4		  5			6 		  7			8		  9 		0		  1			2 		  3
+	0																									100																									200
+	/*/
+	@ li,000 PSay SubStr(CLIENTE,1,6)
+	@ li,007 PSay SubStr(NOM_CLI,1,17)
+	@ li,025 PSay Substr(TIPO,1,4)
+	@ li,029 PSay DTEMI
+	@ li,038 PSay SubStr(N_FISCAL,1,TamSx3("L1_DOC")[1])
+	@ li,052 PSay Substr(SERIE,1,3)
+	@ li,056 PSay Substr(VENDED,1,6)
+	@ li,063 PSay Substr(NOME,1,11)
+	@ li,075 PSay Substr(GRUPO,1,5)
+	@ li,081 PSay Substr(PROD,1,15)
+	@ li,097 PSay Substr(DESCRI,1,15)
+	
+elseif nOrdem = 7
+	/*/
+	P	Caixa Nome Cliente      Tipo Data     NF            Ser Vended Nome Vend.  Grupo Produto         Descricao        UN Quantidade  Valor Unit.  Desc.It. Desc.Proproc.  Acrescimo  Valor Rec.          Valor Icms
+	E   Cash  Customer Name     Type Date     Invoice       Ser Ass.   Name        Group Product         Description      UN Qtty        Unit Vlr.    It.Desc. Prop.Desc.     Item Incr. Receiv. Value    Tax  Value    CP. Fi OL
+	S   Caja  Nom. Cliente      Tipo Fecha    Factura       Ser Vend.  Nom. Vend.  Grupo Producto        Descripcion      UN Canti.      Vlr Unit.    Desc.It. Desc.Prop.     Acres.Ite. Valor Recibido   Impuestos     CP. Sc OL
+	01234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789
+	0		  1			2 	   	  3		    4 		  5			6		  7 	    8	      9			0 		  1			2	 	  3 		4		  5			6 		  7			8		  9 		0		  1			2 		  3
+	0																									100																									200
+	/*/
+	@ li,000 PSay Substr(CAIXA,1,3)
+	@ li,006 PSay SubStr(NOM_CLI,1,17)
+	@ li,024 PSay Substr(TIPO,1,4)
+	@ li,029 PSay DTEMI
+	@ li,038 PSay SubStr(N_FISCAL,1,TamSx3("L1_DOC")[1])
+	@ li,052 PSay Substr(SERIE,1,3)
+	@ li,056 PSay Substr(VENDED,1,6)
+	@ li,063 PSay Substr(NOME,1,11)
+	@ li,075 PSay Substr(GRUPO,1,5)
+	@ li,081 PSay Substr(PROD,1,15)
+	@ li,097 PSay Substr(DESCRI,1,15)
+	
+EndIf
+@ li,114 PSay Substr(UNIDA,1,2)
+@ li,117 PSay QUANT		Picture PesqPictQt("L2_QUANT",10)
+@ li,129 PSay UNIT		Picture PesqPict("SL2","L2_VRUNIT",13,Mv_Par20)
+@ li,142 PSay DESC		Picture PesqPict("SL2","L2_VALDESC",10,Mv_Par20)
+@ li,151 PSay ACRES		Picture PesqPict("SL2","L2_VLRITEM",12,Mv_Par20)
+@ li,166 PSay TOTAL		Picture PesqPict("SL2","L2_VLRITEM",12,Mv_Par20)
+If cPaisLoc == "BRA"
+	@ li,180 PSay ICMS		Picture PesqPict("SL2","L2_VALICM",10)
+Else
+	@ li,194 PSay IMPOSTOS	Picture PesqPict("SL2","L2_VALIMP1",12,Mv_Par20)
+	@ li,208 PSay TIPOIMP
+Endif
+@ li,212 PSay Substr(COND,1,3)
+@ li,216 PSay Substr(FILIAL,1,2)
+@ li,219 PSay OL
+
+Return( Nil )
+
+/*/
+ÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜ
+±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±
+±±ÚÄÄÄÄÄÄÄÄÄÄÂÄÄÄÄÄÄÄÄÄÄÂÄÄÄÄÄÄÄÂÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÂÄÄÄÄÄÄÂÄÄÄÄÄÄÄÄÄÄ¿±±
+±±³Fun‡…o    ³Gravatrab ³ Autor ³ Raul C. Capeleti      ³ Data ³ 22.12.94 ³±±
+±±ÃÄÄÄÄÄÄÄÄÄÄÅÄÄÄÄÄÄÄÄÄÄÁÄÄÄÄÄÄÄÁÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÁÄÄÄÄÄÄÁÄÄÄÄÄÄÄÄÄÄ´±±
+±±³Descri‡…o ³Gravar no arquivo de trabalho os registros que atendam a	  ³±±
+±±³          ³condicao de selecao                                         ³±±
+±±ÃÄÄÄÄÄÄÄÄÄÄÅÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ´±±
+±±³Sintaxe e ³Gravatrab()                                                 ³±±
+±±ÃÄÄÄÄÄÄÄÄÄÄÅÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ´±±
+±±³Parametros³Nao Tem                                                     ³±±
+±±ÃÄÄÄÄÄÄÄÄÄÄÅÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ´±±
+±±³ Uso      ³ Lojr070.prg                                                ³±±
+±±ÀÄÄÄÄÄÄÄÄÄÄÁÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÙ±±
+±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±
+ßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßß
+/*/
+STATIC Function GravaTrab()
+LOCAL aArea := GetArea()
+
+// Localizacoes
+LOCAL aTesImpInf
+LOCAL nImposto
+LOCAL nI
+LOCAL cCampo
+LOCAL lIncluido   := .F.
+LOCAL lDiscrim    := .F.
+LOCAL nMoeda      := IF( cPaisLoc <> "BRA", Max( SL1->L1_MOEDA, 1 ), 1 )
+LOCAL	nDecs 		:= MsDecimais(1)
+
+RecLock("TRB",.T.)
+TRB->LOJA		:= SL1->L1_LOJA
+TRB->CAIXA		:= SL1->L1_OPERADO
+TRB->DTEMI		:= SL1->L1_EMISNF
+TRB->N_FISCAL	:= If(Empty(SL1->L1_DOC),IIf(SL1->(FieldPos("L1_DOCPED")) > 0, SL1->L1_DOCPED, ""),SL1->L1_DOC)
+TRB->SERIE		:= SL1->L1_SERIE
+TRB->VENDED 	:= SL1->L1_VEND
+TRB->NOME		:= SA3->A3_NREDUZ
+TRB->CLIENTE	:= SL1->L1_CLIENTE
+TRB->NOM_CLI	:= SA1->A1_NREDUZ
+TRB->TIPO		:= SB1->B1_TIPO
+TRB->PROD		:= SL2->L2_PRODUTO
+TRB->DESCRI 	:= SL2->L2_DESCRI
+TRB->QUANT		:= SL2->L2_QUANT
+TRB->UNIDA		:= SL2->L2_UM
+TRB->UNIT		:= (IIF(SL2->L2_PRCTAB==0,Round(xMoeda(SL2->L2_VRUNIT,nMoeda,Mv_Par20,SL2->L2_EMISSAO,nDecs+1),;
+nDecs),Round(xMoeda(SL2->L2_PRCTAB,nMoeda,Mv_Par20,SL2->L2_EMISSAO,nDecs+1),nDecs)) + ;
+(SL2->L2_VALIPI / SL2->L2_QUANT))
+TRB->DESC		:= Round(xMoeda(SL2->L2_VALDESC,nMoeda,Mv_Par20,SL2->L2_EMISSAO,nDecs+1),nDecs)
+TRB->DESC    	+= Round(xMoeda(SL2->L2_DESCPRO,nMoeda,Mv_Par20,SL2->L2_EMISSAO,nDecs+1),nDecs)
+TRB->TOTAL		:= Round(xMoeda(SL2->L2_VLRITEM,nMoeda,Mv_Par20,SL2->L2_EMISSAO,nDecs+1),nDecs)
+TRB->ICMS		:= SL2->L2_VALICM
+TRB->GRUPO		:= SB1->B1_GRUPO
+TRB->COND		:= SL1->L1_CONDPG
+TRB->FILIAL 	:= SL1->L1_FILIAL
+TRB->ACRES		:= Round(xMoeda(SL2->L2_VLRITEM,nMoeda,Mv_Par20,SL2->L2_EMISSAO,nDecs+1),nDecs) - (Round(UNIT*QUANT,2))
+TRB->STATUS 	:= ""
+If TRB->ACRES < 0
+	TRB->ACRES :=	0
+Endif
+
+IF cPaisLoc <> "BRA"
+	aTesImpInf 	:= TesImpInf( SL2->L2_TES )
+	FOR nI := 1 TO LEN( aTesImpInf )
+		IF ! lDiscrim
+			lDiscrim := ( aTesImpInf[nI][3] == "1" )
+		ENDIF
+		IF ! lIncluido
+			lIncluido := ( aTesImpInf[nI][3] <> "1" )
+		ENDIF
+		cCampo 	:= "SL2->L2_"+Substr( aTesImpInf[nI][2], 4 )
+		nImposto	:= Round(xMoeda(&cCampo,nMoeda,Mv_Par20,SL2->L2_EMISSAO,nDecs+1),nDecs)
+		TRB->TOTAL  += IIf (aTesImpInf[nI][3] == "1",nImposto,0)
+	NEXT nI
+	TRB->IMPOSTOS	:= nImposto
+	DO CASE
+		CASE lDiscrim .AND. lIncluido
+			TRB->TIPOIMP := "()"
+		CASE lDiscrim
+			TRB->TIPOIMP := "(D)"
+		CASE lIncluido
+			TRB->TIPOIMP := "(I)"
+	ENDCASE
+ENDIF
+
+MsUnlock()
+
+RestArea( aArea )
+
+Return( Nil )
+
+/*/
+ÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜ
+±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±
+±±ÚÄÄÄÄÄÄÄÄÄÄÂÄÄÄÄÄÄÄÄÄÄÂÄÄÄÄÄÄÄÂÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÂÄÄÄÄÄÄÂÄÄÄÄÄÄÄÄÄÄ¿±±
+±±³Fun‡…o    ³Gravatra2 ³ Autor ³ Gustavo Henrique      ³ Data ³ 05.10.00 ³±±
+±±ÃÄÄÄÄÄÄÄÄÄÄÅÄÄÄÄÄÄÄÄÄÄÁÄÄÄÄÄÄÄÁÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÁÄÄÄÄÄÄÁÄÄÄÄÄÄÄÄÄÄ´±±
+±±³Descri‡…o ³Gravar no arquivo de trabalho os registros que atendam a	  ³±±
+±±³          ³condicao de selecao                                         ³±±
+±±ÃÄÄÄÄÄÄÄÄÄÄÅÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ´±±
+±±³Sintaxe e ³Gravatra2()                                                 ³±±
+±±ÃÄÄÄÄÄÄÄÄÄÄÅÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ´±±
+±±³Parametros³Nao Tem                                                     ³±±
+±±ÃÄÄÄÄÄÄÄÄÄÄÅÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ´±±
+±±³ Uso      ³Lojr070.prx                                                 ³±±
+±±ÀÄÄÄÄÄÄÄÄÄÄÁÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÙ±±
+±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±
+ßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßß
+/*/
+STATIC Function GravaTra2( cLjFil )
+LOCAL aArea := GetArea()
+// Localizacoes
+LOCAL aTesImpInf
+LOCAL nImposto
+LOCAL nI
+LOCAL cCampo
+LOCAL lIncluido   := .F.
+LOCAL lDiscrim    := .F.
+LOCAL nMoeda      := IF( cPaisLoc <> "BRA", Max( SF1->F1_MOEDA, 1 ), 1 )
+LOCAL	nDecs 		:= MsDecimais(1)
+
+RecLock("TRB",.T.)
+TRB->LOJA		:= SF1->F1_LOJA
+TRB->CAIXA		:= SubStr( SD1->D1_NUMCQ, 1, 3 )
+TRB->DTEMI		:= SF1->F1_EMISSAO
+TRB->N_FISCAL	:= SF1->F1_DOC
+TRB->SERIE		:= SF1->F1_SERIE
+TRB->NOME		:= SA2->A2_NREDUZ
+TRB->CLIENTE	:= SF1->F1_FORNECE
+TRB->NOM_CLI	:= SA1->A1_NREDUZ
+TRB->TIPO		:= SB1->B1_TIPO
+TRB->PROD		:= SD1->D1_COD
+TRB->DESCRI 	:= SB1->B1_DESC
+TRB->QUANT		:= SD1->D1_QUANT
+TRB->UNIDA		:= SD1->D1_UM
+TRB->UNIT		:= Round(xMoeda(SD1->D1_VUNIT,nMoeda,Mv_Par20,SD1->D1_EMISSAO,nDecs+1),nDecs) + ;
+SD1->( D1_VALIPI / D1_QUANT )
+TRB->DESC		:= Round(xMoeda(SD1->D1_VALDESC,nMoeda,Mv_Par20,SD1->D1_EMISSAO,nDecs+1),nDecs)
+TRB->TOTAL		:= Round(xMoeda(SD1->D1_TOTAL - SD1->D1_VALDESC,nMoeda,Mv_Par20,SD1->D1_EMISSAO,nDecs+1),nDecs)
+TRB->ICMS		:= SD1->D1_VALICM
+TRB->GRUPO		:= SD1->D1_GRUPO
+TRB->COND		:= SF1->F1_COND
+TRB->FILIAL 	:= SD1->D1_FILIAL
+
+TRB->ACRES		:= Round(xMoeda(SD1->D1_TOTAL,nMoeda,Mv_Par20,SD1->D1_EMISSAO,nDecs+1),nDecs) - ( Round( UNIT * QUANT, 2 ) )
+
+If TRB->ACRES < 0
+	TRB->ACRES :=	0
+Endif
+
+IF cPaisLoc <> "BRA"
+	aTesImpInf 	:= TesImpInf( SD1->D1_TES )
+	FOR nI := 1 TO LEN( aTesImpInf )
+		IF ! lDiscrim
+			lDiscrim := ( aTesImpInf[nI][3] == "1" )
+		ENDIF
+		IF ! lIncluido
+			lIncluido := ( aTesImpInf[nI][3] <> "1" )
+		ENDIF
+		cCampo 	:= "SD1->"+aTesImpInf[nI][2]
+		nImposto	:= Round(xMoeda(&cCampo,nMoeda,Mv_Par20,SD1->D1_EMISSAO,nDecs+1),nDecs)
+		TRB->TOTAL  += IIf (aTesImpInf[nI][3] == "1",nImposto,0)
+	NEXT nI
+	TRB->IMPOSTOS	:= nImposto
+	DO CASE
+		CASE lDiscrim .AND. lIncluido
+			TRB->TIPOIMP := "()"
+		CASE lDiscrim
+			TRB->TIPOIMP := "(D)"
+		CASE lIncluido
+			TRB->TIPOIMP := "(I)"
+	ENDCASE
+ENDIF
+
+TRB->STATUS 	:= "D"
+TRB->OL			:= "S"
+MsUnlock()
+
+RestArea( aArea )
+Return( Nil )
+
+/*/
+ÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜ
+±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±
+±±ÚÄÄÄÄÄÄÄÄÄÄÂÄÄÄÄÄÄÄÄÄÄÂÄÄÄÄÄÄÄÂÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÂÄÄÄÄÄÄÂÄÄÄÄÄÄÄÄÄÄ¿±±
+±±³Fun‡…o    ³SubTotDev ³ Autor ³ Viviani               ³ Data ³ 16.06.99 ³±±
+±±ÃÄÄÄÄÄÄÄÄÄÄÅÄÄÄÄÄÄÄÄÄÄÁÄÄÄÄÄÄÄÁÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÁÄÄÄÄÄÄÁÄÄÄÄÄÄÄÄÄÄ´±±
+±±³Descri‡…o ³IMPRIMIR SUBTOTAL DE DEVOLUCOES DO RELATORIO                ³±±
+±±ÃÄÄÄÄÄÄÄÄÄÄÅÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ´±±
+±±³Sintaxe e ³ SubTot(ExpN1,ExpN2,ExpN3,ExpChar1,ExpChar2)                ³±±
+±±ÃÄÄÄÄÄÄÄÄÄÄÅÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ´±±
+±±³Parametros³                                                            ³±±
+±±ÃÄÄÄÄÄÄÄÄÄÄÅÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ´±±
+±±³ Uso      ³ Lojr070.prg                                                ³±±
+±±ÀÄÄÄÄÄÄÄÄÄÄÁÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÙ±±
+±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±
+ßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßß
+/*/
+STATIC Function SubTotDev(nDDescItem,nDAcresItem,nDValorRec,nDValIcms,nOrdem,cParam,nDQuant)
+Local aArea     := GetArea()
+LOCAL cPicQuant := ""
+
+If TamSX3( "L2_QUANT" )[2] > 0
+	cPicQuant := "@E " + REPLICATE("9", TamSX3( "L2_QUANT" )[1]+2) + "." + ;
+	REPLICATE("9", TamSX3( "L2_QUANT" )[2])
+Else
+	cPicQuant := "@E " + REPLICATE("9", TamSX3( "L2_QUANT" )[1]+2)
+EndIf
+
+lj070Quebra( nOrdem, cParam )
+@li,112 PSay nDQuant   		Picture cPicQuant
+@li,142 PSay nDDescItem	  	Picture PesqPict("SL2","L2_VALDESC",10,Mv_Par20)
+@li,151 PSay nDAcresItem 	Picture PesqPict("SL2","L2_VLRITEM",12,Mv_Par20)
+@li,166 PSay nDValorRec  	Picture PesqPict("SL2","L2_VLRITEM",12,Mv_Par20)
+@li,177 PSay nDValIcms   	Picture PesqPict("SL2","L2_VALICM",12)
+
+li++
+
+RestArea( aArea )
+Return( Nil )
+
+/*/
+ÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜ
+±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±
+±±ÚÄÄÄÄÄÄÄÄÄÄÂÄÄÄÄÄÄÄÄÄÄÂÄÄÄÄÄÄÄÂÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÂÄÄÄÄÄÄÂÄÄÄÄÄÄÄÄÄÄ¿±±
+±±³Fun‡…o    ³  SubTot	³ Autor ³ Raul C. Capeleti      ³ Data ³ 26.12.94 ³±±
+±±ÃÄÄÄÄÄÄÄÄÄÄÅÄÄÄÄÄÄÄÄÄÄÁÄÄÄÄÄÄÄÁÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÁÄÄÄÄÄÄÁÄÄÄÄÄÄÄÄÄÄ´±±
+±±³Descri‡…o ³IMPRIMIR SUBTOTAL DO RELATORIO                              ³±±
+±±ÃÄÄÄÄÄÄÄÄÄÄÅÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ´±±
+±±³Sintaxe e ³ SubTot(ExpN1,ExpN2,ExpN3,ExpChar1,ExpChar2)                ³±±
+±±ÃÄÄÄÄÄÄÄÄÄÄÅÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ´±±
+±±³ Uso      ³ Lojr070.prg                                                ³±±
+±±ÀÄÄÄÄÄÄÄÄÄÄÁÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÙ±±
+±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±
+ßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßß
+/*/
+STATIC Function SubTot(nDescItem,nAcresItem,nValorRec,nValIcms,nOrdem,cParam,nQuant)
+
+Local aArea := GetArea()
+LOCAL cPicQuant := ""
+
+If TamSX3( "L2_QUANT" )[2] > 0
+	cPicQuant := "@E " + REPLICATE("9", TamSX3( "L2_QUANT" )[1]+2) + "." + ;
+	REPLICATE("9", TamSX3( "L2_QUANT" )[2])
+Else
+	cPicQuant := "@E " + REPLICATE("9", TamSX3( "L2_QUANT" )[1]+2)
+EndIf
+
+cParam:=Alltrim(cParam)
+
+lJ070Quebra(nOrdem,cParam)
+@ li,112 PSay nQuant		Picture cPicQuant
+@ li,142 PSay nDescItem	  	Picture PesqPict("SL2","L2_VALDESC",10,Mv_Par20)
+@ li,152 PSay nAcresItem  	Picture PesqPict("SL2","L2_VLRITEM",12,Mv_Par20)
+@ li,167 PSay nValorRec   	Picture PesqPict("SL2","L2_VLRITEM",12,Mv_Par20)
+@ li,178 PSay nValIcms   	Picture PesqPict("SL2","L2_VALICM",12)
+li++
+
+RestArea(aArea)
+Return( Nil )
+
+/*/
+ÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜ
+±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±
+±±ÚÄÄÄÄÄÄÄÄÄÄÂÄÄÄÄÄÄÄÄÄÄÂÄÄÄÄÄÄÄÂÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÂÄÄÄÄÄÄÂÄÄÄÄÄÄÄÄÄÄ¿±±
+±±³Fun‡…o    ³  ImpTot	³ Autor ³ Raul C.Capeleti       ³ Data ³ 26.12.94 ³±±
+±±ÃÄÄÄÄÄÄÄÄÄÄÅÄÄÄÄÄÄÄÄÄÄÁÄÄÄÄÄÄÄÁÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÁÄÄÄÄÄÄÁÄÄÄÄÄÄÄÄÄÄ´±±
+±±³Descri‡…o ³IMPRIMIR TOTAL DO RELATORIO                                 ³±±
+±±ÃÄÄÄÄÄÄÄÄÄÄÅÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ´±±
+±±³Sintaxe e ³ ImpTot( ExpN1,ExpN2,ExpN3 )                                ³±±
+±±ÃÄÄÄÄÄÄÄÄÄÄÅÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ´±±
+±±³ Uso      ³ Lojr070.prg                                                ³±±
+±±ÀÄÄÄÄÄÄÄÄÄÄÁÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÙ±±
+±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±
+ßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßß
+/*/
+STATIC Function ImpTotFil(nFilDescItem,nFilAcresItem,nFilValorRec,nFilValIcms,nDFilDescItem,nDFilAcresItem,nDFilValorRec,nDFilValIcms,cFilAtu,nFilQuant,nDFilQuant)
+
+LOCAL aArea := GetArea()
+LOCAL cPicQuant := ""
+
+If TamSX3( "L2_QUANT" )[2] > 0
+	cPicQuant := "@E " + REPLICATE("9", TamSX3( "L2_QUANT" )[1]+2) + "." + ;
+	REPLICATE("9", TamSX3( "L2_QUANT" )[2])
+Else
+	cPicQuant := "@E " + REPLICATE("9", TamSX3( "L2_QUANT" )[1]+2)
+EndIf
+
+dbSelectArea("SM0")
+dbSetOrder(1)
+dbSeek(cEmpAnt + cFilAtu )
+
+li++
+// T O T A L	F I L I A L ---->
+@li,000 PSay STR0035 + SM0->M0_CODFIL + " " + If(Empty(SM0->M0_NOMECOM),SM0->M0_NOME,SM0->M0_NOMECOM)
+@li,112 PSay nFilQuant     -  nDFilQuant      Picture cPicQuant
+@li,142 PSay nFilDescItem  -  nDFilDescItem   Picture PesqPict("SL2","L2_VALDESC",10,Mv_Par20)
+@li,151 PSay nFilAcresItem -  nDFilAcresItem  Picture PesqPict("SL2","L2_VLRITEM",12,Mv_Par20)
+@li,166 PSay nFilValorRec  -  nDFilValorRec   Picture PesqPict("SL2","L2_VLRITEM",12,Mv_Par20)
+@li,177 PSay nFilValIcms   -  nDFilValIcms    Picture PesqPict("SL2","L2_VALICM",12)
+@li+1,00 PSay ""
+li++
+
+RestArea( aArea )
+Return( Nil )
+
+/*/
+ÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜ
+±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±
+±±ÚÄÄÄÄÄÄÄÄÄÄÂÄÄÄÄÄÄÄÄÄÄÂÄÄÄÄÄÄÄÂÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÂÄÄÄÄÄÄÂÄÄÄÄÄÄÄÄÄÄ¿±±
+±±³Fun‡…o    ³  ImpTot	³ Autor ³ Raul C.Capeleti       ³ Data ³ 26.12.94 ³±±
+±±ÃÄÄÄÄÄÄÄÄÄÄÅÄÄÄÄÄÄÄÄÄÄÁÄÄÄÄÄÄÄÁÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÁÄÄÄÄÄÄÁÄÄÄÄÄÄÄÄÄÄ´±±
+±±³Descri‡…o ³IMPRIMIR TOTAL DO RELATORIO                                 ³±±
+±±ÃÄÄÄÄÄÄÄÄÄÄÅÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ´±±
+±±³Sintaxe e ³ ImpTot( ExpN1,ExpN2,ExpN3 )                                ³±±
+±±ÃÄÄÄÄÄÄÄÄÄÄÅÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ´±±
+±±³ Uso      ³ Lojr070.prg                                                ³±±
+±±ÀÄÄÄÄÄÄÄÄÄÄÁÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÙ±±
+±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±
+ßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßß
+/*/
+STATIC Function ImpTot(nGerDescItem,nGerAcresItem,nGerValorRec,nGerValIcms,nDGerDescItem,nDGerAcresItem,nDGerValorRec,nDGerValIcms,nGerQuant,nDGerQuant)
+
+LOCAL cPicQuant := ""
+
+If TamSX3( "L2_QUANT" )[2] > 0
+	cPicQuant := "@E " + REPLICATE("9", TamSX3( "L2_QUANT" )[1]+2) + "." + ;
+	REPLICATE("9", TamSX3( "L2_QUANT" )[2])
+Else
+	cPicQuant := "@E " + REPLICATE("9", TamSX3( "L2_QUANT" )[1]+2)
+EndIf
+
+li++
+@ li,000 PSay STR0031					// T O T A L	G E R A L ---->
+@ li,112 PSay nGerQuant    - nDGerQuant   	Picture cPicQuant
+@ li,142 PSay nGerDescItem - nDGerDescItem	Picture PesqPict("SL2","L2_VALDESC",10,Mv_Par20)
+@ li,151 PSay nGerAcresItem- nDGerAcresItem Picture PesqPict("SL2","L2_VLRITEM",12,Mv_Par20)
+@ li,166 PSay nGerValorRec - nDGerValorRec  Picture PesqPict("SL2","L2_VLRITEM",12,Mv_Par20)
+@ li,177 PSay nGerValIcms  - nDGerValIcms   Picture PesqPict("SL2","L2_VALICM",12)
+@ li+1,00 PSay ""
+
+Return( Nil )
+
+/*/
+ÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜ
+±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±
+±±ÚÄÄÄÄÄÄÄÄÄÄÂÄÄÄÄÄÄÄÄÄÄÂÄÄÄÄÄÄÄÂÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÂÄÄÄÄÄÄÂÄÄÄÄÄÄÄÄÄÄ¿±±
+±±³Fun‡…o    ³Lj070Quebr³ Autor ³ Raul C.Capeleti       ³ Data ³ 11.11.00 ³±±
+±±ÃÄÄÄÄÄÄÄÄÄÄÅÄÄÄÄÄÄÄÄÄÄÁÄÄÄÄÄÄÄÁÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÁÄÄÄÄÄÄÁÄÄÄÄÄÄÄÄÄÄ´±±
+±±³Descri‡…o ³Imprime os dados do subtotal                                ³±±
+±±ÀÄÄÄÄÄÄÄÄÄÄÁÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÙ±±
+±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±
+ßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßß
+/*/
+Static Function lj070Quebra( nOrdem, cParam )
+
+LOCAL cFil
+
+li++
+If nOrdem = 1				// Data
+	// S U B - T O T A L	---->
+	@ li,000 PSay STR0030
+	@ li,026 Psay Substr(cParam,9,2)+"/"+Substr(cParam,7,2)+"/"+Substr(cParam,5,2)
+	
+Elseif nOrdem = 2			// Vendedor
+	// S U B - T O T A L	---->
+	dbSelectArea("SA3")
+	cFil := IIF( EMPTY( xFilial("SA3") ), xFilial("SA3"), Substr(cParam,1,2) )
+	dbSeek( cFil + Substr(cParam,4,6) )
+	@ li,000 PSay STR0030 + " "+Substr(cParam,4,6) +" - "+SA3->A3_NREDUZ
+	
+Elseif nOrdem = 4 .or. nOrdem = 5		// Grupo ou Tipo
+	If nOrdem == 5		//Grupo
+		dbSelectArea("SBM")
+		cFil := IIF( EMPTY( xFilial("SBM") ), xFilial("SBM"), Substr(cParam,1,2) )
+		dbSeek( cFil + Alltrim( Substr( cParam, 3, 4 ) ) )
+		@ li,000 PSay STR0030 + " "+ Alltrim(Substr(cParam,3,4)) +If( ! Empty( SubStr(cParam,3,4) ),;
+		" - "+Capital(SBM->BM_DESC), "")
+	Else
+		DBSelectArea("SX5")
+		cFil := IIF( EMPTY( xFilial("SX5") ), xFilial("SX5"), Substr(cParam,1,2) )
+		DBSeek( cFil + "02" + Alltrim( Substr( cParam, 3, 2 ) ) )
+		@ li,000 PSay STR0030 + " "+ Alltrim(Substr(cParam,3,2)) +" - "+Capital(SX5->X5_DESCRI)
+	Endif
+Elseif nOrdem = 3								// Produto
+	// S U B - T O T A L	---->
+	dbSelectArea("SB1")
+	cFil := IIF( EMPTY( xFilial("SB1") ), xFilial("SB1"), Substr(cParam,1,2) )
+	dbSeek( cFil + Substr( cParam, 4, 15 ) )
+	@ li,000 PSay STR0030 + " "+ AllTrim(Substr(cParam,4,15)) +" - "+SB1->B1_DESC
+	
+Elseif nOrdem = 6							// Cliente
+	// S U B - T O T A L	---->
+	dbSelectArea("SA1")
+	cFil := IIF( EMPTY( xFilial("SA1") ), xFilial("SA1"), Substr(cParam,1,2) )
+	dbSeek( cFil + Substr( cParam, 3, 6 ) )
+	@ li,000 PSay STR0030 + " "+Substr(cParam,3,6) +" - "+SA1->A1_NREDUZ
+	
+Elseif nOrdem = 7							// Caixa
+	dbSelectArea("SA6")
+	cFil := IIF( EMPTY( xFilial("SA6") ), xFilial("SA6"), Substr(cParam,1,2) )
+	dbSeek( cFil + AllTrim( Substr( cParam, 3, 3 ) ) )
+	// S U B - T O T A L	---->
+	@ li,000 PSay STR0030 + " "+Substr(cParam,3,3) +" - "+SA6->A6_NREDUZ
+Endif
+Return( Nil )
+
+/*/
+ÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜ
+±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±
+±±ÚÄÄÄÄÄÄÄÄÄÄÂÄÄÄÄÄÄÄÄÄÄÂÄÄÄÄÄÄÄÂÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÂÄÄÄÄÄÄÂÄÄÄÄÄÄÄÄÄÄ¿±±
+±±³Fun‡…o    ³ Lr070Chec³ Autor ³ Pilar S Alabaladejo   ³ Data ³ 19/11/96 ³±±
+±±ÃÄÄÄÄÄÄÄÄÄÄÅÄÄÄÄÄÄÄÄÄÄÁÄÄÄÄÄÄÄÁÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÁÄÄÄÄÄÄÁÄÄÄÄÄÄÄÄÄÄ´±±
+±±³Descri‡…o ³ Filtra os registros                                        ³±±
+±±ÃÄÄÄÄÄÄÄÄÄÄÅÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ´±±
+±±³Sintaxe   ³ Lr070Chec()                                                ³±±
+±±ÃÄÄÄÄÄÄÄÄÄÄÅÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ´±±
+±±³ Uso      ³ Generico                                                   ³±±
+±±ÀÄÄÄÄÄÄÄÄÄÄÁÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÙ±±
+±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±
+ßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßß
+*/
+Static Function Lr070Chec()
+// String atualmente com 254 bytes
+Local cString
+cString := 'L1_OPERADO>="' + Mv_Par13 + '".And.'
+cString += 'L1_OPERADO<="' + Mv_Par14 + '".And.'
+
+If SL1->(FieldPos("L1_DOCPED")>0)
+	cString += '(L1_DOC<>"      ".Or.L1_DOCPED<>"      ").And.'
+Else
+	cString += 'L1_DOC<>"      ".And.'
+EndIf
+
+cString += 'DTOS(L1_EMISNF)>="' + DTOS(Mv_Par01) + '".And.'
+cString += 'DTOS(L1_EMISNF)<="'+DTOS(Mv_Par02)+'".And.'
+cString += 'L1_VEND>="' + Mv_Par03+'".And.'
+cString += 'L1_VEND<="' + Mv_Par04+'".And.'
+cString += '(L1_TIPO="V".Or.L1_TIPO="P").And.'
+cString += 'L1_FILIAL>="'+Mv_Par17+'".And.'
+cString += 'L1_FILIAL<="'+Mv_Par18+'".And.'
+cString += 'L1_ORCRES="      "'
+Return( cString )
+
+/*/
+ÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜ
+±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±
+±±ÚÄÄÄÄÄÄÄÄÄÄÂÄÄÄÄÄÄÄÄÄÄÂÄÄÄÄÄÄÄÂÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÂÄÄÄÄÄÄÂÄÄÄÄÄÄÄÄÄÄ¿±±
+±±³Fun‡…o    ³ Lr070Che2³ Autor ³ Gustavo Henrique      ³ Data ³ 05/10/00 ³±±
+±±ÃÄÄÄÄÄÄÄÄÄÄÅÄÄÄÄÄÄÄÄÄÄÁÄÄÄÄÄÄÄÁÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÁÄÄÄÄÄÄÁÄÄÄÄÄÄÄÄÄÄ´±±
+±±³Descri‡…o ³ Filtra os registros                                        ³±±
+±±ÃÄÄÄÄÄÄÄÄÄÄÅÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ´±±
+±±³Sintaxe   ³ Lr070Che2()                                                ³±±
+±±ÃÄÄÄÄÄÄÄÄÄÄÅÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ´±±
+±±³ Uso      ³ Generico                                                   ³±±
+±±ÀÄÄÄÄÄÄÄÄÄÄÁÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÙ±±
+±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±
+ßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßß
+*/
+Static Function Lr070Che2()
+
+Local cString
+
+cString := ''
+cString += 'DTOS(F1_EMISSAO)>="' + DTOS(Mv_Par01) + '".And.'
+cString += 'DTOS(F1_EMISSAO)<="' + DTOS(Mv_Par02) + '".And.'
+cString += 'F1_FORNECE >="'+Mv_Par11+'".And.'
+cString += 'F1_FORNECE <="'+Mv_Par12+'".And.'
+cString += 'F1_FILIAL>="'+Mv_Par17+'".And.'
+cString += 'F1_FILIAL<="'+Mv_Par18+'"'
+Return( cString )

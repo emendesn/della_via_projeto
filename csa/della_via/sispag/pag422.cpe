@@ -1,0 +1,65 @@
+Registro Header00100100                                                           
+Arquivo Remessa00200201                                                           
+Arquivo Extenso0030090"REMESSA"                                                   
+Tipo Servico   010011011                                                          
+Servico Extenso0120260"PAGTOS FORNECED"                                           
+Convenio Saf Cl0270340SA6->A6_NUMCON                                              
+Filler         0350370"N"                                                         
+Agenc Saf Conv 0380440SA6->A6_AGENCIA                                             
+Filler         0450460                                                            
+Nome Cliente   0470760Subs(SM0->M0_NOMECOM,1,30)                                  
+No Bco Compens 0770790"422"                                                       
+Nome Banco     0800940"BANCO SAFRA S/A"                                           
+Dta Grav Arquiv0951000GravaData(dDataBase,.F.,1)                                  
+Filler         1013870                                                            
+Filler         3883880"N"                                                         
+No Seq Arquivo 3893940SEE->EE_ULTDSK                                              
+No Seq Registro3954000000001                                                      
+Registro Detalh00100101                                                           
+Codigo CFG/CGC 0020030"01"                                                        
+Numero CPF/CGC 0040170SM0->M0_CGC                                                 
+No. Conv Saf   0180250SA6->A6_NUMCON                                              
+Filler         0260280                                                            
+Ag SafrConvenio0290350SA6->A6_AGENCIA                                             
+Filler         0360620                                                            
+No CPF/CGC Forn0630760SA2->A2_CGC                                                 
+Tipo Compromis 0770790U_TESTER(SE2->E2_TIPO)                                      
+Ident Compromis0800890SE2->E2_IDCNAB                                              
+Seq Compromisso0900900                                                            
+Ident Servico  0910920                                                            
+Filler         0931070                                                            
+Cod Operacao   1081080"C"                                                         
+Tipo Operacao  1091100SE2->E2_OCORREN                                             
+Filler         1111200                                                            
+Data Vencimento1211260GravaData(SE2->E2_VENCREA,.F.,1)                            
+Valor Orig Tit 1271390INT((XMOEDA(SE2->E2_VALOR,SE2->E2_MOEDA,1))*100)            
+Tipo Pagamento 1401420TABELA("58",SEA->EA_MODELO)                                 
+Banco Destinat 1431450IF(SEA->EA_MODELO=="02","000",SA2->A2_BANCO)                
+Agencia Destin 1461520IF(SEA->EA_MODELO=="02","0000000",SA2->A2_AGENCIA)          
+Cam Compens Des1531550"000"                                                       
+C.C. Destinat  1561650IF(SEA->EA_MODELO=="02","0000000000",SA2->A2_NUMCON)        
+Nome Ag Destin 1661850U_SAFRAGEN()                                                
+Ag Saf Convenio1861920SA6->A6_AGENCIA                                             
+BANCO FAVORECID2482500SUBSTR(SE2->E2_CODBAR,1,3)                                  
+Valor Abatiment2512630STRZERO(SE2->E2_DESCONT*100,13,0)                           
+NOME Fornecedor2642930SA2->A2_NOME                                                
+BRANCOS        2943030                                                            
+BANCO FAVORECID3043060SUBSTR(SE2->E2_CODBAR,1,3)                                  
+MOEDA          3073070SUBSTR(SE2->E2_CODBAR,4,1)                                  
+DV             3083080U_DIGVER()                                                  
+VENCIMENTO     3093120U_SISP004()                                                 
+VALOR          3133220U_VALIMP()                                                  
+LIVRE          3233470U_CAMPFREE()                                                
+Juros/Multa    3483600STRZERO(SE2->E2_PORCJUR*100,13)                             
+Data Pagamento 3613660GravaData(dDataBase,.F.,1)                                  
+Valor Pagto    3673790INT((XMOEDA(SE2->E2_SALDO,SE2->E2_MOEDA,1))*100)            
+MOEDA          3803830SUBSTR(SE2->E2_CODBAR,4,1)                                  
+Pre Cadast Forn3843840                                                            
+Filler         3853940                                                            
+Num Seq Regist 3954000Incrementa()                                                
+Reg Trailer    0010010                                                            
+Somat CGC/CPF  0020190SomaCgc()                                                   
+Somat Vlr Orig 0200370SomaValor()                                                 
+Somat Data Pagt0380550SomaData()                                                  
+Filler         0563940                                                            
+No. Sequenc    3954000Incrementa()                                                

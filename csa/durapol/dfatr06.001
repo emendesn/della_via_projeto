@@ -1,0 +1,458 @@
+/*
+ÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜ
+±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±
+±±ÉÍÍÍÍÍÍÍÍÍÍÑÍÍÍÍÍÍÍÍÍÍËÍÍÍÍÍÍÍÑÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍËÍÍÍÍÍÍÑÍÍÍÍÍÍÍÍÍÍÍÍÍ»±±
+±±ºPrograma  ³DFATR06   ºAutor  ³ Reinaldo Caldas    º Data ³  17/08/05   º±±
+±±ÌÍÍÍÍÍÍÍÍÍÍØÍÍÍÍÍÍÍÍÍÍÊÍÍÍÍÍÍÍÏÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÊÍÍÍÍÍÍÏÍÍÍÍÍÍÍÍÍÍÍÍÍ¹±±
+±±ºDesc.     ³ Mapa diario de Faturamento                                 º±±
+±±ÌÍÍÍÍÍÍÍÍÍÍØÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍ¹±±
+±±ºUso       ³ Durapol Renovadora de Pneus LTDA.                          º±±
+±±ÈÍÍÍÍÍÍÍÍÍÍÏÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍ¼±±
+±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±
+ßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßß
+*/
+
+User Function DFATR06()
+//ÚÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ¿
+//³ Declaracao de Variaveis                                             ³
+//ÀÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÙ
+
+Private cString
+Private aOrd 		:= {}
+Private CbTxt       := ""
+Private cDesc1      := "Relatorio de Mapa Diario de Faturamento "
+Private cDesc2      := ""
+Private cDesc3      := ""
+Private cPict       := ""
+Private lEnd        := .F.
+Private lAbortPrint := .F.
+Private limite      := 78
+Private tamanho     := "G"
+Private nomeprog    := "DFATR06"
+Private nTipo       := 18
+Private aReturn     := { "Zebrado", 1, "Administracao", 2, 2, 1, "", 1}
+Private nLastKey    := 0
+Private titulo      := "Mapa Diario de Faturamento"
+Private nLin        := 80
+Private nPag		:= 0
+Private Cabec1      := " "
+Private Cabec2      := " "
+Private cbtxt      	:= Space(10)
+Private cbcont     	:= 00
+Private CONTFL     	:= 01
+Private m_pag      	:= 01
+Private imprime     := .T.
+Private wnrel      	:= "DFATR06"
+Private _cPerg     	:= "DFAT06"
+
+Private cString 	:= "SF2"
+
+dbSelectArea("SF2")
+dbSetOrder(1)
+
+//ÚÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ¿
+//³ Monta a interface padrao com o usuario...                           ³
+//ÀÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÙ
+
+_aRegs:={}
+
+AAdd(_aRegs,{_cPerg,"01","Da  Data ?"        ,"Da  Data"       ,"Da  Data"       ,"mv_ch1","D", 8,0,0,"G","","mv_par01","","","","","","","","","","","","","","","","","","","","","","","","",""})
+AAdd(_aRegs,{_cPerg,"02","Ate Data ?"        ,"Ate Data"       ,"Ate Data"       ,"mv_ch2","D", 8,0,0,"G","","mv_par02","","","","","","","","","","","","","","","","","","","","","","","","",""})
+AAdd(_aRegs,{_cPerg,"03","Do  Produto ?"     ,"Do Produto"     ,"Do Produto"     ,"mv_ch3","C",15,0,0,"G","","mv_par03","","","","","","","","","","","","","","","","","","","","","","","","","SB1"})
+AAdd(_aRegs,{_cPerg,"04","Ate Produto ?"     ,"Ate Produto"    ,"Ate Produto"    ,"mv_ch4","C",15,0,0,"G","","mv_par04","","","","","","","","","","","","","","","","","","","","","","","","","SB1"})
+AAdd(_aRegs,{_cPerg,"05","Do  Cliente ? "    ,"Do Cliente"     ,"Do Cliente"     ,"mv_ch5","C", 6,0,0,"G","","mv_par05","","","","","","","","","","","","","","","","","","","","","","","","","CLI"})
+AAdd(_aRegs,{_cPerg,"06","Ate Cliente ?"     ,"Ate Cliente"    ,"Ate Data"       ,"mv_ch6","C", 6,0,0,"G","","mv_par06","","","","","","","","","","","","","","","","","","","","","","","","","CLI"})
+AAdd(_aRegs,{_cPerg,"07","Da  Loja ?"        ,"Da Loja"        ,"Da Loja"        ,"mv_ch7","C", 2,0,0,"G","","mv_par07","","","","","","","","","","","","","","","","","","","","","","","","",""})
+AAdd(_aRegs,{_cPerg,"08","Ate Loja ?"        ,"Ate Loja"       ,"Ate Loja"       ,"mv_ch8","C", 2,0,0,"G","","mv_par08","","","","","","","","","","","","","","","","","","","","","","","","",""})
+AAdd(_aRegs,{_cPerg,"09","Do  Motorista ?"   ,"Do Vendedor"    ,"Do Vendedor"    ,"mv_ch9","C", 6,0,0,"G","","mv_par09","","","","","","","","","","","","","","","","","","","","","","","","","SA3"})
+AAdd(_aRegs,{_cPerg,"10","Ate Motorista ?"   ,"Ate Vendedor"   ,"Ate Vendedor"   ,"mv_cha","C", 6,0,0,"G","","mv_par10","","","","","","","","","","","","","","","","","","","","","","","","","SA3"})
+AAdd(_aRegs,{_cPerg,"11","Do  Vendedor ?"    ,"Do Vendedor"    ,"Do Vendedor"    ,"mv_chb","C", 6,0,0,"G","","mv_par11","","","","","","","","","","","","","","","","","","","","","","","","","SA3"})
+AAdd(_aRegs,{_cPerg,"12","Ate Vendedor ?"    ,"Ate Vendedor"   ,"Ate Vendedor"   ,"mv_chc","C", 6,0,0,"G","","mv_par11","","","","","","","","","","","","","","","","","","","","","","","","","SA3"})
+AAdd(_aRegs,{_cPerg,"13","Do  Indicador ?"   ,"Do Vendedor"    ,"Do Vendedor"    ,"mv_chd","C", 6,0,0,"G","","mv_par13","","","","","","","","","","","","","","","","","","","","","","","","","SA3"})
+AAdd(_aRegs,{_cPerg,"14","Ate indicador ?"   ,"Ate Vendedor"   ,"Ate Vendedor"   ,"mv_che","C", 6,0,0,"G","","mv_par14","","","","","","","","","","","","","","","","","","","","","","","","","SA3"})
+AAdd(_aRegs,{_cPerg,"15","Da Filial     ?"   ,"Do Vendedor"    ,"Do Vendedor"    ,"mv_chf","C", 2,0,0,"G","","mv_par15","","","","","","","","","","","","","","","","","","","","","","","","",""})
+AAdd(_aRegs,{_cPerg,"16","Ate Filial    ?"   ,"Ate Vendedor"   ,"Ate Vendedor"   ,"mv_chg","C", 2,0,0,"G","","mv_par16","","","","","","","","","","","","","","","","","","","","","","","","",""})
+AAdd(_aRegs,{_cPerg,"17","Da Nota Saida ?"   ,"Da Nota Saida"  ,"Da Nota Saida"  ,"mv_chh","C", 6,0,0,"G","","mv_par17","","","","","","","","","","","","","","","","","","","","","","","","",""})
+AAdd(_aRegs,{_cPerg,"18","Ate Nota Saida ?"  ,"Ate Nota Saida" ,"Ate Nota Saida" ,"mv_chi","C", 6,0,0,"G","","mv_par18","","","","","","","","","","","","","","","","","","","","","","","","",""})
+AAdd(_aRegs,{_cPerg,"19","Coeficiente Liq.?" ,"Coeficiente Liq","Coeficiente Liq","mv_chj","N", 5,3,0,"G","","mv_par19","","","","","","","","","","","","","","","","","","","","","","","","",""})
+
+ValidPerg(_aRegs,_cPerg)
+
+Pergunte(_cPerg,.F.)
+
+aOrd :={"Por Cod.Produto", "Por Cod.Cliente", "Por Motorista", "Por Vendedor","Por Indicador","Por Nota Fiscal de Saida" }
+
+wnrel := SetPrint(cString,NomeProg,_cPerg,@titulo,cDesc1,cDesc2,cDesc3,.F.,aOrd,,Tamanho)
+
+If nLastKey == 27
+	Return
+Endif
+
+SetDefault(aReturn,cString)
+
+If nLastKey == 27
+	Return
+Endif
+
+nTipo := If(aReturn[4]==1,15,18)
+
+Processa( {|| ImpRel() } )
+
+Return
+
+
+/*
+ÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜ
+±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±
+±±ÉÍÍÍÍÍÍÍÍÍÍÑÍÍÍÍÍÍÍÍÍÍËÍÍÍÍÍÍÍÑÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍËÍÍÍÍÍÍÑÍÍÍÍÍÍÍÍÍÍÍÍÍ»±±
+±±ºPrograma  ³ ImpRel   ºAutor  ³ Reinaldo Caldas    º Data ³  17/08/05   º±±
+±±ÌÍÍÍÍÍÍÍÍÍÍØÍÍÍÍÍÍÍÍÍÍÊÍÍÍÍÍÍÍÏÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÊÍÍÍÍÍÍÏÍÍÍÍÍÍÍÍÍÍÍÍÍ¹±±
+±±ºDesc.     ³ Funcao para impressao do relatorio                         º±±
+±±º          ³                                                            º±±
+±±ÈÍÍÍÍÍÍÍÍÍÍÏÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍ¼±±
+±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±
+ßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßß
+*/
+
+Static Function ImpRel()
+
+LOCAL _cQry
+LOCAL cCod     := cVar := cCodGen := ""
+LOCAL cCodVen  := cCodVen4 := cCodVen5 := ""
+LOCAL cCodCli  := ""
+LOCAL cNota    := ""
+LOCAL _aTam    := _aEstrutura := {}
+LOCAL nOrdem   := aReturn[8]
+LOCAL Titulo   := Titulo + ' -   ' + aOrd[nOrdem]
+LOCAL nTotVlr  := nVlrCons:= nTotCus := nTotDif  := nTtPneu  := nTtCons := nTotRec := 0
+
+LOCAL cabec1   := "   Coeficiente : "+Alltrim(Str(mv_par19))
+LOCAL cabec2   := "   Nota   Cod.Cliente Nome do Cliente                   Cod.Serviço         Desc.Serviço                           Medida       Banda   Largura    Qtd.    Venda Liq.    Coefiente   Custo   Diferenca    Preco/Custo   Coleta"
+
+
+ProcRegua(100)
+
+IF Select("TRBFAT") > 0
+	TRBFAT->(dbCloseArea())
+EndIF
+
+_cQry := "select F2_DOC ,F2_CLIENTE, A1_NOME, A3_NOME, D2_PEDIDO, D2_ITEMPV, D2_COD, D2_PRCVEN, D2_DESCON, B1_DESC, B1_PRODUTO, B1_CUSTD, F2_VEND3,
+_cQry += " D2_TIPO, D2_QUANT, D2_TES, D2_GRUPO, F2_VEND4, F2_VEND5 "
+_cQry += " from " + RetSqlName("SF2")+ " SF2, " + RetSqlName("SD2") + " SD2, " + RetSqlName("SA1") + " SA1, " + RetSqlName("SA3") + " SA3, "+RetSqlName("SB1")+ " SB1 "
+_cQry += " where SF2.D_E_L_E_T_ = ' ' "
+_cQry += " and SD2.D_E_L_E_T_ = ' ' "
+_cQry += " and SA1.D_E_L_E_T_ = ' ' "
+_cQry += " and SA3.D_E_L_E_T_ = ' ' "
+_cQry += " and SB1.D_E_L_E_T_ = ' ' "
+_cQry += " and F2_FILIAL >= '" + mv_par15 + "' and F2_FILIAL <= '" + mv_par16 + "' "
+_cQry += " and D2_FILIAL >= '" + mv_par15 + "' and D2_FILIAL <= '" + mv_par16 + "' "
+_cQry += " and B1_FILIAL = '" + xFilial("SB1") + "' "
+_cQry += " and F2_EMISSAO >= '" + DtoS(mv_par01) + "' and F2_EMISSAO <= '" + DtoS(mv_par02) + "' "
+_cQry += " and D2_COD = B1_COD and D2_LOCAL = B1_LOCPAD and F2_DOC = D2_DOC "
+_cQry += " and D2_CLIENTE = F2_CLIENTE and F2_LOJA = D2_LOJA and F2_CLIENTE = A1_COD "
+_cQry += " and F2_LOJA = A1_LOJA and F2_VEND3 = A3_COD "
+
+IF nOrdem = 1  //Por Produto
+	
+	_cQry += " and F2_FILIAL = '" + xFilial("SF2") + "' "
+	_cQry += " and D2_FILIAL = '" + xFilial("SD2") + "' "
+	_cQry += " and D2_COD >= '" + mv_par03 + "' and D2_COD <= '" + mv_par04 + "' "
+	_cQry += " order by D2_COD "
+	
+ElseIF nOrdem = 2  //Por Cod.Cliente
+	
+	_cQry += " and F2_CLIENTE >= '" + mv_par05 + "' and F2_CLIENTE <= '" + mv_par06 + "' "
+	_cQry += " and F2_LOJA >= '" + mv_par07 + "' and F2_LOJA <= '" + mv_par08 + "' "
+	_cQry += " order by F2_CLIENTE "
+	
+ElseIF nOrdem = 3 //Por Motorista - Vendedor 3
+	
+	_cQry += " and F2_VEND3 >= '" + mv_par09 + "' and F2_VEND3 <= '" + mv_par10 + "' "
+	_cQry += " order by F2_VEND3 "
+	
+ElseIF nOrdem = 4  //Por Vendedor - Vendedor 4
+	
+	_cQry += " and F2_VEND4 >= '" + mv_par11 + "' and F2_VEND4 <= '" + mv_par12 + "' "
+	_cQry += " order by F2_VEND4 "
+	
+ElseIF nOrdem = 5  //Por Indicador - Vendedor 5
+	
+	_cQry += " and F2_VEND5 >= '" + mv_par13 + "' and F2_VEND5 <= '" + mv_par14 + "' "
+	_cQry += " order by F2_VEND5 "
+	
+Else //Por Nota Fiscal de Saida
+	_cQry += " and F2_DOC >= '" + mv_par17 + "' and F2_DOC <= '" + mv_par18 + "' "
+	_cQry += " order by F2_DOC "
+	
+EndIF
+memowrite("teste.sql",_cQry)
+_cQry := ChangeQuery(_cQry)
+
+dbUseArea(.T.,"TOPCONN",TCGenQry(,,_cQry),"TRBFAT",.F.,.T.)
+
+TcSetField("TRBFAT", "F2_EMISSAO", "D")
+
+dbSelectArea("TRBFAT")
+dbGoTop()
+
+_aEstrutura := {}
+
+_aTam := TamSX3("D2_COD")
+aAdd(_aEstrutura,{"TMP_COD"     ,"C",_aTam[1],_aTam[2]})
+_aTam := TamSX3("F2_DOC")
+aAdd(_aEstrutura,{"TMP_DOC"     ,"C",_aTam[1],_aTam[2]})
+_aTam := TamSX3("F2_CLIENTE")
+aAdd(_aEstrutura,{"TMP_CLI"     ,"C",_aTam[1],_aTam[2]})
+_aTam := TamSX3("A1_NOME")
+aAdd(_aEstrutura,{"TMP_NOME"    ,"C",_aTam[1],_aTam[2]})
+_aTam := TamSX3("B1_DESC")
+aAdd(_aEstrutura,{"TMP_DESC"    ,"C",_aTam[1],_aTam[2]})
+_aTam := TamSX3("B1_PRODUTO")
+aAdd(_aEstrutura,{"TMP_PROD"    ,"C",_aTam[1],_aTam[2]})
+_aTam := TamSX3("D2_QUANT")
+aAdd(_aEstrutura,{"TMP_QUANT"   ,"N",_aTam[1],_aTam[2]})
+_aTam := TamSX3("D2_PEDIDO")
+aAdd(_aEstrutura,{"TMP_PED"     ,"C",_aTam[1],_aTam[2]})
+_aTam := TamSX3("F2_VEND3")
+aAdd(_aEstrutura,{"TMP_VEND3"   ,"C",_aTam[1],_aTam[2]})
+_aTam := TamSX3("F2_VEND4")
+aAdd(_aEstrutura,{"TMP_VEND4"   ,"C",_aTam[1],_aTam[2]})
+_aTam := TamSX3("F2_VEND5")
+aAdd(_aEstrutura,{"TMP_VEND5"   ,"C",_aTam[1],_aTam[2]})
+_aTam := TamSX3("A3_NOME")
+aAdd(_aEstrutura,{"TMP_NOMEV"   ,"C",_aTam[1],_aTam[2]})
+_aTam := TamSX3("D2_TES")
+aAdd(_aEstrutura,{"TMP_TES"     ,"C",_aTam[1],_aTam[2]})
+_aTam := TamSX3("B1_CUSTD")
+aAdd(_aEstrutura,{"TMP_CUSTD"   ,"N",_aTam[1],_aTam[2]})
+_aTam := TamSX3("D2_GRUPO")
+aAdd(_aEstrutura,{"TMP_GRUPO"   ,"C",_aTam[1],_aTam[2]})
+_aTam := TamSX3("D2_PRCVEN")
+aAdd(_aEstrutura,{"TMP_PRCV"    ,"N",_aTam[1],_aTam[2]})
+_aTam := TamSX3("D2_PRCVEN")
+aAdd(_aEstrutura,{"TMP_COEF"    ,"N",_aTam[1],_aTam[2]})
+_aTam := TamSX3("D2_TOTAL")
+aAdd(_aEstrutura,{"TMP_PRECO"   ,"N",_aTam[1],_aTam[2]})
+
+cNomArq := CriaTrab(_aEstrutura,.T.)
+
+dbUseArea(.T.,,cNomArq,"TMP",.T.,.F.)
+
+dbSelectArea("TMP")
+IF nOrdem = 1
+	IndRegua("TMP",cNomArq,"(Descend(Strzero(TMP_COEF,11,2))+TMP_COD)",,,"Selecionando Registros")
+ElseIF nOrdem = 2
+	IndRegua("TMP",cNomArq,"(Descend(Strzero(TMP_COEF,11,2))+TMP_CLI)",,,"Selecionando Registros")
+ElseIF nOrdem = 3
+	IndRegua("TMP",cNomArq,"(Descend(Strzero(TMP_COEF,11,2))+TMP_VEND3)",,,"Selecionando Registros")
+ElseIF nOrdem = 4
+	IndRegua("TMP",cNomArq,"(Descend(Strzero(TMP_COEF,11,2))+TMP_VEND4)",,,"Selecionando Registros")
+ElseIF nOrdem = 5
+	IndRegua("TMP",cNomArq,"(Descend(Strzero(TMP_COEF,11,2))+TMP_VEND5)",,,"Selecionando Registros")
+Else
+	IndRegua("TMP",cNomArq,"(Descend(Strzero(TMP_COEF,11,2))+TMP->DOC)",,,"Selecionando Registros")
+EndIF
+dbSetIndex(cNomArq+OrdbagExt())
+
+dbSelectArea("TRBFAT")
+While ! Eof()
+	
+	Reclock("TMP",.T.)
+	TMP->TMP_COD    := TRBFAT->D2_COD
+	TMP->TMP_DOC    := TRBFAT->F2_DOC
+	TMP->TMP_CLI    := TRBFAT->F2_CLIENTE
+	TMP->TMP_NOME   := TRBFAT->A1_NOME
+	TMP->TMP_DESC   := TRBFAT->B1_DESC
+	TMP->TMP_PROD   := TRBFAT->B1_PRODUTO
+	TMP->TMP_QUANT  := TRBFAT->D2_QUANT
+	TMP->TMP_PED    := TRBFAT->D2_PEDIDO
+	TMP->TMP_VEND3  := TRBFAT->F2_VEND3
+	TMP->TMP_VEND4  := TRBFAT->F2_VEND4
+	TMP->TMP_VEND5  := TRBFAT->F2_VEND5
+	TMP->TMP_NOMEV  := TRBFAT->A3_NOME
+	TMP->TMP_TES    := TRBFAT->D2_TES
+	TMP->TMP_GRUPO  := TRBFAT->D2_GRUPO
+	
+	cGrupo          := Alltrim(TMP->TMP_GRUPO)
+	lRecapa         := ( cGrupo $ "SERV" )
+		
+	If lRecapa
+		dbSelectArea("SD3")
+		SD3->( dbSeek(xFilial("SD3") + TRBFAT->D2_PEDIDO+TRBFAT->D2_ITEMPV+"001" , .f. ) )
+		While !Eof() .And. xFilial("SD3") == SD3->D3_FILIAL .And. Alltrim(SD3->D3_OP) == Alltrim(TRBFAT->D2_PEDIDO+TRBFAT->D2_ITEMPV+"001")
+			If SD3->D3_ESTORNO == "S" .Or. Alltrim( Upper(SD3->D3_GRUPO) ) != "BAND"
+				SD3->( dbSkip() )
+				Loop
+			EndIf
+			If SG1->( dbSeek(xFilial("SG1") + TMP->TMP_PROD + SD3->D3_COD,.F.) )
+				TMP->TMP_CUSTD := TMP->TMP_CUSTD + ( SD3->D3_QUANT * SG1->G1_XCSBI )
+			EndIf
+			SD3->( dbSkip() )
+		EndDo
+	Else
+		TMP->TMP_CUSTD := ( SD3->D3_QUANT * SB1->B1_CUSTD )
+	EndIf
+
+	TMP->TMP_PRCV    := TRBFAT->D2_PRCVEN
+	TMP->TMP_COEF    := ((TRBFAT->D2_PRCVEN+TRBFAT->D2_DESCON)*mv_par19) - TRBFAT->B1_CUSTD
+	TMP->TMP_PRECO   := TRBFAT->D2_PRCVEN+TRBFAT->D2_DESCON
+	MsUnlock()
+	
+	dbSelectArea("TRBFAT")
+	dbSkip()
+EndDo
+
+dbSelectArea("TRBFAT")
+dbCloseArea()
+
+dbSelectArea("TMP")
+dbGoTop()
+dbSetOrder(1)
+
+While ! Eof()
+	IF lEnd
+		@Prow()+1, 001 Psay "Cancelado pelo operador "
+		Exit
+	EndIF
+	
+	IncProc()
+	
+	IF nLin > 60
+		Cabec(Titulo,cabec1,cabec2,nomeprog,tamanho,GetMV("MV_COMP"))
+		nLin := 8
+	EndIF
+	
+	IF nOrdem = 1 .and. TMP->TMP_COD != cCodGen
+		nLin ++
+		@ nLin, 003 Psay 'Faturamento do Produto : '+ TMP->TMP_COD+' -  '+TMP->TMP_DESC
+		cCodGen := TMP->TMP_COD
+		nLin := nLin + 2
+	EndIF
+	IF nOrdem = 2 .and. TMP->TMP_CLI != cCodGen
+		nLin ++
+		@ nLin, 003 Psay 'Faturamento do Cliente : '+ TMP->TMP_CLI + ' ' + TMP->TMP_NOME
+		cCodGen := TMP->TMP_CLI
+		nLin := nLin + 2
+	EndIF
+	IF nOrdem = 3 .and. TMP->TMP_VEND3 != cCodGen
+		nLin ++
+		@ nLin, 003 Psay 'Faturamento do Motorista : '+ TMP->TMP_VEND3 + ' ' +TMP->TMP_NOMEV
+		cCodGen := TMP->TMP_VEND3
+		nLin := nLin + 2
+	EndIF
+	IF nOrdem = 4 .and. TMP->TMP_VEND4 != cCodGen
+		nLin ++
+		@ nLin, 003 Psay 'Faturamento do Vendedor  : '+ TMP->TMP_VEND4 + ' '+Posicione("SA3",1,xFilial("SA3")+TMP->TMP_VEND4,"A3_NOME")
+		cCodGen := TMP->TMP_VEND4
+		nLin := nLin + 2
+	EndIF
+	IF nOrdem = 5 .and. TMP->TMP_VEND5 != cCodGen
+		nLin ++
+		@ nLin, 003 Psay 'Faturamento do Indicador : '+ TMP->TMP_VEND5 + ' '+ Posicione("SA3",1,xFilial("SA3")+TMP->TMP_VEND5,"A3_NOME")
+		cCodGen := TMP->TMP_VEND5
+		nLin := nLin + 2
+	EndIF
+	
+	IF nOrdem = 6 .and. TMP->TMP_DOC != cCodGen
+		nLin ++
+		@ nLin, 003 Psay 'Faturamento da Nota : ' + TMP->TMP_DOC
+		cCodGen := TMP->TMP_DOC
+		nLin := nLin + 2
+	EndIF
+	
+	IF TMP->TMP_TES == '594'
+		nTtPneu += TMP->TMP_QUANT
+	EndIF
+	
+	
+	IF TMP->TMP_TES != '594'
+		nTtPneu += TMP->TMP_QUANT
+		@ nLin, 003 Psay TMP->TMP_DOC
+		@ nLin, 013 Psay TMP->TMP_CLI
+		@ nLin, 023 Psay Alltrim(TMP->TMP_NOME)
+		@ nLin, 057 Psay TMP->TMP_COD
+		@ nLin, 077 Psay Alltrim(TMP->TMP_DESC)
+		@ nLin, 113 Psay TMP->TMP_PROD
+		
+		IF TMP->TMP_TES == '903'
+			@ nLin, 147 Psay TMP->TMP_QUANT Picture "@E 999"
+			@ nLin, 158 Psay "RECUSADO"
+			@ nLin, 213 Psay TMP->TMP_PED
+			nLin ++
+		Else
+			@ nLin, 147 Psay TMP->TMP_QUANT Picture "@E 999"
+			@ nLin, 157 Psay TMP->TMP_PRECO Picture "@Z 99,999.99"
+			@ nLin, 168 Psay TMP->TMP_PRECO*mv_par19 Picture "@Z 99,999.99" //Coeficiente.
+			@ nLin, 178 Psay TMP->TMP_CUSTD Picture "@Z 99,999.99" //Custo
+			@ nLin, 188 Psay TMP->TMP_COEF  Picture "@Z 99,999.99" //Diferenca
+			@ nLin, 203 Psay (TMP->TMP_PRECO*mv_par19) / TMP->TMP_CUSTD   Picture "@Z 999.99"  //Preco/Custo
+			@ nLin, 213 Psay TMP->TMP_PED
+			nLin ++
+			
+			nTotVlr += TMP->TMP_PRECO*TMP->TMP_QUANT
+			nTotCus += TMP->TMP_CUSTD
+			nTotDif += TMP->TMP_COEF
+			
+		EndIF
+		
+		IF TMP->TMP_TES == '903'
+			nTotRec += TMP->TMP_QUANT
+		EndIF
+		IF Alltrim(TMP->TMP_GRUPO) $ 'CI/SC'
+			nTtCons  += TMP->TMP_QUANT
+			nVlrCons += TMP->TMP_QUANT * TMP->TMP_PRCV
+		EndIF
+	EndIF
+	dbSelectArea("TMP")
+	dbSkip()
+	
+	cVar := IIF(nOrdem = 1,TMP_COD,IIF(nOrdem = 2,TMP->TMP_CLI,IIF(nOrdem = 3,TMP->TMP_VEND3,;
+	IIF(nOrdem = 4,TMP->TMP_VEND4,IIF(nOrdem = 5,TMP->TMP_VEND5,TMP->TMP_DOC)))))
+	
+	IF cVar != cCodGen  // Totalizadores
+		nLin := nLin + 2
+		@ nLin, 003 Psay "Pneu(s)        Conserto(s)        Vlr.Conserto(s)         Recusado(s)"
+		@ nLin, 150 Psay "Total Venda        Tabela        Custo        Diferença "
+		nLin ++
+		@ nLin, 005 Psay nTtPneu
+		@ nLin, 022 Psay nTtCons
+		@ nLin, 039 Psay nVlrCons Picture "@E 99,999,999.99"
+		@ nLin, 065 Psay nTotRec
+		@ nLin, 147 Psay nTotVlr Picture "@E 99,999,999.99" //Preco de venda
+		@ nLin, 162 Psay nTotVlr*mv_par19 Picture "@E 99,999,999.99" //Tabela=Coeficiente
+		@ nLin, 175 Psay nTotCus Picture "@E 99,999,999.99" //Custo
+		@ nLin, 192 Psay nTotDif Picture "@E 99,999,999.99" //Diferenca
+		
+		nTotVlr := nTotCus := nTotDif := nTtPneu := nTotRec := nTtCons := nVlrCons := 0
+		
+		nLin ++
+	EndIF
+EndDo
+
+IF nLin != 80
+	IF nLin > 60
+		cabec(titulo,cabec1,cabec2,nomeprog,tamanho,GetMv("MV_COMP"))
+	EndIF
+	Roda(cbcont,cbtxt,"G")
+EndIF
+
+//ÚÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ¿
+//³ Se impressao em disco, chama o gerenciador de impressao...          ³
+//ÀÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÙ
+
+SetPgEject(.F.)
+
+dbSelectArea("TMP")
+dbCloseArea()
+fErase(cNomArq+GetDBExtension())
+fErase(cNomArq+OrdbagExt())
+
+If aReturn[5]==1
+	dbCommitAll()
+	SET PRINTER TO
+	OurSpool(wnrel)
+EndiF
+
+MS_FLUSH()
+
+Return

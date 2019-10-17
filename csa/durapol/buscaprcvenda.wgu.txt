@@ -1,0 +1,105 @@
+#include "rwmake.ch"
+#include "topconn.ch"
+
+/*
+ÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜ
+±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±
+±±ÉÍÍÍÍÍÍÍÍÍÍÑÍÍÍÍÍÍÍÍÍÍÍÍÍËÍÍÍÍÍÍÍÑÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍËÍÍÍÍÍÍÑÍÍÍÍÍÍÍÍÍÍÍÍÍ»±±
+±±ºPrograma  ³BUSCAPRCVENDAºAutor  ³Microsiga        º Data ³  23/05/05   º±±
+±±ÌÍÍÍÍÍÍÍÍÍÍØÍÍÍÍÍÍÍÍÍÍÍÍÍÊÍÍÍÍÍÍÍÏÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÊÍÍÍÍÍÍÏÍÍÍÍÍÍÍÍÍÍÍÍÍ¹±±
+±±ºDesc.     ³Executa a busca do preco de venda com relacao a tabela de   º±±
+±±º          ³preco e cadastro de produtos                                º±±
+±±ÌÍÍÍÍÍÍÍÍÍÍØÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍ¹±±
+±±ºUso       ³ Durapol                                                    º±±
+±±ÈÍÍÍÍÍÍÍÍÍÍÏÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍ¼±±
+±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±
+ßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßß
+*/
+
+User Function BuscaPrcVenda(_cServ,_cCliente,_cLoja)
+
+Local _aArea := GetArea()
+Local _nValor:= 0
+
+IF !Empty(_cServ)
+	
+	dbSelectArea("SA1")
+	dbSetOrder(1)
+	dbSeek(xFilial("SA1")+_cCliente+_cLoja)
+	
+	IF !Empty(SA1->A1_TABELA)
+		dbSelectArea("DA0")
+		dbSetOrder(1)
+		dbSeek(xFilial("DA0")+SA1->A1_TABELA)
+		
+		IF DA0->DA0_ATIVO == "1"
+			dbSelectArea("DA1")
+			dbSetOrder(1)
+			IF dbSeek(xFilial("DA1")+SA1->A1_TABELA+_cServ)
+				
+				_lExiste:= .F.
+				
+				//Consideracao das regras de desconto por cliente.
+				
+				IF Select("ACOTMP") > 0
+					dbSelectArea("ACOTMP")
+					dbCloseArea()
+				EndIF
+
+				_cQry:= "SELECT ACO_CODTAB, ACP_PERDES, ACP_PERACR, ACO_CODREG "
+				_cQry+= " FROM " + RetSqlName("ACO") + " ACO, "+ RetSqlName("ACP")+ " ACP "
+				_cQry+= " WHERE ACO_CODREG = ACP_CODREG "
+				_cQry += "  AND ACO_FILIAL = '" + xFilial("ACO") + "' "
+				_cQry += "  AND ACP_FILIAL = '" + xFilial("ACP") + "' "
+				_cQry+= "   AND ACO_CODCLI = '" + SA1->A1_COD +"' "
+				_cQry+= "   AND ACP_CODPRO = '"+ _cServ +"' "
+				_cQry+= "   AND (ACO_CODTAB = '"+ SA1->A1_TABELA +"' OR ACO_CODTAB = '   ') "
+				_cQry+= "   AND ACO.D_E_L_E_T_ = ' ' "
+				_cQry+= "   AND ACP.D_E_L_E_T_ = ' ' "
+				
+				_cQry := ChangeQuery(_cQry)
+				
+				dbUseArea( .T., "TOPCONN", TCGenQry(,,_cQry), 'ACOTMP', .F., .T.)
+				dbGoTop()
+			   	//IF !Empty(ACOTMP->ACO_CODREG)
+					IF ACOTMP->ACP_PERDES > 0
+						_nValor := NoRound(DA1->DA1_PRCVEN-Round(((ACOTMP->ACP_PERDES/100)*DA1->DA1_PRCVEN),2),2)
+						//_nValor := NoRound(ACOTMP->ACP_PRCTAB-Round(((ACOTMP->ACP_PERDES/100)*ACOTMP->ACP_PRCTAB),2),2)
+					ElseIF ACOTMP->ACP_PERACR > 0
+						_nValor := NoRound(DA1->DA1_PRCVEN+Round(((ACOTMP->ACP_PERACR/100)*DA1->DA1_PRCVEN),2),2)
+						//_nValor := NoRound(ACOTMP->ACP_PRCTAB+Round(((ACOTMP->ACP_PERACR/100)*ACOTMP->ACP_PRCTAB),2),2)
+					Else
+						//_nValor := ACOTMP->ACP_PRCTAB
+						_nValor := DA1->DA1_PRCVEN
+					EndIF
+			   //	Else
+				  //		MsgInfo("Nao exite regra de desconto para este cliente","Atenção")
+			   //	EndIF	
+				   IF _nValor == 0 
+			   			_nValor := DA1->DA1_PRCVEN
+			   		EndIF
+			Else
+				dbSelectArea("SB1")
+				dbSetOrder(1)
+				dbSeek(xFilial("SB1")+_cServ)
+				
+				_nValor := SB1->B1_PRV1
+				
+			EndIF
+		EndIF
+	Else
+		dbSelectArea("SB1")
+		dbSetOrder(1)
+		dbSeek(xFilial("SB1")+_cServ)
+		
+		_nValor := SB1->B1_PRV1
+		
+	EndIF
+	IF _nValor == 0
+		MsgInfo("Nao exite tabela de preco para este cliente, ou cadastro do produto"+_cServ+" esta sem o preco de venda!","Atenção")
+	EndIF
+EndIF
+
+RestArea(_aArea)
+
+Return(_nValor)

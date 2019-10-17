@@ -1,0 +1,220 @@
+/*ÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜ
+±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±
+±±ÉÍÍÍÍÍÍÍÍÍÍÑÍÍÍÍÍÍÍÍÍÍËÍÍÍÍÍÍÍÑÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍËÍÍÍÍÍÍÑÍÍÍÍÍÍÍÍÍÍÍÍÍ»±±
+±±ºPrograma  ³SF1100I   ºAutor  ³Robson Alves        º Data ³  03/08/05   º±±
+±±ÌÍÍÍÍÍÍÍÍÍÍØÍÍÍÍÍÍÍÍÍÍÊÍÍÍÍÍÍÍÏÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÊÍÍÍÍÍÍÏÍÍÍÍÍÍÍÍÍÍÍÍÍ¹±±
+±±ºDesc.     ³ Gera ordem de producao com base nos itens da NF Entrada.   º±±
+±±ÌÍÍÍÍÍÍÍÍÍÍØÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍ¹±±
+±±ºUso       ³ Durapol                                                    º±±
+±±ÈÍÍÍÍÍÍÍÍÍÍÏÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍ¼±±
+±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±
+ßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßß*/
+User Function SF1100I()
+
+Local _aArea        := GetArea()
+Local _aAreaSD1     := SD1->(GetArea())
+Local _aAreaSA2     := SA2->(GetArea())
+Local _aAreaSB2     := SB2->(GetArea())
+Local _aLinha       := {}
+Local _aSC2         := {}
+Local nA            := 0
+Local cSeekSD1      := ""
+Local _cQry         := ""
+Private lMsHelpAuto := .F.
+Private lMsErroAuto := .F.
+
+//-- Somente executa tratamento para Notas Fiscais de Coleta (Tipo Beneficiamento) da Empresa Durapol (03)
+If FunName() = "MATA103" .And. SF1->F1_TIPO = "B" .And. SM0->M0_CODIGO == "03"
+	
+	SB1->( dbSetOrder( 1 ) )
+	SA1->( dbSetOrder( 1 ) )
+	SD1->( dbSetOrder( 1 ) )
+	SA3->( dbSetOrder( 1 ) )
+	
+	SA1->( MsSeek( xFilial("SA1") + SF1->( F1_FORNECE + F1_LOJA ) ) )
+	SA3->( MsSeek( xFilial("SA3") + SA1->A1_VEND3 ) )
+	
+	SD1->( MsSeek( cSeekSD1 := xFilial("SD1") + SF1->( F1_DOC + F1_SERIE + F1_FORNECE + F1_LOJA ) ) )
+	While SD1->( !Eof() .And. D1_FILIAL + D1_DOC + D1_SERIE + D1_FORNECE + D1_LOJA == cSeekSD1 )
+		
+		//-- Posiciono o Cadastro de Produtos para saber quais itens deverao ter a O.P. gerada.
+		If SB1->( MsSeek( xFilial("SB1") + SD1->D1_COD ) ) .And. SB1->B1_TIPO == "MO"
+			Loop
+		Endif
+		
+		//-- busca dados da coleta anterior
+		_cQry := "SELECT * "
+		_cQry += " FROM " + RetSqlName("SD1") + " SD1 "
+		_cQry += " WHERE D1_COD = '"+SD1->D1_COD+"' "
+		_cQry += "   AND D1_TIPO = 'B' "
+		_cQry += "   AND D1_FORNECE = '"+SD1->D1_FORNECE+"' "
+		_cQry += "   AND D1_LOJA = '"+SD1->D1_LOJA+"' "
+		_cQry += "   AND D1_DOC <> '"+SD1->D1_DOC+"' "
+		_cQry += "   AND D1_SERIE <> '"+SD1->D1_SERIE+"' "
+		If ! Empty(SD1->D1_NUMFOGO)
+			_cQry += "   AND D1_NUMFOGO = '" + SD1->D1_NUMFOGO +"' "
+		Endif
+		If ! Empty(SD1->D1_SERIEPN)
+			_cQry += "   AND D1_SERIEPN = '" + SD1->D1_SERIEPN +"' "
+		Endif
+		_cQry += "   AND SD1.D_E_L_E_T_ <> '*' "
+		_cQry += "   ORDER BY D1_EMISSAO "
+		
+		_cQry := ChangeQuery(_cQry)
+		
+		dbUseArea( .T., "TOPCONN", TCGenQry(,,_cQry), 'TEMPSD1', .F., .T.)
+		
+		_cColetaOrig     := Space(6)
+		_dDtProducaoOrig := CtoD("")
+		_dDtFaturamOrig  := CtoD("")
+		_cFaturaOrig     := Space(6)
+		_cBandaOrig      := Space(15)
+		_nProfundOrig    := SB1->B1_XPROFUN
+		_cServicoOrig    := Space(15)
+		_nPrecoOrig      := 0
+		_nPrecoTabela    := 0
+		
+		dbSelectArea("TEMPSD1")
+		dbGoTop()
+		
+		While ! Eof()
+			
+			_cColetaOrig  := TEMPSD1->D1_DOC
+			_cServicoOrig := TEMPSD1->D1_SERVICO
+			_cBandaOrig   := TEMPSD1->D1_X_DESEN
+			                        
+			_cNumOP := TEMPSD1->D1_DOC + StrZero( Val( TEMPSD1->D1_ITEM ), Len(SC2->C2_ITEM) ) + "001" + TEMPSD1->D1_COD
+			
+			//-- busca producao
+			dbSelectArea("SC2")
+			dbSetOrder(6)
+			MsSeek(xFilial("SC2")+_cNumOP)
+			
+			_dDtProducaoOrig := SC2->C2_DATRF
+			                   
+			//-- busca pedido para a OP
+			dbSelectArea("SC6")
+			dbSetOrder(7)
+			MsSeek(xFilial("SC6")+SC2->C2_NUM+SC2->C2_ITEM)
+
+			While ! Eof() .And. SC6->(C6_FILIAL+C6_NUMOP+C6_ITEMOP) == xFilial("SC6")+SC2->C2_NUM+SC2->C2_ITEM
+			
+				If SC6->C6_PRODUTO == _cServicoOrig
+                                       
+		            //-- busca nota para o pedido
+					dbSelectArea("SD2")
+					dbSetOrder(8)
+					MsSeek(xFilial("SD2")+SC6->C6_NUM+SC6->C6_ITEM)
+					
+					_cFaturaOrig     := SD2->D2_DOC
+					_dDtFaturamOrig  := SD2->D2_EMISSAO
+					_nPrecoOrig      := SD2->D2_PRCVEN
+					_nPrecoTabela    := U_BuscaPrcVenda(_cServicoOrig,TEMPSD1->D1_FORNECE,TEMPSD1->D1_LOJA)
+					
+					Exit
+					
+				Endif
+				
+				dbSelectArea("SC6")
+				dbSkip()          
+				
+			Enddo	
+
+			dbSelectArea("TEMPSD1")
+			dbSkip()
+
+		Enddo
+		
+		dbSelectArea("TEMPSD1")
+		dbCloseArea()
+		
+		//-- grava item
+		For nA := 1 To SD1->D1_QUANT
+			
+			_aLinha := {}
+			
+			dbSelectArea("SC2")
+			RecLock( "SC2", .T. )
+			SC2->C2_FILIAL  := xFilial("SC2")
+			SC2->C2_NUM     := SD1->D1_DOC
+			SC2->C2_ITEM    := StrZero( Val( SD1->D1_ITEM ), Len(SC2->C2_ITEM) )
+			SC2->C2_X_STATU := '1'
+			SC2->C2_SEQUEN  := '001'
+			SC2->C2_DATPRF  := SD1->D1_DTENTRE //dDataBase
+			SC2->C2_PRODUTO := SD1->D1_COD
+			SC2->C2_LOCAL   := SB1->B1_LOCPAD
+			SC2->C2_XNREDUZ := SA1->A1_NREDUZ
+			SC2->C2_QUANT   := 1
+			SC2->C2_UM      := SB1->B1_UM
+			SC2->C2_DATPRI  := dDataBase
+			SC2->C2_OBS     := SD1->D1_X_OBS  // Criar campo para esta 'Auto - Nota Fiscal Coleta :' + SD1->D1_DOC
+			SC2->C2_EMISSAO := dDataBase
+			SC2->C2_STATUS  := 'N'
+			SC2->C2_DESTINA := 'E'
+			SC2->C2_AGLUT   := 'N'
+			SC2->C2_SEQPAI  := '000'
+			SC2->C2_X_DESEN := SD1->D1_X_DESEN
+			SC2->C2_CARCACA := SD1->D1_CARCACA
+			SC2->C2_NUMFOGO := SD1->D1_NUMFOGO
+			SC2->C2_SERIEPN := SD1->D1_SERIEPN
+			SC2->C2_TPOP    := "F"
+			SC2->C2_XMOTORI := SA3->A3_NREDUZ
+
+            //- JC 23/08/05 - Dados da coleta original
+			SC2->C2_XCOLORI := _cColetaOrig     
+			SC2->C2_XDPRDOR := _dDtProducaoOrig 
+			SC2->C2_XULTNF  := _cFaturaOrig
+			SC2->C2_XDFATOR := _dDtFaturamOrig 
+			SC2->C2_XBANDA  := _cBandaOrig      
+			SC2->C2_XPROFOR := _nProfundOrig    
+			SC2->C2_XSERVOR :=	_cServicoOrig    
+			SC2->C2_XPRCORI := _nPrecoOrig     
+			SC2->C2_XPRCTAB := _nPrecoTabela    
+			
+			SC2->( MsUnLock() )
+			
+			/*
+			Aadd( _aLinha, { 'C2_FILIAL' , xFilial("SC2")                             , NIL } )
+			Aadd( _aLinha, { 'C2_NUM'    , SD1->D1_DOC                                , NIL } )
+			Aadd( _aLinha, { 'C2_ITEM'   , StrZero( Val( SD1->D1_ITEM ), Len(SC2->C2_ITEM) ), NIL } )
+			Aadd( _aLinha, { 'C2_X_STATU', '1'                                        , NIL } )
+			Aadd( _aLinha, { 'C2_SEQUEN' , '001'                                      , NIL } )
+			Aadd( _aLinha, { 'C2_DATPRF' , dDataBase                                  , NIL } )
+			Aadd( _aLinha, { 'C2_PRODUTO', SD1->D1_COD                                , NIL } )
+			Aadd( _aLinha, { 'C2_LOCAL'  , SB1->B1_LOCPAD                             , NIL } )
+			Aadd( _aLinha, { 'C2_XNREDUZ', SA1->A1_NREDUZ                             , NIL } )
+			Aadd( _aLinha, { 'C2_QUANT'  , 1                                          , NIL } )
+			Aadd( _aLinha, { 'C2_UM'     , SB1->B1_UM                                 , NIL } )
+			Aadd( _aLinha, { 'C2_DATPRI' , dDataBase                                  , NIL } )
+			Aadd( _aLinha, { 'C2_OBSC'   , 'Auto - Nota Fiscal Coleta :' + SD1->D1_DOC, NIL } )
+			Aadd( _aLinha, { 'C2_EMISSAO', dDataBase                                  , NIL } )
+			Aadd( _aLinha, { 'C2_STATUS' , 'N'                                        , NIL } )
+			Aadd( _aLinha, { 'C2_DESTINA', 'E'                                        , NIL } )
+			Aadd( _aLinha, { 'C2_AGLUT'  , 'N'                                        , NIL } )
+			Aadd( _aLinha, { 'C2_SEQPAI' , '000'                                      , NIL } )
+			Aadd( _aLinha, { 'AUTEXPLODE', 'S'                                        , NIL } )
+			
+			//-- Chamada da rotina automatica de inclusao da Ordem de Producao.
+			MsExecAuto( { |x, y| Mata650( x, y ) }, _aLinha, 3 )
+			
+			//-- Verifica se houve algum erro.
+			If lMsErroAuto
+			If Aviso( "Pergunta", "Ordem de Producao nao gerada. Deseja visualizar o log?", { "Sim", "Nao" }, 1, "Atencao" ) == 1
+			MostraErro()
+			EndIf
+			EndIf
+			*/
+			
+		Next nA
+		
+		SD1->( dbSkip() )
+	Enddo
+EndIf
+
+SD1->( RestArea( _aAreaSD1 ) )
+SB2->( RestArea( _aAreaSB2 ) )
+SA2->( RestArea( _aAreaSA2 ) )
+
+RestArea(_aArea)
+
+Return Nil

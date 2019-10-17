@@ -1,0 +1,1125 @@
+#INCLUDE "rwmake.ch"
+#Include "TopConn.ch"
+
+/*
+ÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜ
+±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±
+±±ÉÍÍÍÍÍÍÍÍÍÍÑÍÍÍÍÍÍÍÍÍÍËÍÍÍÍÍÍÍÑÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍËÍÍÍÍÍÍÑÍÍÍÍÍÍÍÍÍÍÍÍÍ»±±
+±±ºPrograma  ³ DFINR01  ºAutor  ³Marcelo Alcantara / Marcio Domingos      º±±
+±±ÌÍÍÍÍÍÍÍÍÍÍØÍÍÍÍÍÍÍÍÍÍÊÍÍÍÍÍÍÍÏÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÊÍÍÍÍÍÍÏÍÍÍÍÍÍÍÍÍÍÍÍÍ¹±±
+±±ºDesc.     ³esta Rotina efetua o Fechamento do Caixa com o emissão do   º±±
+±±º          ³relatorio de fechamento analitica e Sintetico               º±±                                             º±±
+±±ÌÍÍÍÍÍÍÍÍÍÍØÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍ¹±±
+±±ºUso       ³ DELLA VIA                                                  º±±
+±±ÈÍÍÍÍÍÍÍÍÍÍÏÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍ¼±±
+±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±
+ßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßß
+*/
+
+User Function DFINR01()
+//ÚÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ¿
+//³ Declaracao de Variaveis                                             ³
+//ÀÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÙ
+
+Private cString
+Private aOrd 		:= {}
+Private CbTxt       := ""
+Private cDesc1      := "Relatorio de Fechamento de Caixa"
+Private cDesc2      := ""
+Private cDesc3      := ""
+Private cPict       := ""
+Private lEnd        := .F.
+Private lAbortPrint := .F.
+Private limite      := 78
+Private tamanho     := "P"
+Private nomeprog    := "DFINR01"
+Private nTipo       := 18
+Private aReturn     := { "Zebrado", 1, "Administracao", 2, 2, 1, "", 1}
+Private nLastKey    := 0
+Private titulo      := "Fechamento Caixa"
+Private nLin        := 80
+Private nPag		:= 0
+
+Private Cabec1      := ""
+Private Cabec2      := ""
+Private cbtxt      	:= Space(10)
+Private cbcont     	:= 00
+Private CONTFL     	:= 01
+Private m_pag      	:= 01
+Private imprime     := .T.
+Private wnrel      	:= "DFINR01"
+Private _cPerg     	:= "DFIN01"
+
+Private cString 	:= "SE1"
+Private _nTotal 	:= 0
+
+// Dinheiro
+Private  _nDinheiro := 0
+Private  _aDinheiro := {}
+
+// Cheque A Vista
+Private  _nChequeAV := 0
+Private  _aChequeAV := {}
+
+// Cheque a Prazo
+Private  _nChequePR := 0
+Private  _aChequePR := {}
+
+// Cartao de Credito
+Private  _nTotCC 	:= 0
+Private  _aTotCC 	:= {}
+
+// Cartao de Debito a vista
+Private _nTotCDAV := 0
+Private _aTotCDAV := {}
+
+// Cartao de Debito a prazo
+Private _nTotCDAP := 0
+Private _aTotCDAP := {}
+        
+// resumos de cartoes
+Private _aResCC   := {}
+Private _aResCDAV := {}
+Private _aResCDAP := {}
+
+// Total Cartao de Debito
+Private _nTotCD := 0
+
+// Receitas Multas
+Private _nMultas 	:= 0
+Private _aMultas 	:= {}
+
+// Receitas Juros
+Private _nJuros 	:= 0
+Private _aJuros 	:= {}
+
+// Despesas Descontos
+Private _nDescontos	:= 0
+Private _aDescontos	:= {}
+
+// Despesas Pagamentos ( mov bancario )
+Private _nMovPag    := 0
+Private _aMovPag	:= {}
+
+// Receitas Recebimentos ( mov bancario )
+Private _nMovRec    := 0
+Private _aMovRec	:= {}
+
+// Receitas
+Private _nReceitas  := 0
+
+// Outros
+Private _nOutros := 0
+Private _aOutros := {}
+
+// Devolucoes
+Private _nDevolucoes := 0
+Private _aDevolucoes := {}
+
+Private _nDevRessarcir := 0
+Private _aDevRessarcir := {}
+
+// NCC
+Private _nNcc := 0
+Private _aNcc := {}
+
+// Orcamentos em aberto
+Private _nOrcAberto	:= 0
+Private _aOrcAberto	:= {}
+
+Private _nLin := _nTotCheque := 0
+
+Private _nCont := 0
+Private _x := 0
+Private	_bAchouDevolucao := .F.
+
+// Sangria Dinheiro
+Private	_DINHEIRO   := 0
+Private	_aSDINHEIRO := {}
+
+// Sangria Cheque
+Private _CHEQUE := 0
+Private _aSCHEQUE := {}
+
+// Sangria Cartao de Credito
+Private _CARTAOCREDITO := 0
+Private _aSCARTAOCREDITO := {}
+
+// Sangria Vale
+Private _VALES := 0
+Private _aSVALES := {}
+
+// Sangria Convenio
+Private	_CONVENIO := 0
+Private	_aSCONVENIO := {}
+
+// Sangria Financiado
+Private _FINANCIADO := 0
+Private _aSFINANCIADO := {}
+
+// Sangria Cartao de Debito
+Private _DEBITO := 0
+Private _aSDEBITO := {}
+
+// Sangria Outros
+Private _Outros := 0
+Private _aSOutros := {}
+
+// Credito de Venda
+Private _CREDVENDA := 0
+Private _aSCREDVENDA := {}
+
+// Transferencias
+Private _nTransDeb 			:= 0
+Private _nTransCrd 			:= 0
+Private _aTransDeb		 	:= {}
+Private _aTransCrd		 	:= {}
+Private _aDetDeb			:= {}
+Private _aDetCrd			:= {}
+
+Private _nSangriaTotal := 0
+
+//Cartao de Credito
+Private	_aCodCC	 			:= {}
+Private _aNomeCC 			:= {}
+Private _aVlCreditoVista	:= {}
+Private _aCCTaxa 			:= {}
+Private _aRegCC 			:= {}
+
+//Cartao de Debito Automatico
+Private	_aCodCD	 			:= {}
+Private _aNomeCD 			:= {}
+Private _aVlCDVista			:= {}
+Private _aVlDebitoParcelado	:= {}
+Private _aCDTaxa			:= {}
+Private _aDiasVirada		:= {}
+Private _aRegCDAV 			:= {}
+Private _aRegCDPC 			:= {}
+
+//Outros
+Private _aCodOutros 		:= {}
+Private _aNomeOutros		:= {}
+Private _aVlOutros			:= {}
+Private _aOutrosTaxa		:= {}
+Private _aRegOutros			:= {}
+Private nSaldoCx			:= 0.00
+Private ChqPrz:= "N"
+
+Private _cTipoRel	
+
+
+//CloseOpen({"SL1"},{"SL1"})
+dbSelectArea("SE1")
+dbSetOrder(1)
+
+//ÚÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ¿
+//³ Monta a interface padrao com o usuario...                           ³
+//ÀÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÙ
+
+_aRegs:={}
+AAdd(_aRegs,{_cPerg,"01","Data Fechamento?"  ,"Data Fechamento?"  ,"Data Fechamento?"  ,"mv_ch1","D", 8,0,0,"G","","mv_par01","","","","","","","","","","","","","","","","","","","","","","","","",""})
+AAdd(_aRegs,{_cPerg,"02","Caixa?"            ,"Caixa?"            ,"Caixa?"            ,"mv_ch2","C", 3,0,0,"G","","mv_par02","","","","","","","","","","","","","","","","","","","","","","","","","SA6"})
+
+ValidPerg(_aRegs,_cPerg)
+Pergunte(_cPerg,.F.)
+
+wnrel := SetPrint(cString,NomeProg,_cPerg,@titulo,cDesc1,cDesc2,cDesc3,.F.,aOrd,.T.,Tamanho,,.T.)
+
+If nLastKey == 27
+	Return
+Endif
+
+SetDefault(aReturn,cString)
+
+If nLastKey == 27
+	Return
+Endif
+
+nTipo := If(aReturn[4]==1,15,18)
+
+Processa( {|| Impressao() } )
+
+Return
+
+/*/
+ÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜ
+±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±
+±±ÉÍÍÍÍÍÍÍÍÍÍÑÍÍÍÍÍÍÍÍÍÍËÍÍÍÍÍÍÍÑÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍËÍÍÍÍÍÍÑÍÍÍÍÍÍÍÍÍÍÍÍÍ»±±
+±±ºFun‡„o    ³RUNREPORT º Autor ³ AP5 IDE            º Data ³  01/06/00   º±±
+±±ÌÍÍÍÍÍÍÍÍÍÍØÍÍÍÍÍÍÍÍÍÍÊÍÍÍÍÍÍÍÏÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÊÍÍÍÍÍÍÏÍÍÍÍÍÍÍÍÍÍÍÍÍ¹±±
+±±ºDescri‡„o ³ Funcao auxiliar chamada pela RPTSTATUS. A funcao RPTSTATUS º±±
+±±º          ³ monta a janela com a regua de processamento.               º±±
+±±ÌÍÍÍÍÍÍÍÍÍÍØÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍ¹±±
+±±ºUso       ³ Programa principal                                         º±±
+±±ÈÍÍÍÍÍÍÍÍÍÍÏÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍ¼±±
+±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±
+ßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßß
+/*/
+
+//Static Function RunReport()
+
+Static Function Impressao()
+
+LOCAL _nX,_nPos
+
+LOCAL _cSE1 := RetSQLName("SE1")
+
+Private _dDataFec := mv_par01
+Private _cCaixa   := mv_par02
+
+ProcRegua(100)
+
+/*
+dbSelectArea("SE1")
+dbSetOrder(6)
+dbSeek(xFilial("SE1")+_dDataFec)
+		
+While ! Eof() .And. SE1->E1_FILIAL == xFilial("SE1") .And. SE1->E1_EMISSAO == _dDataFec
+
+	_nSaldoTit := SaldoTit(SE1->E1_PREFIXO,SE1->E1_NUM,SE1->E1_PARCELA,SE1->E1_TIPO,SE1->E1_NATUREZ,"R",SE1->E1_CLIENTE,"1",_dDataFec,_dDataFec,SE1->E1_LOJA,SE1->E1_FILIAL)
+		                            
+	// cheque a prazo gerado pela liquidacao
+	If SE1->E1_TIPO == "CH " .And. SE1->E1_VENCTO <> SE1->E1_EMISSAO 
+		_nChequePR += SE1->E1_VALOR
+		AADD(_aChequePR,{SE1->E1_PREFIXO,SE1->E1_NUM,SE1->E1_CLIENTE,SE1->E1_NOMCLI,SE1->E1_VALOR,"num.cheque"})
+	Endif
+	
+	// cheque a vista gerado pela liquidacao
+	If SE1->E1_TIPO == "CH " .And. SE1->E1_VENCTO == SE1->E1_EMISSAO 
+		_nChequeAV += SE1->E1_VALOR
+		AADD(_aChequeAV,{SE1->E1_PREFIXO,SE1->E1_NUM,SE1->E1_CLIENTE,SE1->E1_NOMCLI,SE1->E1_VALOR,"num.cheque"})
+	Endif
+	
+	// cartao de credito
+	If SE1->E1_TIPO == "CC "
+		_nTotCC += SE1->E1_VALOR
+		AADD(_aTotCC,{SE1->E1_PREFIXO,SE1->E1_NUM,SE1->E1_CLIENTE,SE1->E1_NOMCLI,SE1->E1_VALOR})
+	Endif
+	
+	// cartao de debito a vista
+	If SE1->E1_TIPO == "CD " .And. SE1->E1_EMISSAO == SE1->E1_VENCTO 
+		_nTotCDAV += SE1->E1_VALOR
+		AADD(_aTotCDAV,{SE1->E1_PREFIXO,SE1->E1_NUM,SE1->E1_CLIENTE,SE1->E1_NOMCLI,SE1->E1_VALOR})
+	Endif
+	
+	// cartao de debito a prazo
+	If SE1->E1_TIPO == "CD " .And. SE1->E1_EMISSAO <> SE1->E1_VENCTO 
+		_nTotCDAP += SE1->E1_VALOR
+		AADD(_aTotCDAP,{SE1->E1_PREFIXO,SE1->E1_NUM,SE1->E1_CLIENTE,SE1->E1_NOMCLI,SE1->E1_VALOR})
+	Endif
+	
+	dbSelectArea("SE1")
+	dbSkip()
+	
+Enddo
+*/
+
+dbSelectArea("SE5")
+dbSetOrder(1)
+dbSeek(xFilial("SE5")+DtoS(_dDataFec))
+
+While ! Eof() .And. SE5->E5_FILIAL == xFilial("SE5") .And. SE5->E5_DATA == _dDataFec
+	
+	IncProc()
+
+	dbSelectArea("SE1")
+	dbSetOrder(2)
+	dbSeek(xFilial("SE1")+SE5->(E5_CLIFOR+E5_LOJA+E5_PREFIXO+E5_NUMERO+E5_PARCELA+E5_TIPO))
+		
+	// baixa em dinheiro = baixa normal no banco caixa da loja sem preencher dados do cheque
+	If SE5->E5_RECPAG == "R" .And. SE5->E5_MOTBX == "NOR" .And. SE5->E5_BANCO == _cCaixa .And. ;
+		Empty(SE1->(E1_BCOCHQ+E1_AGECHQ+E1_CTACHQ)) .And. SE5->E5_TIPODOC $ "BA,VL"
+		_nDinheiro += SE5->E5_VALOR
+		AADD(_aDinheiro,{SE1->E1_PREFIXO,SE1->E1_NUM,SE1->E1_CLIENTE,SE1->E1_NOMCLI,SE5->E5_VALOR})
+	Endif
+	
+	// baixa em cheque a vista = baixa normal no banco caixa da loja com dados do cheque preenchidos
+	If SE5->E5_RECPAG == "R" .And. SE5->E5_MOTBX == "NOR" .And. SE5->E5_BANCO == _cCaixa .And. ;
+		! Empty(SE1->(E1_BCOCHQ+E1_AGECHQ+E1_CTACHQ)) .And. SE5->E5_TIPODOC $ "BA,VL"
+		_nChequeAV += SE5->E5_VALOR
+		AADD(_aChequeAV,{SE1->E1_PREFIXO,SE1->E1_NUM,SE1->E1_CLIENTE,SE1->E1_NOMCLI,SE5->E5_VALOR,"num.cheque"})
+	Endif
+	
+	// guarda receitas por juros
+	If SE5->E5_RECPAG == "R" .And. SE5->E5_TIPODOC == "JR"
+		_nJuros += SE5->E5_VALOR
+		AADD(_aJuros,{SE1->E1_PREFIXO,SE1->E1_NUM,SE1->E1_CLIENTE,SE1->E1_NOMCLI,SE5->E5_VALOR})
+	Endif
+	
+	// guarda receitas por multas
+	If SE5->E5_RECPAG == "R" .And. SE5->E5_TIPODOC == "MT"
+		_nMultas += SE5->E5_VALOR
+		AADD(_aMultas,{SE1->E1_PREFIXO,SE1->E1_NUM,SE1->E1_CLIENTE,SE1->E1_NOMCLI,SE5->E5_VALOR})
+	Endif
+	
+	// guarda despesas por desconto
+	If SE5->E5_RECPAG == "R" .And. SE5->E5_TIPODOC == "DC"
+		_nDescontos += SE5->E5_VALOR
+		AADD(_aDescontos,{SE1->E1_PREFIXO,SE1->E1_NUM,SE1->E1_CLIENTE,SE1->E1_NOMCLI,SE5->E5_VALOR})
+	Endif
+	
+	// guarda pagamentos feitos no caixa ( movimento bancario )
+	If SE5->E5_RECPAG == "P" .And. ! Empty(SE5->E5_MOEDA) .And. SE5->E5_BANCO == _cCaixa
+		_nMovPag += SE5->E5_VALOR
+		AADD(_aMovPag,{SE5->E5_HISTOR,SE5->E5_DOCUMEN,SE5->E5_VALOR})
+	Endif
+	
+	// guarda recebimentos feitos no caixa ( movimento bancario )
+	If SE5->E5_RECPAG == "R" .And. ! Empty(SE5->E5_MOEDA) .And. SE5->E5_BANCO == _cCaixa
+		_nMovRec += SE5->E5_VALOR
+		AADD(_aMovRec,{SE5->E5_HISTOR,SE5->E5_DOCUMEN,SE5->E5_VALOR})
+	Endif
+	
+	// quando for baixa por liquidacao, busca titulos gerados no SE1
+	If SE5->E5_RECPAG == "R" .And. SE5->E5_MOTBX == "LIQ" .And. SE5->E5_SITUACA <> "C" .And. SE5->E5_TIPODOC == "BA"
+
+		_cNumLiq := Substr(SE5->E5_DOCUMEN,1,6)
+
+		dbSelectArea("SE1")
+		dbSetOrder(15)
+		dbSeek(xFilial("SE1")+_cNumLiq)
+		
+		While ! Eof() .And. SE1->E1_FILIAL == xFilial("SE1") .And. SE1->E1_NUMLIQ == _cNumLiq
+		                            
+		    // se for reliquidado ignora
+			_lReliquidacao := Liquidacao(_dDataFec)
+			                
+			If _lReliquidacao
+				dbSkip()
+				Loop
+			Endif	
+			
+			// cheque a prazo gerado pela liquidacao
+			If SE1->E1_TIPO == "CH " .And. SE1->E1_VENCTO <> SE1->E1_EMISSAO 
+				_nChequePR += SE1->E1_VALOR
+				AADD(_aChequePR,{SE1->E1_PREFIXO,SE1->E1_NUM,SE1->E1_CLIENTE,SE1->E1_NOMCLI,SE1->E1_VALOR,"num.cheque"})
+			Endif
+			
+			// cheque a vista gerado pela liquidacao
+			If SE1->E1_TIPO == "CH " .And. SE1->E1_VENCTO == SE1->E1_EMISSAO 
+				_nChequeAV += SE1->E1_VALOR
+				AADD(_aChequeAV,{SE1->E1_PREFIXO,SE1->E1_NUM,SE1->E1_CLIENTE,SE1->E1_NOMCLI,SE1->E1_VALOR,"num.cheque"})
+			Endif
+			
+			// cartao de credito
+			If SE1->E1_TIPO == "CC " 
+				_nTotCC += SE1->E1_VALOR
+				AADD(_aTotCC,{SE1->E1_PREFIXO,SE1->E1_NUM,SE1->E1_CLIENTE,SE1->E1_NOMCLI,SE1->E1_VALOR})
+			Endif
+			
+			// cartao de debito a vista
+			If SE1->E1_TIPO == "CD " .And. SE1->E1_EMISSAO == SE1->E1_VENCTO 
+				_nTotCDAV += SE1->E1_VALOR
+				AADD(_aTotCDAV,{SE1->E1_PREFIXO,SE1->E1_NUM,SE1->E1_CLIENTE,SE1->E1_NOMCLI,SE1->E1_VALOR})
+			Endif
+			
+			// cartao de debito a prazo
+			If SE1->E1_TIPO == "CD " .And. SE1->E1_EMISSAO <> SE1->E1_VENCTO 
+				_nTotCDAP += SE1->E1_VALOR
+				AADD(_aTotCDAP,{SE1->E1_PREFIXO,SE1->E1_NUM,SE1->E1_CLIENTE,SE1->E1_NOMCLI,SE1->E1_VALOR})
+			Endif
+			
+			dbSelectArea("SE1")
+			dbSkip()
+			
+		Enddo
+
+	Endif
+	
+	dbSelectArea("SE5")
+	dbSkip()
+	
+Enddo
+
+_aResCC   := {}
+_aResCDAV := {}
+_aResCDAP := {}
+                             
+// preenche resumo de cartao de credito
+For _nX := 1 To Len(_aTotCC)
+	_nPos := AScan(_aResCC,{|x| x[1]==_aTotCC[_nX,3]})
+	If _nPos == 0
+		AAdd(_aResCC,{_aTotCC[_nX,3],_aTotCC[_nX,4],_aTotCC[_nX,5]})
+	Else
+		_aResCC[_nPos,3] +=	_aTotCC[_nX,5]
+	Endif	
+Next
+                              
+// preenche resumo de cartao de debito a vista
+For _nX := 1 To Len(_aTotCDAV)
+	_nPos := AScan(_aResCDAV,{|x| x[1]==_aTotCDAV[_nX,3]})
+	If _nPos == 0
+		AAdd(_aResCDAV,{_aTotCDAV[_nX,3],_aTotCDAV[_nX,4],_aTotCDAV[_nX,5]})
+	Else
+		_aResCDAV[_nPos,3] += _aTotCDAV[_nX,5]
+	Endif	
+Next
+
+// preenche resumo de cartao de debito a prazo
+For _nX := 1 To Len(_aTotCDAP)
+	_nPos := AScan(_aResCDAP,{|x| x[1]==_aTotCDAP[_nX,3]})
+	If _nPos == 0
+		AAdd(_aResCDAP,{_aTotCDAP[_nX,3],_aTotCDAP[_nX,4],_aTotCDAP[_nX,5]})
+	Else
+		_aResCDAP[_nPos,3] += _aTotCDAP[_nX,5]
+	Endif	
+Next
+
+_nTotCheque := _nChequeAV + _nChequePR
+_nTotCD     := _nTotCDAV + _nTotCDAP
+_nReceitas  := _nJuros + _nMultas
+
+_cTipoRel:= 1
+ImprimeRelatorio()
+//	_cTipoRel:= 2
+//	ImprimeRelatorio()
+//ÚÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ¿
+//³ Se impressao em disco, chama o gerenciador de impressao...          ³
+//ÀÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÙ
+
+SetPgEject(.F.)
+If aReturn[5]==1
+	dbCommitAll()
+	SET PRINTER TO
+	OurSpool(wnrel)
+Endif
+//TRBSE1->(dbCloseArea())
+
+MS_FLUSH()
+
+Return
+
+/*
+ÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜ
+±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±
+±±ÉÍÍÍÍÍÍÍÍÍÍÑÍÍÍÍÍÍÍÍÍÍËÍÍÍÍÍÍÍÑÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍËÍÍÍÍÍÍÑÍÍÍÍÍÍÍÍÍÍÍÍÍ»±±
+±±ºPrograma  ³RELFECX   ºAutor  ³                    º Data ³  10/22/04   º±±
+±±ÌÍÍÍÍÍÍÍÍÍÍØÍÍÍÍÍÍÍÍÍÍÊÍÍÍÍÍÍÍÏÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÊÍÍÍÍÍÍÏÍÍÍÍÍÍÍÍÍÍÍÍÍ¹±±
+±±ºDesc.     ³                                                            º±±
+±±º          ³                                                            º±±
+±±ÌÍÍÍÍÍÍÍÍÍÍØÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍ¹±±
+±±ºUso       ³ AP                                                        º±±
+±±ÈÍÍÍÍÍÍÍÍÍÍÏÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍ¼±±
+±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±
+ßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßß
+*/
+Static Function ImprimeRelatorio()
+
+_nLin := 1
+dbSelectArea("SE1")
+dbGoTop()
+
+ImpCab()
+
+@ _nLin,000 PSAY "|"
+@ _nLin,079 PSAY "|"
+AddLinha()
+
+_cTexto := "Dinheiro "
+ImpDetalhe(_aDinheiro)
+@ _nLin,000 PSAY "|"
+@ _nLin,002 PSAY _cTexto+Replicate("-",60-Len(_cTexto))+">"
+@ _nLin,065 PSAY _nDinheiro PICTURE "@E 99,999,999.99"
+@ _nLin,079 PSAY "|"
+AddLinha()
+
+@ _nLin,000 PSAY "|"
+@ _nLin,079 PSAY "|"
+AddLinha()
+
+@ _nLin,000 PSAY "|"
+_cTexto := "Cheques"
+@ _nLin,002 PSAY _cTexto
+@ _nLin,079 PSAY "|"
+AddLinha()
+
+_cTexto := "Cheques a Vista "
+ImpDetalhe(_aChequeAV)
+@ _nLin,000 PSAY "|"
+@ _nLin,002 PSAY _cTexto+Replicate("-",60-Len(_cTexto))+">"
+@ _nLin,065 PSAY _nChequeAV PICTURE "@E 99,999,999.99"
+@ _nLin,079 PSAY "|"
+AddLinha()
+
+_cTexto := "Cheques Pre Datados "
+chqprz:= "S"
+ImpDetalhe(_aChequePR)
+chqprz:= "N"
+@ _nLin,000 PSAY "|"
+@ _nLin,002 PSAY _cTexto+Replicate("-",60-Len(_cTexto))+">"
+@ _nLin,065 PSAY _nChequePR PICTURE "@E 99,999,999.99"
+@ _nLin,079 PSAY "|"
+AddLinha()
+
+@ _nLin,000 PSAY "|"
+_cTexto := "Cheques (Total) "
+@ _nLin,002 PSAY _cTexto+Replicate("-",60-Len(_cTexto))+">"
+@ _nLin,065 PSAY _nTotCheque PICTURE "@E 99,999,999.99"
+@ _nLin,079 PSAY "|"
+AddLinha()
+
+@ _nLin,000 PSAY "|"
+@ _nLin,079 PSAY "|"
+AddLinha()
+
+@ _nLin,000 PSAY "|"
+_cTexto := "Cartoes de Credito"
+@ _nLin,002 PSAY _cTexto
+@ _nLin,079 PSAY "|"
+AddLinha()
+
+For _nCont:=1 to Len(_aResCC)
+	_cTexto:= _aResCC[_nCont,2]
+	ImpDetalhe(_aResCC,_aResCC[_nCont])
+	@ _nLin,000 PSAY "|"
+	@ _nLin,006 PSAY _cTexto
+	@ _nLin,065 PSAY _aResCC[_nCont,3] PICTURE "@E 99,999,999.99"
+	@ _nLin,079 PSAY "|"
+	AddLinha()
+Next
+
+@ _nLin,000 PSAY "|"
+_cTexto := "Cartoes de Credito (Total) "
+@ _nLin,002 PSAY _cTexto+Replicate("-",60-Len(_cTexto))+">"
+@ _nLin,065 PSAY _nTotCC PICTURE "@E 99,999,999.99"
+@ _nLin,079 PSAY "|"
+AddLinha()
+
+@ _nLin,000 PSAY "|"
+@ _nLin,079 PSAY "|"
+AddLinha()
+
+
+@ _nLin,000 PSAY "|"
+_cTexto := "Cartoes de Debito Automatico"
+@ _nLin,002 PSAY _cTexto
+@ _nLin,079 PSAY "|"
+AddLinha()
+
+@ _nLin,000 PSAY "|"
+@ _nLin,006 PSAY "A Vista"
+@ _nLin,079 PSAY "|"
+AddLinha()
+For _nCont:=1 to Len(_aResCDAV)
+	_cTexto:= _aResCDAV[_nCont,2]
+	ImpDetalhe(_aResCDAV,_aResCDAV[_nCont])
+	@ _nLin,000 PSAY "|"
+	@ _nLin,009 PSAY _cTexto
+	@ _nLin,065 PSAY _aResCDAV[_nCont,3] PICTURE "@E 99,999,999.99"
+	@ _nLin,079 PSAY "|"
+	AddLinha()
+Next
+
+@ _nLin,000 PSAY "|"
+@ _nLin,006 PSAY "A Prazo"
+@ _nLin,079 PSAY "|"
+AddLinha()
+For _nCont:=1 to Len(_aResCDAP)
+	_cTexto:= _aResCDAP[_nCont,2]
+	ImpDetalhe(_aResCDAP,_aResCDAP[_nCont])
+	@ _nLin,000 PSAY "|"
+	@ _nLin,009 PSAY _cTexto
+	@ _nLin,065 PSAY _aResCDAP[_nCont,3] PICTURE "@E 99,999,999.99"
+	@ _nLin,079 PSAY "|"
+	AddLinha()
+Next
+
+@ _nLin,000 PSAY "|"
+_cTexto := "Cartoes de Debito Automatico (Total) "
+@ _nLin,002 PSAY _cTexto+Replicate("-",60-Len(_cTexto))+">"
+@ _nLin,065 PSAY _nTotCD PICTURE "@E 99,999,999.99"
+@ _nLin,079 PSAY "|"
+AddLinha()
+
+@ _nLin,000 PSAY "|"
+@ _nLin,079 PSAY "|"
+AddLinha()
+
+@ _nLin,000 PSAY "|"
+_cTexto := "Outros "
+@ _nLin,002 PSAY _cTexto+Replicate("-",60-Len(_cTexto))+">"
+@ _nLin,065 PSAY _nOutros PICTURE "@E 99,999,999.99"
+@ _nLin,079 PSAY "|"
+AddLinha()
+
+@ _nLin,000 PSAY "|"
+@ _nLin,079 PSAY "|"
+AddLinha()
+
+// Receitas
+_cTexto := "Receitas "
+ImpDetalhe(_aDinheiro)
+@ _nLin,000 PSAY "|"
+@ _nLin,002 PSAY _cTexto+Replicate("-",60-Len(_cTexto))+">"
+@ _nLin,065 PSAY _nReceitas PICTURE "@E 99,999,999.99"
+@ _nLin,079 PSAY "|"
+AddLinha()
+
+@ _nLin,000 PSAY "|"
+@ _nLin,079 PSAY "|"
+AddLinha()
+
+@ _nLin,000 PSAY "|"
+@ _nLin,001 PSAY Replicate("-",limite)
+@ _nLin,079 PSAY "|"
+AddLinha()
+
+@ _nLin,000 PSAY "|"
+_cTexto := "CREDITOS / VENDAS (Total Geral) "
+@ _nLin,002 PSAY _cTexto+Replicate("-",60-Len(_cTexto))+">"
+@ _nLin,065 PSAY _nTotal PICTURE "@E 99,999,999.99"
+@ _nLin,079 PSAY "|"
+AddLinha()
+
+//-------------------
+
+@ _nLin,000 PSAY "|"
+@ _nLin,001 PSAY Replicate("-",limite)
+@ _nLin,079 PSAY "|"
+AddLinha()
+
+@ _nLin,000 PSAY "|"
+_cTexto := "DEBITOS / SANGRIAS"
+@ _nLin,002 PSAY _cTexto
+@ _nLin,079 PSAY "|"
+AddLinha()
+
+@ _nLin,000 PSAY "|"
+@ _nLin,079 PSAY "|"
+AddLinha()
+
+//    @ _nLin,000 PSAY "|"
+//    @ _nLin,002 PSAY "(Total Geral Sem Devoluções)"
+//    @ _nLin,065 PSAY (_nSangriaTotal-_nDevolucoes) PICTURE "@E 99,999,999.99"
+//    @ _nLin,079 PSAY "|"
+//    AddLinha()
+
+@ _nLin,000 PSAY "|"
+@ _nLin,079 PSAY "|"
+AddLinha()
+
+_cTexto := "Dinheiro "
+ImpSangria(_aSDINHEIRO)
+@ _nLin,000 PSAY "|"
+@ _nLin,002 PSAY _cTexto+Replicate("-",60-Len(_cTexto))+">"
+@ _nLin,065 PSAY _DINHEIRO PICTURE "@E 99,999,999.99"
+@ _nLin,079 PSAY "|"
+AddLinha()
+
+_cTexto := "Cheques "
+ImpSangria(_aSCHEQUE)
+@ _nLin,000 PSAY "|"
+@ _nLin,002 PSAY _cTexto+Replicate("-",60-Len(_cTexto))+">"
+@ _nLin,065 PSAY _CHEQUE PICTURE "@E 99,999,999.99"
+@ _nLin,079 PSAY "|"
+AddLinha()
+
+_cTexto := "Cartao de Credito "
+ImpSangria(_aSCARTAOCREDITO)
+@ _nLin,000 PSAY "|"
+@ _nLin,002 PSAY _cTexto+Replicate("-",60-Len(_cTexto))+">"
+@ _nLin,065 PSAY _CARTAOCREDITO PICTURE "@E 99,999,999.99"
+@ _nLin,079 PSAY "|"
+AddLinha()
+
+_cTexto := "Cartao de Debito automatico "
+ImpSangria(_aSDEBITO)
+@ _nLin,000 PSAY "|"
+@ _nLin,002 PSAY _cTexto+Replicate("-",60-Len(_cTexto))+">"
+@ _nLin,065 PSAY _DEBITO PICTURE "@E 99,999,999.99"
+@ _nLin,079 PSAY "|"
+AddLinha()
+
+_cTexto := "Outros "
+@ _nLin,000 PSAY "|"
+ImpSangria(_aSOUTROS)
+@ _nLin,002 PSAY _cTexto+Replicate("-",60-Len(_cTexto))+">"
+@ _nLin,065 PSAY _Outros PICTURE "@E 99,999,999.99"
+@ _nLin,079 PSAY "|"
+AddLinha()
+
+@ _nLin,000 PSAY "|"
+@ _nLin,079 PSAY "|"
+AddLinha()
+
+_cTexto := "Devolucoes "
+ImpDetalhe(_aDevolucoes)
+@ _nLin,000 PSAY "|"
+@ _nLin,002 PSAY _cTexto+Replicate("-",60-Len(_cTexto))+">"
+@ _nLin,065 PSAY _nDevolucoes PICTURE "@E 99,999,999.99"
+@ _nLin,079 PSAY "|"
+AddLinha()
+
+
+@ _nLin,000 PSAY "|"
+@ _nLin,079 PSAY "|"
+AddLinha()
+
+// Despesas
+_cTexto := "Despesas"
+@ _nLin,000 PSAY "|"
+@ _nLin,002 PSAY _cTexto
+@ _nLin,079 PSAY "|"
+AddLinha()
+
+If _cTipoRel == 2
+	@ _nLin,000 PSAY "|"
+	@ _nLin,003 PSAY "Documento / Historico"
+	@ _nLin,079 PSAY "|"
+	AddLinha()
+	@ _nLin,000 PSAY "|"
+	@ _nLin,003 PSAY "--------------------------------------------------------------"
+	@ _nLin,079 PSAY "|"
+	AddLinha()
+	For _nDet:=1 to Len(_aDetDeb)
+		@ _nLin,000 PSAY "|"
+		@ _nLin,003 PSAY Rtrim(Rtrim(_aDetDeb[_nDet,2])+"  "+_aDetDeb[_nDet,3])
+		@ _nLin,065 PSAY _aDetDeb[_nDet,4] PICTURE "@E 99,999,999.99"
+		@ _nLin,079 PSAY "|"
+		AddLinha()
+	Next
+Else
+	For _nDet:=1 to Len(_aDetDeb)
+		@ _nLin,000 PSAY "|"
+		@ _nLin,003 PSAY Rtrim(Rtrim(_aDetDeb[_nDet,2])+"  "+_aDetDeb[_nDet,3])
+		@ _nLin,065 PSAY _aDetDeb[_nDet,4] PICTURE "@E 99,999,999.99"
+		@ _nLin,079 PSAY "|"
+		AddLinha()
+	Next
+Endif
+
+@ _nLin,000 PSAY "|"
+@ _nLin,079 PSAY "|"
+AddLinha()
+
+@ _nLin,000 PSAY "|"
+@ _nLin,001 PSAY Replicate("-",limite)
+@ _nLin,079 PSAY "|"
+AddLinha()
+
+@ _nLin,000 PSAY "|"
+_cTexto := "DEBITOS / SANGRIAS (Total Geral Com Devolucoes)"
+@ _nLin,002 PSAY _cTexto+Replicate("-",60-Len(_cTexto))+">"
+@ _nLin,065 PSAY _nSangriaTotal PICTURE "@E 99,999,999.99"
+@ _nLin,079 PSAY "|"
+AddLinha()
+
+@ _nLin,000 PSAY "|"
+@ _nLin,001 PSAY Replicate("-",limite)
+@ _nLin,079 PSAY "|"
+AddLinha()
+
+@ _nLin,000 PSAY "|"
+@ _nLin,002 PSAY "Saldo do Caixa"
+@ _nLin,065 PSAY _nTotal-_nSangriaTotal PICTURE "@E 99,999,999.99"
+@ _nLin,079 PSAY "|"
+AddLinha()
+
+@ _nLin,000 PSAY "|"
+@ _nLin,001 PSAY Replicate("-",limite)
+@ _nLin,079 PSAY "|"
+_nLin := _nLin + 1
+
+@ _nLin,000 PSAY "|"
+@ _nLin,001 PSAY Replicate("-",limite)
+@ _nLin,079 PSAY "|"
+AddLinha()
+*/
+
+Return
+
+Static Function ImpSangria(aMatriz,cChave)
+
+If _nLin > 54
+	ImpCab()
+Endif
+
+If _cTipoRel = 1
+	Return
+Endif
+
+If len(aMatriz) = 0
+	Return
+Endif
+
+lCab := .T.
+For _n = 1 to len(aMatriz)
+	
+	If cChave = nil .OR. aMatriz[_n][1] = cChave
+		if lCab
+			
+			@ _nLin,000 PSAY "|"
+			@ _nLin,079 PSAY "|"
+			_nLin := _nLin + 1
+			
+			@ _nLin,000 PSAY "|"
+			@ _nLin,002 PSAY _cTexto
+			@ _nLin,079 PSAY "|"
+			
+			AddLinha()
+			
+			@ _nLin,000 PSAY "|"
+			@ _nLin,010 PSAY "Doc."
+			@ _nLin,026 psay "Historico"
+			@ _nLin,079 PSAY "|"
+			_nLin := _nLin + 1
+			@ _nLin,000 PSAY "|"
+			@ _nLin,010 PSAY "---------------"
+			@ _nLin,026 psay "----------------------------------------"
+			@ _nLin,079 PSAY "|"
+			_nLin := _nLin + 1
+			lCab := .F.
+		Endif
+		@ _nLin,000 PSAY "|"
+		@ _nLin,010 PSAY aMatriz[_n][2]
+		@ _nLin,026 psay Substr(aMatriz[_n][3],1,30)
+		@ _nLin,065 psay aMatriz[_n][4]	PICTURE "@E 99,999,999.99"
+		@ _nLin,079 PSAY "|"
+		_nLin := _nLin + 1
+		
+	Endif
+Next
+@ _nLin,000 PSAY "|"
+@ _nLin,079 PSAY "|"
+_nLin := _nLin + 1
+
+Return
+
+
+
+
+
+/*
+ÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜ
+±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±
+±±ÉÍÍÍÍÍÍÍÍÍÍÑÍÍÍÍÍÍÍÍÍÍËÍÍÍÍÍÍÍÑÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍËÍÍÍÍÍÍÑÍÍÍÍÍÍÍÍÍÍÍÍÍ»±±
+±±ºPrograma  ³RELFECX   ºAutor  ³                    º Data ³  10/22/04   º±±
+±±ÌÍÍÍÍÍÍÍÍÍÍØÍÍÍÍÍÍÍÍÍÍÊÍÍÍÍÍÍÍÏÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÊÍÍÍÍÍÍÏÍÍÍÍÍÍÍÍÍÍÍÍÍ¹±±
+±±ºDesc.     ³                                                            º±±
+±±º          ³                                                            º±±
+±±ÌÍÍÍÍÍÍÍÍÍÍØÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍ¹±±
+±±ºUso       ³ AP                                                        º±±
+±±ÈÍÍÍÍÍÍÍÍÍÍÏÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍ¼±±
+±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±
+ßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßß
+*/
+Static Function ImpDetalhe(aMatriz,cChave)
+
+If _nLin > 54
+	ImpCab()
+Endif
+
+If _cTipoRel = 1
+	Return
+Endif
+
+If len(aMatriz) = 0
+	Return
+Endif
+
+lCab := .T.
+For _n := 1 to len(aMatriz)
+	
+	If cChave == nil .OR. aMatriz[_n][1] == cChave
+		if lCab
+			
+			@ _nLin,000 PSAY "|"
+			@ _nLin,079 PSAY "|"
+			AddLinha()
+			
+			@ _nLin,000 PSAY "|"
+			@ _nLin,002 PSAY _cTexto
+			@ _nLin,079 PSAY "|"
+			
+			AddLinha()
+			
+			@ _nLin,000 PSAY "|"
+			@ _nLin,003 PSAY "Doc."
+			@ _nLin,010 psay "Sr."
+			@ _nLin,014 psay "Pedido"
+			@ _nLIn,021 psay "Cliente"
+			@ _nLin,029 psay "Nome"
+			@ _nLin,049 psay "Vendedor"
+			if chqprz=="S"
+				@ _nLin,058 pSay "Vencimento"
+			endif
+			//			If Len(aMatriz[_n]) = 8 .and. Alltrim(aMatriz[_n,1]) != "DV"
+			//				@ _nLin,057 psay " Taxa"
+			//			Endif
+			@ _nLin,079 PSAY "|"
+			AddLinha()
+			@ _nLin,000 PSAY "|"
+			@ _nLin,003 PSAY "------"
+			@ _nLin,010 psay "---"
+			@ _nLin,014 PSAY "------"
+			@ _nLIn,021 psay "------"
+			@ _nLin,028 psay "-------------------"
+			@ _nLin,049 psay "--------"
+			if chqprz=="S"
+				@ _nLin,058 pSay "----------"
+			endif
+			//			If Len(aMatriz[_n]) = 8 .and. Alltrim(aMatriz[_n,1]) != "DV"
+			//				@ _nLin,057 psay "------"
+			//			Endif
+			@ _nLin,079 PSAY "|"
+			AddLinha()
+			lCab := .F.
+		Endif
+		If Empty(aMatriz[_n][5])
+			DbSelectArea("SA1")
+			DbSetOrder(1)
+			If DbSeek(xfilial("SA1")+aMatriz[_n][4])
+				aMatriz[_n][5] := Substr(A1_NOME,1,20)
+			Endif
+		Endif
+		
+		SL1->(dbSetOrder(2))
+		SL1->(dbSeek(xFilial("SL1") + aMatriz[_n][3] + aMatriz[_n][2]))
+		
+		@ _nLin,000 PSAY "|"
+		@ _nLin,003 PSAY aMatriz[_n][2]
+		@ _nLin,010 psay aMatriz[_n][3]
+		@ _nLin,014 PSAY SL1->L1_NUM
+		@ _nLIn,021 psay aMatriz[_n][4]
+		@ _nLin,028 psay aMatriz[_n][5]
+		If Len(aMatriz[_n]) = 9 .and. Alltrim(aMatriz[_n,1]) == "DV"
+			@ _nLin,049 psay aMatriz[_n][9]
+		Else
+			@ _nLin,049 psay aMatriz[_n][6]
+		EndIF
+		//		If Len(aMatriz[_n]) = 8 .and. Alltrim(aMatriz[_n,1]) != "DV"
+		//			@ _nLin,057 psay aMatriz[_n][8] picture "@E 999.99"
+		//		Endif
+		if ChqPrz == "S"
+			@ _nLin,058	 pSay aMatriz[_n][8]
+		endif
+		@ _nLin,065 psay aMatriz[_n][7]	PICTURE "@E 99,999,999.99"
+		@ _nLin,079 PSAY "|"
+		AddLinha()
+		
+		IF Alltrim(aMatriz[_n,1]) == "DV"
+			DbSelectArea("SE1")
+			DbSetOrder(1)
+			
+			IF DbSeek(xFilial("SE1")+Alltrim(aMatriz[_n,8]))
+				
+				@ _nLin,000 PSAY "|"
+				@ _nLin,079 PSAY "|"
+				AddLinha()
+				While !SE1->(Eof()) .and. SE1->(E1_FILIAL+E1_PREFIXO+E1_NUM) == xFilial("SE1")+Alltrim(aMatriz[_n,8])
+					
+					@ _nLin,000 PSAY "|"
+					@ _nLin,020 PSAY SE1->E1_TIPO
+					@ _nLin,040 PSAY IIF(SE1->E1_VLRREAL<>0,SE1->E1_VLRREAL,SE1->E1_VALOR) PICTURE "@E 99,999,999.99"
+					@ _nLin,079 PSAY "|"
+					AddLinha()
+					
+					SE1->(DbSkip())
+					IncProc()
+				EndDo
+				@ _nLin,000 PSAY "|"
+				@ _nLin,079 PSAY "|"
+				AddLinha()
+			EndIF
+		EndIF
+		
+	Endif
+Next
+@ _nLin,000 PSAY "|"
+@ _nLin,079 PSAY "|"
+AddLinha()
+Return
+
+Static Function ImpCab()
+nPag += 1
+If _nLin > 53
+	@ _nLin,000 PSAY "|"
+	@ _nLin,001 PSAY Replicate("-",limite)
+	@ _nLin,079 PSAY "|"
+	_nLin :=  1
+Endif
+
+@ _nLin,000 PSAY "|"
+@ _nLin,001 PSAY Replicate("-",limite)
+@ _nLIn,079 PSAY "|"
+_nLin := _nLin + 1
+
+@ _nLin,000 PSAY "|"
+@ _nLin,002 PSAY "Empresa : " + SM0->M0_NOMECOM + " - " + SM0->M0_NOME
+@ _nLin,071 PSAY "Pag:"+Str(nPag,3)
+@ _nLin,079 PSAY "|"
+_nLin := _nLin + 1
+
+@ _nLin,000 PSAY "|"
+@ _nLin,001 PSAY Replicate("-",limite)
+@ _nLin,079 PSAY "|"
+_nLin := _nLin + 1
+
+@ _nLin,000 PSAY "|"
+@ _nLin,020 PSAY "FECHAMENTO DO CAIXA - "+If(_cTipoRel==1,"SINTETICO","ANALITICO")
+@ _nLin,079 PSAY "|"
+_nLin := _nLin + 1
+
+@ _nLin,000 PSAY "|"
+@ _nLin,001 PSAY Replicate("-",limite)
+@ _nLin,079 PSAY "|"
+_nLin := _nLin + 1
+
+@ _nLin,000 PSAY "|"
+@ _nLin,002 PSAY "Periodo do Movimento : " + Dtoc(_dDataFec) + ", as " +Time()
+@ _nLin,079 PSAY "|"
+_nLin := _nLin + 1
+
+@ _nLin,000 PSAY "|"
+@ _nLin,001 PSAY Replicate("-",limite)
+@ _nLin,079 PSAY "|"
+_nLin := _nLin + 1
+
+Return
+
+/*
+ÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜ
+±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±
+±±ÉÍÍÍÍÍÍÍÍÍÍÑÍÍÍÍÍÍÍÍÍÍËÍÍÍÍÍÍÍÑÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍËÍÍÍÍÍÍÑÍÍÍÍÍÍÍÍÍÍÍÍÍ»±±
+±±ºPrograma  ³RELFECX   ºAutor  ³                    º Data ³  10/22/04   º±±
+±±ÌÍÍÍÍÍÍÍÍÍÍØÍÍÍÍÍÍÍÍÍÍÊÍÍÍÍÍÍÍÏÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÊÍÍÍÍÍÍÏÍÍÍÍÍÍÍÍÍÍÍÍÍ¹±±
+±±ºDesc.     ³                                                            º±±
+±±º          ³                                                            º±±
+±±ÌÍÍÍÍÍÍÍÍÍÍØÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍ¹±±
+±±ºUso       ³ AP                                                        º±±
+±±ÈÍÍÍÍÍÍÍÍÍÍÏÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍ¼±±
+±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±
+ßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßß
+*/
+Static Function AddLinha()
+
+_nLin += 1
+If _nLin > 54
+	ImpCab()
+Endif
+
+Return
+
+
+Static Function Liquidacao(_dData)
+
+LOCAL _aAliasSE5 := SE5->(GetArea())
+LOCAL _lReliquidacao := .F.			
+
+// verifica se o titulo liquidado tem liquidacao na mesma data, se sim foi reliquidado
+dbSelectArea("SE5")
+dbSetOrder(7)
+dbSeek(xFilial("SE5")+SE1->E1_PREFIXO+SE1->E1_NUM+SE1->E1_PARCELA+SE1->E1_TIPO+SE1->E1_CLIENTE+SE1->E1_LOJA)
+
+While ! Eof() .And. SE5->(E5_FILIAL+E5_PREFIXO+E5_NUMERO+E5_PARCELA+E5_TIPO+E5_CLIFOR+E5_LOJA) == ;
+	xFilial("SE5")+SE1->E1_PREFIXO+SE1->E1_NUM+SE1->E1_PARCELA+SE1->E1_TIPO+SE1->E1_CLIENTE+SE1->E1_LOJA			
+	If SE5->E5_DATA == _dData .And. SE5->E5_RECPAG == "R" .And. SE5->E5_MOTBX == "LIQ" .And. SE5->E5_SITUACA <> "C" .And. SE5->E5_TIPODOC == "BA"
+		_lReliquidacao := .T.			
+		Exit
+	Endif
+	dbSkip()
+Enddo
+	
+RestArea(_aAliasSE5)
+
+Return(_lReliquidacao)

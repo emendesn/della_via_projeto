@@ -1,0 +1,367 @@
+#INCLUDE "protheus.ch"
+#INCLUDE "ap5mail.ch"
+#INCLUDE "tbiconn.ch"
+
+/*
+ÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜ
+±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±
+±±ÉÍÍÍÍÍÍÍÍÍÍÑÍÍÍÍÍÍÍÍÍÍËÍÍÍÍÍÍÍÑÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍËÍÍÍÍÍÍÑÍÍÍÍÍÍÍÍÍÍÍÍÍ»±±
+±±ºPrograma  ³WEST01    ºAutor  ³Microsiga           º Data ³  08/23/05   º±±
+±±ÌÍÍÍÍÍÍÍÍÍÍØÍÍÍÍÍÍÍÍÍÍÊÍÍÍÍÍÍÍÏÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÊÍÍÍÍÍÍÏÍÍÍÍÍÍÍÍÍÍÍÍÍ¹±±
+±±ºDesc.     ³WORKFLOW PROCESSO SEPU                                      º±±
+±±º          ³                                                            º±±
+±±ÌÍÍÍÍÍÍÍÍÍÍØÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍ¹±±
+±±ºUso       ³ AP                                                        º±±
+±±ÈÍÍÍÍÍÍÍÍÍÍÏÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍ¼±±
+±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±
+ßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßß
+*/
+//USER FUNCTION WSEPU01(cNumeroOP)
+USER FUNCTION WSEPU01()
+
+LOCAL oLembrete, oHtml
+LOCAL aAliasAnt       := GetArea()
+LOCAL cEMailComercial := Alltrim(GetMv("MV_WSEPU01"))
+LOCAL cEMailDiretor   := Alltrim(GetMv("MV_WSEPU02"))
+LOCAL cPathWf         := Alltrim(GetMv("MV_WSEPU03")) + "SEPU.HTM"
+LOCAL nPrecoServico   := 0
+LOCAL cMotivoProducao := '', cStatusProducao  := '' 
+LOCAL cMotivoComercial:= '', cStatusComercial := '' 
+LOCAL cMotivoDiretoria:= '', cStatusDiretoria := '' 
+LOCAL aMotivos        := {}
+
+CONOUT('SEPU Solicitacao Exame Pneus Usados - Inicializado...')
+
+// Inicializa a Classe TWFProcess
+oLembrete := TWFProcess():New('SEPU01','SEPU Solicitacao Exame Pneus Usados')
+
+// Abro as Tabelas Necessarias ao Processamente
+ChkFile('SC2') // Ordem de Producao - é onde existem as informações do Laudo Exame Pneu
+ChkFile('SE1') // Titulos a Receber - para gravacao da NCC
+ChkFile('SA1') // tabela de clientes
+ChkFile('SB1') // tabela de produtos
+ChkFile('SD1') // tabela de itens notas fiscais entrada
+ChkFile('SF1') // tabela de itens notas fiscais entrada
+ChkFile('SZS')  // tabela de motivos SEPU
+
+SA1->(dbSetOrder(1))      
+SA1->(dbGoTop())
+SC2->(dbSetOrder(1))                         
+//SC2->(MsSeek(xFilial("SC2")+cNumeroOP))
+SB1->(dbSetOrder(1))
+SE1->(dbSetOrder(1))
+SD1->(dbSetOrder(2))
+SF1->(dbSetOrder(1))
+SZS->(dbSetOrder(1))
+                
+If ! SF1->(dbSeek(xFilial("SF1")+SC2->C2_NUM,.f.)) .Or. ! (SF1->F1_TIPO == "B")
+	CONOUT('NAO ENCONTROU NOTA FISCAL ENTRADA COLETA ('+SC2->C2_NUM+'), OU COLETA ENCONTRADA NAO EH DO TIPO BENEFICIAMENTO ('+SF1->F1_TIPO+')')
+	Return(.F.)
+EndIf
+
+If ! SA1->(dbSeek(xFilial("SA1")+SF1->F1_FORNECE+SF1->F1_LOJA,.f.))
+	CONOUT('NAO ACHOU CLIENTE '+SF1->F1_FORNECE+'-'+SF1->F1_LOJA)
+	Return(.F.)
+EndIf
+
+If ( !SD1->( dbSeek(xFilial("SD1")+SC2->C2_PRODUTO+SC2->C2_NUM,.f.) ) .Or. ! ( SD1->D1_TIPO == "B" ) ) /////.Or. ! ( SC2->C2_PRODUTO == SD1->D1_COD ) )
+	CONOUT('NAO ENCONTROU ITEM DA NOTA FISCAL ENTRADA COLETA ('+SC2->C2_NUM+'), OU COLETA ENCONTRADA NAO EH DO TIPO BENEFICIAMENTO ('+SF1->F1_TIPO+')')
+	Return(.F.)
+EndIf
+                                         
+cCodServExame := SD1->D1_SERVICO
+
+//-- Se Email diretor nao estiver preenchido, nao executa WF
+If Empty(cEMailDiretor)
+	ConOut('E-MAIL DIRETOR NAO CADASTRADO')
+	Return(.F.)
+Endif
+
+//-- Se Email comercial nao estiver preenchido, nao executa WF
+If Empty(cEMailComercial)
+	ConOut('E-MAIL COMERCIAL NAO CADASTRADO')
+	Return(.F.)
+Endif
+
+// valida dados digitados no email, verifica se o campo esta correto
+If ! ( ('@' $ cEMailDiretor) .and. (".COM" $ upper(cEMailDiretor)) )
+	ConOut('E-MAIL DIRETOR INVALIDO')
+	Return(.F.)
+Endif
+
+// valida dados digitados no email, verifica se o campo esta correto
+If ! ( ('@' $ cEMailComercial) .and. (".COM" $ upper(cEMailComercial)) )
+	ConOut('E-MAIL COMERCIAL INVALIDO')
+	cEmailComercial := ''
+Endif
+
+// Crio uma nova tarefa para o processo
+oLembrete:NewTask('500000',cPathWf)
+
+// Usa o objeto HTML criado pelo processo acima
+oHtml := oLembrete:oHtml
+
+// Email usuario no para
+oLembrete:cTo:=Rtrim(Lower(cEMailDiretor))
+
+// Subject do Email
+oLembrete:cSubject :='SEPU - Solicitacao Exame Pneus Usados'
+
+
+// Preenche Dados do Formulario - Folder CLIENTE
+oHtml:ValByName( 'CLIENTE'   , SA1->A1_COD+"-"+AllTrim(SA1->A1_NOME) )
+oHtml:ValByName( 'ENDERECO' , AllTrim(SA1->A1_END) )
+oHtml:ValByName( 'CIDADE'   , AllTrim(SA1->A1_MUN) )
+oHtml:ValByName( 'ESTADO'   , AllTrim(SA1->A1_EST) )
+oHtml:ValByName( 'FONE'     , AllTrim(SA1->A1_TEL) )
+oHtml:ValByName( 'ULTCOM'   , dToC(SA1->A1_ULTCOM) )
+oHtml:ValByName( 'RISCO'    , SA1->A1_RISCO )
+
+// Preenche Dados do Formulario - Folder FICHA INSPECAO
+oHtml:ValByName( 'COLETAORIGINAL'     , SC2->C2_XCOLORI )
+oHtml:ValByName( 'DATACOLETAORIGINAL' , SC2->C2_XDPRDOR )
+oHtml:ValByName( 'NFFATURAORIGINAL'   , SC2->C2_XULTNF )
+oHtml:ValByName( 'DATAFATURAORIGINAL' , SC2->C2_XDFATOR )
+oHtml:ValByName( 'COLETAEXAME'        , SC2->C2_NUM+SC2->C2_ITEM )
+oHtml:ValByName( 'DATACOLETAEXAME'    , SF1->F1_DTDIGIT )
+oHtml:ValByName( 'DATAINSPECAOOP'     , SC2->C2_EMISSAO )
+
+nPrecoServico := U_BuscaPrcVenda(SD1->D1_SERVICO,SD1->D1_FORNECE,SD1->D1_LOJA)
+nPrecoSugerido:= ( SC2->C2_XPROFAF / SC2->C2_XPROFOR ) * nPrecoServico
+
+// Preenche Dados do Formulario - Folder FICHA PNEU
+oHtml:ValByName( 'MEDIDA'          , SC2->C2_PRODUTO )
+oHtml:ValByName( 'MARCA'           , SC2->C2_MARCAPN )
+oHtml:ValByName( 'BANDA'           , SC2->C2_XBANDA )
+oHtml:ValByName( 'SERIE'           , SC2->C2_SERIEPN )
+oHtml:ValByName( 'FOGO'            , SC2->C2_NUMFOGO)
+oHtml:ValByName( 'CODSERVORIGINAL' , SC2->C2_XSERVOR )
+oHtml:ValByName( 'CODSERVEXAME'    , SD1->D1_SERVICO )
+oHtml:ValByName( 'PRCTAB'          , nPrecoServico )
+oHtml:ValByName( 'PROFORIGINAL'    , SC2->C2_XPROFOR )
+oHtml:ValByName( 'PROFAFERIDA'     , SC2->C2_XPROFAF )
+oHtml:ValByName( 'VALORSUGERIDO'   , nPrecoSugerido )
+
+dbSelectArea("SZS")
+dbSetOrder(1) 
+MsSeek(xFilial("SZS"))
+
+While ! Eof() .And. SZS->ZS_FILIAL == xFilial("SZS")
+	AAdd(_aMotivos,SZS->ZS_CODIGO+" - "+Alltrim(SZS->ZS_DESCR)+" - "+Alltrim(U_StatSEPU(SZS->ZS_TIPO)))
+	dbSkip()
+Enddo
+                                                          
+//-- Pesquisa Motivo SEPU colocado pela Producao
+MsSeek(xFilial("SZS")+SC2->C2_XMREPRD)
+
+cMotivoProducao := SZS->ZS_CODIGO+" - "+Alltrim(SZS->ZS_DESCR)+" - "+Alltrim(U_StatSEPU(SZS->ZS_TIPO))
+//cStatusProducao := U_StatSEPU(SZS->ZS_TIPO)             
+cObservProducao := MSMM(SC2->C2_XCOBS1)
+
+// Preenche Dados do Formulario - Folder INSPECAO PRODUCAO
+oHtml:ValByName( 'MOTIVOPRODUCAO'  , cMotivoProducao )
+//oHtml:ValByName( 'STATUSPRODUCAO'  , cStatusProducao )
+oHtml:ValByName( 'OBSPRODUCAO'     , cObservProducao )
+
+//-- Pesquisa Motivo SEPU colocado pelo Comercial                                                
+                    
+If Empty(SC2->C2_XMREFIN)
+	cMotivoComercial := _aMotivos
+	//cStatusComercial := cStatusProducao
+	cObservComercial := Space("80")
+Else
+	MsSeek(xFilial("SZS")+SC2->C2_XMREFIN)
+	cMotivoComercial := SZS->ZS_CODIGO+" - "+Alltrim(SZS->ZS_DESCR)+" - "+Alltrim(U_StatSEPU(SZS->ZS_TIPO))
+	//cStatusComercial := U_StatSEPU(SZS->ZS_TIPO)
+	cObservComercial := MSMM(SC2->C2_XCOBS2)
+Endif
+
+// Preenche Dados do Formulario - Folder INSPECAO COMERCIAL
+oHtml:ValByName( 'MOTIVOCOMERCIAL'  ,cMotivoComercial )
+//oHtml:ValByName( 'STATUSCOMERCIAL'  ,cStatusComercial )
+oHtml:ValByName( 'OBSCOMERCIAL'     ,cObservComercial )
+
+//-- Pesquisa Motivo SEPU colocado pela Diretoria                                                
+
+If Empty(SC2->C2_XMREDIR)
+	cMotivoDiretoria := _aMotivos
+	//cStatusDiretoria := cStatusComercial
+	cObservDiretoria := Space(80)
+Else
+	MsSeek(xFilial("SZS")+SC2->C2_XMREDIR)
+	cMotivoDiretoria := SZS->ZS_CODIGO+" - "+Alltrim(SZS->ZS_DESCR)+" - "+Alltrim(U_StatSEPU(SZS->ZS_TIPO))
+	cStatusDiretoria := U_StatSEPU(SZS->ZS_TIPO)
+	cObservDiretoria := MSMM(SC2->C2_XCOBS3)
+Endif
+                                 
+// Preenche Dados do Formulario - Folder INSPECAO PRODUCAO
+oHtml:ValByName( 'MOTIVODIRETORIA'  ,cMotivoDiretoria ) 
+oHtml:ValByName( 'STATUSDIRETORIA'  ,cStatusDiretoria )
+oHtml:ValByName( 'OBSDIRETORIA'     ,cObservDiretoria )
+
+//Funcao para validar o Time-Out ref. Resposta do Email
+oLembrete:bTimeOut := {{'U_SEPUTimeOut',4,6,30}}
+
+// Funcao para leitura do retorno
+oLembrete:bReturn := 'U_SEPURetLem()'
+
+// Funcao para Startar o envio do Email WorkFlow
+oLembrete:Start()
+
+RestArea(aAliasAnt)
+
+CONOUT('SEPU Solicitacao Exame Pneus Usados - Finalizado...')
+
+Return
+
+/*
+________________________________________________________________________________________
+Programa  :	SEPURetLem	 		 
+Descricao : Funcao para leitura dos retornos emails ref´s lembretes
+Parametros:
+Retorno   :
+Tipo	  : Rotina Projeto - WORKFLOW
+_________________________________________________________________________________________
+*/
+USER FUNCTION SEPURetLem(oLembrete)
+
+LOCAL   oHtml
+LOCAL   cStatusDiretoria := '', cStatusComercial := '', cObsDiretoria := '', cObsComercial := ''
+LOCAL   nValorCredito    := 0, cColetaExame := '', cColetaOriginal := '', cMotivoDiretoria, cMotivoComercial
+LOCAL   cParcela         := ''
+PRIVATE aMemos           := { {"C2_XOBSC1","C2_OBSPRO" } }
+PRIVATE lMsHelpAuto      := .F.
+PRIVATE lMsErroAuto      := .F.   
+PRIVATE _aReg            := {}  
+                                      
+conout("Retorno do processo de SEPU - Iniciando...")
+
+// Faz uso do objeto ohtml que pertence ao processo
+oHtml := oLembrete:oHtml
+
+//-- Busca valores pra atualizar tabelas.
+cMotivoComercial := Substr(oHtml:RetByName('MOTIVOCOMERCIAL'),1,3)
+//cStatusComercial := oHtml:RetByName('STATUSCOMERCIAL')
+cObsComercial    := oHtml:RetByName('OBSCOMERCIAL')
+cMotivoDiretoria := Substr(oHtml:RetByName('MOTIVODIRETORIA'),1,3)
+//cStatusDiretoria := oHtml:RetByName('STATUSDIRETORIA')
+cObsDiretoria    := oHtml:RetByName('OBSDIRETORIA')
+cColetaOriginal  := oHtml:RetByName('COLETAORIGINAL')
+cColetaExame     := oHtml:RetByName('COLETAEXAME')
+nValorCredito    := Val(oHtml:RetByName('VALORCREDITO'))
+
+conout("Variaveis inicializadas...")
+
+ChkFile("SC2")
+ChkFile("SE1")
+ChkFile("SA1")
+ChkFile("SF1")
+ChkFile("SZS")
+
+dbSelectArea("SC2")
+dbSetOrder(1)
+If ( Empty(cColetaExame) .Or. ( ! dbSeek( xFilial("SC2")+cColetaExame,.f.) ) )
+   Conout("Nao Encontrou Coleta de Exame relacionada a este email")
+   Return(.f.)
+EndIf      
+
+SF1->( dbSetOrder(1) )
+SF1->( dbSeek(xFilial("SF1")+Substr(cColetaExame,1,6),.f. ) )
+SA1->( dbSetOrder(1) )
+SA1->( dbSeek(xFilial("SA1")+SF1->F1_FORNECE+SF1->F1_LOJA,.f. ) )
+
+If SC2->( RecLock("SC2",.F.) )
+	If ! Empty(cMotivoComercial)
+	     SC2->C2_XMREFIN := cMotivoComercial
+	     MSMM(SC2->C2_XCOBS2,78,,cObsComercial,1,,,"SC2","C2_XOBSC2")
+	Endif
+	If Empty(cMotivoDiretoria)		     
+	     SC2->C2_XMREDIR := cMotivoDiretoria
+    	 SC2->C2_XVALAPR := nValorCredito
+	     MSMM(SC2->C2_XCOBS3,78,,cObsDiretoria,1,,,"SC2","C2_XOBSC3")
+	Endif	     
+	SC2->( MsUnlock() )
+EndIf
+
+//-- Inclui NCC caso aprovado
+SZS->( dbSetOrder(1) )
+SZS->( dbSeek(xFilial("SZS")+cMotivoDiretoria,.F.) )
+
+If nValorCredito > 0 .And. ! Empty(SZS->ZS_STATUS) .And. SZS->ZS_STATUS <> "5" // Aprova
+   
+    //-- gera numero da parcela com letra equivalente ao item da coleta
+	cParcela := Chr( ( Asc("A") - 1 ) + Val(Substr(cColetaExame,7,2)) )
+
+	AAdd( _aReg, { "E1_FILIAL"  , xFilial("SE1")                  , NIL } )
+	AAdd( _aReg, { "E1_PREFIXO" , "SEP"                           , NIL } )
+	AAdd( _aReg, { "E1_NUM"     , Substr(cColetaExame,1,6)        , NIL } )
+	AAdd( _aReg, { "E1_PARCELA" , cParcela                        , NIL } )
+	AAdd( _aReg, { "E1_TIPO"    , "NCC"                           , NIL } )
+	AAdd( _aReg, { "E1_NATUREZ" , "1300"                          , NIL } )
+	AAdd( _aReg, { "E1_CLIENTE" , SF1->F1_FORNECE                 , NIL } )
+	AAdd( _aReg, { "E1_LOJA"    , SF1->F1_LOJA                    , NIL } )
+	AAdd( _aReg, { "E1_EMISSAO" , dDataBase                       , NIL } )
+	AAdd( _aReg, { "E1_VENCTO"  , dDataBase                       , NIL } )
+	AAdd( _aReg, { "E1_VENCREA" , DataValida(dDataBase,.T.)       , NIL } )
+	AAdd( _aReg, { "E1_VALOR"   , nValorCredito                   , NIL } )
+	AAdd( _aReg, { "E1_MOTDESC" , cMotivoDiretoria                , NIL } )
+	AAdd( _aReg, { "E1_COLETA"  , Substr(cColetaOriginal,1,6)     , NIL } )
+		
+    MsExecAuto( {|x,y| Fina040(x,y)}, _aReg, 3 )
+
+    //-- Verifica se houve algum erro.
+    If lMsErroAuto
+    	ConOut("Houve um erro na criacao do titulo SEP-"+Substr(cColetaExame,1,6)+"-"+cParcela)
+    	//MostraErro()
+    EndIf
+
+EndIf
+
+// Finaliza o processo.
+oLembrete:Finish()
+
+Return
+
+/*
+________________________________________________________________________________________
+Programa  :	SEPUTimeOut	 		Autor : Ely Antunes  	Data : 25.08.2005
+Descricao : Valida time-out no  retorno dos mail´s , caso o participante nao
+responda o sistema ira encerrar o processo (3 dias para validacao)
+Parametros:
+Retorno   :
+Tipo	  : Rotina Projeto - WORKFLOW
+_________________________________________________________________________________________
+*/
+User Function SEPUTimeOut(oLembrete)
+
+// Finaliza o processo.
+oLembrete:Finish()
+
+Return
+
+/*
+________________________________________________________________________________________
+Programa  :	SEUPWFEnv	Autor : Ely Antunes				Data : 25.08.2005
+Descricao : Job para Disparar Emails Workflow ref´s lembrete
+Tipo	  : WorkFlow Rotina Projeto - ERP
+_________________________________________________________________________________________
+*/
+USER FUNCTION SEPUWFENV()
+
+//Preparando Ambiente
+PREPARE ENVIRONMENT EMPRESA "99" FILIAL "01" FUNNAME "SEPUWFENV"
+
+ChkFile('SC2') // Ordem de Producao - é onde existem as informações do Laudo Exame Pneu
+ChkFile('SE1') // Titulos a Receber - para gravacao da NCC
+ChkFile('SA1') // tabela de clientes
+ChkFile('SB1') // tabela de produtos
+ChkFile('SD1') // tabela de itens notas fiscais entrada
+ChkFile('SF1') // tabela de itens notas fiscais entrada
+ChkFile('SZS')  // tabela de motivos SEPU
+
+//Processa Rotina
+U_WSEPU01()
+
+RESET ENVIRONMENT
+
+Return

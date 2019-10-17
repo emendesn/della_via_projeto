@@ -1,0 +1,44 @@
+#INCLUDE "rwmake.ch"
+
+/*/
+ÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜ
+±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±
+±±ÉÍÍÍÍÍÍÍÍÍÍÑÍÍÍÍÍÍÍÍÍÍËÍÍÍÍÍÍÍÑÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍËÍÍÍÍÍÍÑÍÍÍÍÍÍÍÍÍÍÍÍÍ»±±
+±±ºPrograma  ³M460SOLI  º Autor ³ AP6 IDE            º Data ³  15/02/06   º±±
+±±ÌÍÍÍÍÍÍÍÍÍÍØÍÍÍÍÍÍÍÍÍÍÊÍÍÍÍÍÍÍÏÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÊÍÍÍÍÍÍÏÍÍÍÍÍÍÍÍÍÍÍÍÍ¹±±
+±±ºDescricao ³ Na Devolucao de Compra, o sistema nao esta calculando      º±±
+±±º          ³ corretamente o valor da base e do ICMS Subs Tributaria     º±±
+±±ÌÍÍÍÍÍÍÍÍÍÍØÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍ¹±±
+±±ºUso       ³ AP6 IDE                                                    º±±
+±±ÈÍÍÍÍÍÍÍÍÍÍÏÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍ¼±±
+±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±
+ßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßß
+/*/
+
+User Function M460SOLI()
+
+aArea:=GetaREA()
+
+IF SC5->C5_TIPO == "D"
+	dBselectarea("SD1")
+	dbsetorder(1)
+	IF dbseek(xFilial("SD1")+SC6->(C6_NFORI+C6_SERIORI)+SC5->(C5_CLIENTE+C5_LOJACLI)+SC6->C6_PRODUTO+SC6->C6_ITEMORI)
+		dBselectarea("SF4")
+		dBsetorder(1)
+		IF dBseek(xFilial("SF4")+SC6->C6_TES)
+			IF SF4->F4_DUPLIC =="S"
+				IF SD1->D1_BRICMS > 0
+					restArea(aArea)
+					aRet:={}
+					aadd(aRet,Round((SD1->D1_BRICMS/SD1->D1_QUANT)*SC6->C6_QTDVEN,2))
+					aadd(aRet,Round((SD1->D1_ICMSRET/SD1->D1_QUANT)*SC6->C6_QTDVEN,2))
+					Return aRet
+				Endif                                                              
+			ENDIF
+		ENDIF
+	ENDIF
+ENDIF
+Restarea(aArea)
+aRet:={}
+Aadd(aRet,0)
+Return aRet

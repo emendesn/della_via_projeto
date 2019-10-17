@@ -1,0 +1,41 @@
+Group Della Via
+   Version=7.0
+   VSSDB=
+   HasProperties=1
+   Properties
+      BeforeApply=
+      AfterApply=
+      Icon=
+      ID=
+      Version=
+      PalmName=
+      OutPut=
+   End
+   ProjectsCount=1
+   Project Log Cnab
+      FoldersCount=2
+      Folder Fontes
+         VSSPath=Fontes
+         FilesCount=5
+         File \Especif\Ver811\Della Via\PESQSZ7.prw
+             Type=T
+         End
+         File \Especif\Ver811\Della Via\F200Tit.prw
+             Type=T
+         End
+         File \Especif\Ver811\Della Via\FC010CON.prw
+             Type=T
+         End
+         File \Especif\Ver811\Della Via\F040BOT.prw
+             Type=T
+         End
+         File \Especif\Ver811\Della Via\TK280TB.prw
+             Type=T
+         End
+      End
+      Folder Definições
+         VSSPath=Definições
+         FilesCount=0
+      End
+   End
+End

@@ -1,0 +1,42 @@
+____________________________________________________________________________________________________________________________________________________________________________________________________________________________
+MICROSIGA                                                                                                                                                                                                  Folha:      1
+SIGA /PRCR531                                                                             RELAÇÃO DE CHAMADOS DO CRA                                                                                       Dt.Ref.: 30/06/05
+Hora...: 15:56:02                                                                                                                                                                                          Emissao: 30/06/05
+____________________________________________________________________________________________________________________________________________________________________________________________________________________________
+ 
+CHAMADO No.  :AACJV5
+CLIENTE      :DELLA VIA PNEUS                          CODIGO    :13797                        N.FANTASIA :DELLA VIA                     
+ENDERECO     :R. PROF. ARNALDO JOAO SEMERARO, 164      CADASTRO  :29/06/05                     BAIRRO     :JD STA EMILIA       
+AN. ALOCADO  :                                         MUNICIPIO :SAO PAULO                    ESTADO     :SP
+USUARIO      :MARCOS PAULO                             CNPJ/CPF  :60957784000172               IE         :108213894112      
+CONTATO      :                                         TELEFONE  :1163333215                   FAX        :01163333215    
+____________________________________________________________________________________________________________________________________________________________________________________________________________________________
+VERSAO       :MP811           S.O. REMOTE   :WINXP          TIPO PROBLEMA  :001 - Nao conformidade              
+MODULO       :LOJA            S.O. TOPCON   :               UNID. RESP.    :CD3200 - GAR - MARIA CRISTINA JUNQUEIRA
+ROTINA       :LOJA701         S.O. BASE     :               STATUS         :TRANSFERIDO
+BASE         :                BUILD SISTEMA :7.00.050313A   AN. RESPONS.   :TI0921
+S.O. SERVER  :                BUILD TOP     :,              AREA RESP.     :N1-AUT.COM
+SOLUCAO EM   :  /  /          BOPS          :00000083801    COORDENADOR    :       -                                    
+AVALIACAO    :
+____________________________________________________________________________________________________________________________________________________________________________________________________________________________
+ 
+Item    Area                                      Descricao                                                                                            Consultor Externo        Analista Alocado         Periodo
+____________________________________________________________________________________________________________________________________________________________________________________________________________________________
+ 
+001    N1-AUT.COM            Problema           Quando faço um recebimento e existe uma impressora de cheque.cadastrada nas estações. o siste          TI2327 Marcelo Alcant    AUTO AUTOMATI            29/06/05 18:35
+                                                ma apresenta um erro.  diz que a variavel.aParcelas nao existe. analisamos o fonte e percebemos o er
+                                                ro nessa nessa.rotina: LOJXREC.PRW.001307 if !empty(LjGetStation("IMPCHQ")) .and..!empty(LjGetStatio
+                                                n("PORTCHQ")).001308 FRTImpCH().001309 Endif.segue erro abaixo:..MP8 Build 7.00.050506P.ERRO THREAD
+                                                (DELLAVIA, MTZSIC07)   29/06/2005   14:01:58.variable does not exist APARCELAS on FRTIMPCH(FRTA010A.
+                                                PRW) 23/06/2005.line : 7354..[build:7.00.050506P].[environment: AUTOMACAO2].[thread 3292].Called fro
+                                                m _LJGRVREC(LOJXREC.PRW) 07/03/2005 line : 1308.Called from {|ODLG| ATITULONB := ACLONE(_LJGRVREC(AP
+                                                GTOS))}(LOJXREC.PRW).line : 1082.Called from  line : 5050.Called from { || EVAL( BACTION, ODLG ), OD
+                                                LG:END()}(MATXFUNB.PRX) line :.5050.Called from  line : 0.Called from LJMSGRUN(MATXFUNB.PRX) 13/05/2
+                                                005 line : 5053.Called from LJGRVREC(LOJXREC.PRW) 07/03/2005 line : 1082.Called from LJ7GRVVENDA(LOJ
+                                                A701C.PRW) 27/06/2005 line : 2049.Called from LJ7GRAVACAO(LOJA701C.PRW) 27/06/2005 line : 438..preci
+                                                so de urgencia pois o cliente ja esta com algum tempo com erro no.recebimento. estou utilizando uma
+                                                DARUMA FS2000.
+ 
+002    N1-AUT.COM            Contato            Reproduzido no ambiente da qualidade o mesmo erro. Bops será aberto pelo chamado                       TI2327 Marcelo Alcant    TI0921 FABIO             30/06/05 14:50
+003    N1-AUT.COM            Bops               Abertura do BOPS.Gerado o Bops No. 00000083801                                                         TI2327 Marcelo Alcant    TI0921 FABIO             30/06/05 15:54
+004    N3-VCLIENT            Transferir         Em 30/06/05, as 15:55:58, o BOPS foi para o passo: 000003 - DISTR / ANALISE                            TI2327 Marcelo Alcant    TI0921 FABIO             30/06/05 15:54

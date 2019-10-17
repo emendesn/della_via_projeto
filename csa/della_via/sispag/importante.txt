@@ -1,0 +1,57 @@
+PROCEDIMENTO PARA UTILIZAR - SISPAG - ITAU
+
+1) colocar no SEE parametros bancos ->  do itau a agencia e conta corrente: código da empresa no banco
+Ao fazer o bordero o sistema pega os dados da SEE, pode se ter apenas 1 see
+
+2) Criar campos para o CNAB:
+
+E2_CODBAR C 48 - COLOCAR A VALIDACAO U_CODBARVL() - Código de barras *
+E2_E_RECPA C 4 - Código para digitar o código da receita - DARF NORMAL e GPS *
+E2_E_VLENT N 17  - Valor das outras entidades para uso da gps e da darf normal *
+E2_E_JUR N 17  - valor dos juros *
+E2_E_MUL N 17 - valor da multa *
+
+3) Pontos de Entrada
+
+f240arq.prw 
+f240sum.prw 
+rfine20()
+FA300OCO.prw //ponto de entrada para nao baixar o valor da multa
+
+4) Ao fazer o bordero:
+			Modelo:			Tipo Pagamento:
+
+Darf Normal 		16				*22 - criar tabela 59 do configurador	
+GPS 			17 				*22 - criar tabela 59 do configurador
+Darf Simples		18				*22 - criar tabela 59 do configurador
+Crédito em Conta	01				20 ou 98
+Doc			03 				20 ou 98
+TED Outro Titular	41				20 ou 98
+TED Mesmo TITULAR	43				20 ou 98	
+COB ITAU		30				20 ou 98 
+COB OUTRSO BANCOS	31				20 ou 98 
+
+5) Colocar o campo SEE->EE_TIPDAT NO BROWSE E DEPOIS ALTERA-LO PARA 4 OU SEJA DDMMAAAA *
+
+Para simular:
+
+SEB
+SEE
+SA6
+SE2
+SEA
+
+
+---- 
+FORMA CORRETA DE PREENCHIMENTO DOS TRIBUTOS
+
+NUM 010 FORNECEDOR INPS GPS VLR TITULO 10.000,00  OUTRAS ENTIDADES 2.000,00  ACRESCIMO JOGAR NA MULTA (E2_E_MUL)
+500,00 COD RECEITA 2100
+
+NUM 010 000222 DARF NORMAL  
+VLR TITULO 10.000,00  TAXA PERMANCENCIA = JUROS = (E2_E_JUR) 100,00  ACRESCIMO = MULTA = (E2_E_MUL) 858,00 
+COD RECEITA 8109
+---------------------------------------------
+ALTERNATIVA:
+PREENCHER O E2_VALOR COM O VALOR TOTAL DO TITULO + O VALOR DA MULTA + JUROS + OUTRAS ENTIDADES
+DEPOIS DISTRIBUIR OS VALORES  DA MULTA + JUROS + OUTRAS ENTIDADES NOS RESPECTIVOS CAMPOS

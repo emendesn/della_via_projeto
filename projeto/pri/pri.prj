@@ -1,0 +1,35 @@
+Group Priscila
+   Version=7.0
+   VSSDB=
+   HasProperties=1
+   Properties
+      BeforeApply=
+      AfterApply=
+      Icon=
+      ID=
+      Version=
+      PalmName=
+      OutPut=
+   End
+   ProjectsCount=1
+   Project Novo Projeto
+      FoldersCount=2
+      Folder Fontes
+         VSSPath=Fontes
+         FilesCount=3
+         File \especif\ver811\Della Via\projeto\pri\DELA064.prw
+             Type=T
+         End
+         File \especif\ver811\Della Via\projeto\pri\DELA020.prw
+             Type=T
+         End
+         File \especif\ver811\Della Via\projeto\pri\DELA063.prw
+             Type=T
+         End
+      End
+      Folder Definições
+         VSSPath=Definições
+         FilesCount=0
+      End
+   End
+End

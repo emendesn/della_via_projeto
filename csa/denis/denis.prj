@@ -1,0 +1,119 @@
+Group Teste - Denis
+   Version=7.0
+   VSSDB=
+   HasProperties=1
+   Properties
+      BeforeApply=
+      AfterApply=
+      Icon=
+      ID=
+      Version=
+      PalmName=
+      OutPut=
+   End
+   ProjectsCount=1
+   Project Programas
+      FoldersCount=5
+      Folder SQry
+         VSSPath=Nova Pasta1
+         FilesCount=3
+         File \my projects\Denis\SQry\SQryVw.prw
+             Type=T
+         End
+         File \my projects\Denis\SQry\SQryAut.prw
+             Type=T
+         End
+         File \my projects\Denis\SQry\SQryFun.prw
+             Type=T
+         End
+      End
+      Folder Diversos
+         VSSPath=Nova Pasta2
+         FilesCount=12
+         File \my projects\Denis\TSTF3.prw
+             Type=T
+         End
+         File \my projects\Denis\QryTool.prw
+             Type=T
+         End
+         File \my projects\Denis\dialogIde.prw
+             Type=T
+         End
+         File \my projects\Denis\DFTRUN.PRW
+             Type=T
+         End
+         File \my projects\Denis\TSTFTP.prw
+             Type=T
+         End
+         File \my projects\Denis\TstPrn.prw
+             Type=T
+         End
+         File \my projects\Denis\VerParam.prw
+             Type=T
+         End
+         File \my projects\Denis\TXTVIRG.prw
+             Type=T
+         End
+         File \my projects\Denis\AtuSalDup.prw
+             Type=T
+         End
+         File \my projects\Denis\ZZ4ZZ5.prw
+             Type=T
+         End
+         File \my projects\Denis\TSTMSAUTO.prw
+             Type=T
+         End
+         File \my projects\Denis\DVQGR02.PRW
+             Type=T
+         End
+      End
+      Folder EDI Durapol
+         VSSPath=Nova Pasta4
+         FilesCount=5
+         File \my projects\Denis\EDI\Durapol\DEDI001.prw
+             Type=T
+         End
+         File \my projects\Denis\EDI\Durapol\DEDI002.prw
+             Type=T
+         End
+         File \my projects\Denis\EDI\Durapol\DEDI003.prw
+             Type=T
+         End
+         File \my projects\Denis\EDI\Durapol\DEDI004.prw
+             Type=T
+         End
+         File \my projects\Denis\EDI\Durapol\DEDI005.PRW
+             Type=T
+         End
+      End
+      Folder EDI DellaVia
+         VSSPath=Nova Pasta5
+         FilesCount=6
+         File \my projects\Denis\EDI\DellaVia\DVEDI01.prw
+             Type=T
+         End
+         File \my projects\Denis\EDI\DellaVia\DVEDI02.prw
+             Type=T
+         End
+         File \my projects\Denis\EDI\DellaVia\DVEDI03.prw
+             Type=T
+         End
+         File \my projects\Denis\EDI\DellaVia\DVEDI04.prw
+             Type=T
+         End
+         File \my projects\Denis\EDI\DellaVia\DVEDI05.PRW
+             Type=T
+         End
+         File \my projects\Denis\EDI\DellaVia\DVEDI06.prw
+             Type=T
+         End
+      End
+      Folder QG
+         VSSPath=Nova Pasta5
+         FilesCount=1
+         File \my projects\Denis\DVQGR01.prw
+             Type=T
+         End
+      End
+   End
+End

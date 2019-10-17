@@ -1,0 +1,36 @@
+/*    
+	KARDUKA
+
+
+
+	// Monta estrutura do temporario
+	aEstru := {}
+	aadd(aEstru,{"T_LINHA"    ,"C",255,0})
+	aadd(aEstru,{"T_COD"      ,"C",6,0})
+	aadd(aEstru,{"T_DATA"     ,"D",8,0})
+	aadd(aEstru,{"T_DOC"      ,"C",6,0})
+	aadd(aEstru,{"T_CFOP"     ,"C",4,0})
+	aadd(aEstru,{"T_TIPO"     ,"C",1,0})
+	aadd(aEstru,{"T_QUANT"    ,"N",14,2})
+	
+	// Cria, abre, indexa temporario
+	cNomTmp := CriaTrab(aEstru,.t.)
+	dbUseArea(.T.,,cNomTmp,"TMP",.F.,.F.)
+	IndRegua("TMP",cNomTmp,"T_OPER+T_MIDIA+T_NUM",,.t.,"Selecionando Registros...")
+
+
+nFile := fCreate("DVFIS01.LOG")    // Para Criar o arquivo
+nFile := fOpen("DVFIS01.LOG",2+64) // Caso o arquivo ja exista
+
+cTxt := "BORORORO" + Chr(13)+Chr(10) // Texto + quebra de linha
+
+fWrite(nFile,cTxt)                 // Escreve no arquivo
+fClose(nFile)                      // Fecha o arquivo
+
+
+
+
+
+*/
+
+	

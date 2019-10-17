@@ -1,0 +1,646 @@
+#define Confirma 1
+#define Redigita 2
+#define Abandona 3
+#Include "protheus.ch"
+#Include "gpea130.ch"
+/*/
+ÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜ
+±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±
+±±ÚÄÄÄÄÄÄÄÄÄÄÂÄÄÄÄÄÄÄÄÄÄÂÄÄÄÄÄÄÄÂÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÂÄÄÄÄÄÄÂÄÄÄÄÄÄÄÄÄÄ¿±±
+±±³Fun‡…o    ³ Gpea130  ³ Autor ³ Mauro Sergio          ³ Data ³ 23.04.96 ³±±
+±±ÃÄÄÄÄÄÄÄÄÄÄÅÄÄÄÄÄÄÄÄÄÄÁÄÄÄÄÄÄÄÁÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÁÄÄÄÄÄÄÁÄÄÄÄÄÄÄÄÄÄ´±±
+±±³Descri‡…o ³ Cadastramento de Vale Transporte                           ³±±
+±±ÃÄÄÄÄÄÄÄÄÄÄÅÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ´±± 
+±±³ Uso      ³ Generico                                                   ³±±
+±±ÃÄÄÄÄÄÄÄÄÄÄÁÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ´±±
+±±³         ATUALIZACOES SOFRIDAS DESDE A CONSTRU€AO INICIAL.             ³±±
+±±ÃÄÄÄÄÄÄÄÄÄÄÄÄÂÄÄÄÄÄÄÄÄÂÄÄÄÄÄÄÂÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ´±±
+±±³Programador ³ Data   ³ BOPS ³  Motivo da Alteracao                     ³±±
+±±ÃÄÄÄÄÄÄÄÄÄÄÄÄÅÄÄÄÄÄÄÄÄÅÄÄÄÄÄÄÅÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ´±±
+±±³Andreia     ³29/07/02³------³Inclusao das opcoes de Impressao e Calculo³±±
+±±³Natie       ³01/12/03³------³Inclusao das opc Imp.Recibo e Compra V.T  ³±±
+±±ÀÄÄÄÄÄÄÄÄÄÄÄÄÁÄÄÄÄÄÄÄÄÁÄÄÄÄÄÄÁÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÙ±±
+±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±
+ßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßß*/
+User Function Gpea130x
+
+LOCAL cFiltraSRA			//Variavel para filtro
+LOCAL aIndexSRA	:= {}		//Variavel Para Filtro
+
+Private bFiltraBrw := {|| Nil}		// Variavel para Filtro
+
+
+//ÚÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ¿
+//³ Define array contendo as Rotinas a executar do programa      ³
+//³ ----------- Elementos contidos por dimensao ------------     ³
+//³ 1. Nome a aparecer no cabecalho                              ³
+//³ 2. Nome da Rotina associada                                  ³
+//³ 3. Usado pela rotina                                         ³
+//³ 4. Tipo de Transa‡„o a ser efetuada                          ³
+//³    1 - Pesquisa e Posiciona em um Banco de Dados             ³
+//³    2 - Simplesmente Mostra os Campos                         ³
+//³    3 - Inclui registros no Bancos de Dados                   ³
+//³    4 - Altera o registro corrente                            ³
+//³    5 - Remove o registro corrente do Banco de Dados          ³
+//ÀÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÙ
+PRIVATE aRotina := {  	{ STR0004 	,"PesqBrw"	, 0 , 1},;  //"Pesquisar"
+				  		{ STR0005	,"gp130Atu"	, 0 , 2},;  //"Visualizar"
+						{ STR0006 	,"gp130Atu"	, 0 , 4},;  //"Incluir"  
+					 	{ STR0007 	,"gp130Atu"	, 0 , 4},;  //"Alterar"  
+						{ STR0008 	,"gp130Atu"	, 0 , 5},;  //"Excluir"  
+				 		{ STR0013 	,"U_GPEM004"	, 0 , 2},;  //"Calculo"
+						{ STR0014	,"GPER210"	, 0 , 5},;  //"Imprimir Mapa "
+						{ STR0015	,"GPER220"	, 0 , 5},;  //"Imprimir Recibo "
+ 					   	{ STR0016	,"GPER230"	, 0 , 5}}	 //"Compra V.T. "
+
+
+cCadastro := OemToAnsi(STR0009)  //"Vale Transporte"
+	
+//ÚÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ¿
+//³ Verifica se o Arquivo Esta Vazio                             ³
+//ÀÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÙ
+If !ChkVazio("SRA")
+	Return
+Endif
+
+//ÚÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ¿
+//³ Inicializa o filtro utilizando a funcao FilBrowse                      ³
+//ÀÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÙ
+cFiltraRh := CHKRH("GPEA130","SRA","1")
+bFiltraBrw 	:= {|| FilBrowse("SRA",@aIndexSRA,@cFiltraRH) }
+Eval(bFiltraBrw) 
+
+//ÚÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ¿
+//³ Endereca a funcao de BROWSE                                  ³
+//ÀÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÙ
+dbSelectArea("SRA")
+mBrowse( 6, 1,22,75,"SRA",,,,,,fCriaCor() )
+
+//ÚÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ¿
+//³ Deleta o filtro utilizando a funcao FilBrowse                     	   ³
+//ÀÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÙ
+EndFilBrw("SRA",aIndexSra)
+
+Return
+
+/*/
+ÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜ
+±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±
+±±ÚÄÄÄÄÄÄÄÄÄÄÂÄÄÄÄÄÄÄÄÄÄÂÄÄÄÄÄÄÄÂÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÂÄÄÄÄÄÄÂÄÄÄÄÄÄÄÄÄÄ¿±±
+±±³Fun‡…o    ³ GPEM050  ³ Autor ³ Marcos A. Stiefano    ³ Data ³ 19/07/95 ³±±
+±±ÃÄÄÄÄÄÄÄÄÄÄÅÄÄÄÄÄÄÄÄÄÄÁÄÄÄÄÄÄÄÁÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÁÄÄÄÄÄÄÁÄÄÄÄÄÄÄÄÄÄ´±±
+±±³Descri‡…o ³ Calculo do Vale Transporte                                 ³±±
+±±ÃÄÄÄÄÄÄÄÄÄÄÅÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ´±±
+±±³Sintaxe   ³ GPEM050(void)                       	                      ³±±
+±±ÃÄÄÄÄÄÄÄÄÄÄÅÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ´±±
+±±³ Uso      ³ Mensal                                                     ³±±
+±±ÃÄÄÄÄÄÄÄÄÄÄÁÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ´±±
+±±³         ATUALIZACOES SOFRIDAS DESDE A CONSTRU€AO INICIAL.             ³±±
+±±ÃÄÄÄÄÄÄÄÄÄÄÄÄÂÄÄÄÄÄÄÄÄÂÄÄÄÄÄÄÂÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ´±±
+±±³Programador ³ Data   ³ BOPS ³  Motivo da Alteracao                     ³±±
+±±ÃÄÄÄÄÄÄÄÄÄÄÄÄÅÄÄÄÄÄÄÄÄÅÄÄÄÄÄÄÅÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ´±±
+±±³ Natie      ³18/01/01|007164³  Acerto na verificacao de func demit fora³±± 	
+±±³            ³        |      ³  mes/ano referencia                      ³±±  
+±±³ Natie      ³01/02/01|004448³  Inclusao Pergunte:Ferias Programadas    ³±± 
+±±³            ³        |      ³  Considera ferias programadas p/calc.VT  ³±± 
+±±³Emerson     ³22/05/01³------³ Passar utilizar as tres datas disponiveis³±±
+±±³            ³        ³------³ para a programacao de ferias (Meta 6.09) ³±±
+±±³Emerson     ³13/06/01³------³ Tratar cpos de dias de Ferias Programadas³±±
+±±³Natie       ³22/06/01|009178³  Descarta func.c/dt admis.maior dDtataRef³±± 
+±±³Natie       ³08/08/01|QNC746³ ValeTrans()-Aceita Mes/Ano branco caso se³±± 
+±±³            ³        |      ³ sejar usar dias uteis/dias VT generico   ³±±
+±±³Emerson     ³11/06/02³------³ Incl. funcao fTab_Fer p/ calculo Ferias. ³±±
+±±³Mauro  	   ³30/10/02³------³ Incl. Ponto entrada gpm050dias, para     ³±±
+±±³            ³        ³------³ controle de dias de vale e dias Trab.    ³±±
+±±³Emerson     ³23/01/03³------³ Nao deduzir dias de abono dos dias ferias³±±
+±±³            ³        ³------³ se existirem os campos de programacao.   ³±±
+±±³Andreia     ³13/03/03³062532³ Acerto no calculo de dias proporcionais  ³±±
+±±³            ³        ³------³ quando o parametro MV_DIASMES for "S".   ³±±
+±±³Mauro       ³05/05/03³------³ Para as Lojas Gabriella foi aberta poss. ³±±
+±±³            ³        ³------³ sep. Qtd. Vales Dias Uteis e Sabado com  ³±±
+±±³            ³        ³------³ a criacao do campo SR0->R0_QDIASAB e pelo³±±
+±±³            ³        ³------³ ponto de entrada det. os d.uteis e sabado³±±
+±±³            ³        ³------³ e passamos a calcular com a qtd.sab. se  ³±±
+±±³            ³        ³------³ houver o campo criado.					  ³±±
+±±³Mauro       ³24/05/03³------³ Criacao da Pergunte determinando no.vales³±±
+±±³            ³        ³------³ a ser descontado de cada meio de transp. ³±±
+±±³Emerson     ³14/08/03³------³ Se tiver ferias programadas avancando p/ ³±±
+±±³            ³        ³------³ o mes seguinte, nao abatia estes dias.   ³±±
+±±³Natie       ³01/12/03³Meta81³ Utilizacao do Calendario p/efetuar Calc. ³±±
+±±ÀÄÄÄÄÄÄÄÄÄÄÄÄÁÄÄÄÄÄÄÄÄÁÄÄÄÄÄÄÁÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÙ±±
+±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±
+ßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßß*/
+User Function GPEM004
+
+Local 	aSays	:={ }, aButtons:= { } //<== arrays locais de preferencia
+
+Private cCadastro := OemToAnsi("Calculo Vale Transporte") //"Calculo Vale Transporte" 
+Private nSavRec
+nOpca := 0
+
+Pergunte("GPM050",.F.) 
+
+AADD(aSays,OemToAnsi("Este programa calcula o vale transporte.") )  //"Este programa calcula o vale transporte."
+AADD(aSays,OemToAnsi("Sera calculado de acordo com os parametros selecionados pelo usuario.") )  //"Sera calculado de acordo com os parametros selecionados pelo usuario."
+
+AADD(aButtons, { 5,.T.,{|| Pergunte("GPM050",.T. ) } } ) 
+AADD(aButtons, { 1,.T.,{|o| nOpca := 1,IF(gpconfOK(),FechaBatch(),nOpca:=0) }} ) 
+AADD(aButtons, { 2,.T.,{|o| FechaBatch() }} )
+	
+FormBatch( cCadastro, aSays, aButtons )
+
+//ÚÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ¿
+//³ Variaveis utilizadas para parametros                         ³
+//ÀÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÙ
+IF nOpca == 1 
+    Processa({|lEnd| GPM050Processa(),"Calculo do Vale Transporte "}) //"Calculo do Vale Transporte " 
+Endif
+
+Return
+
+*--------------------------------*
+Static Function Gpm050Processa( )
+*--------------------------------*
+Local   nDiaDifer 	:= 0				//-- QTde de dias de Vales de Diferenca
+Local   nDiaVales 	:= 0 				//-- Qtde de dias de Vales  Dia Util
+Local   nDiaNUtil	:= 0 				//-- Qtde de Dias de Vales  Dia Nao Util 
+Local   nDiasFePro  := 0
+Local   nDiasAbono  := 0
+Local 	dDtIniProg  := CTOD("")
+Local   lTemCpoProg 
+Local 	cCompetencia:= ""
+
+Private aCodFol 	:= {}		// Matriz com Codigo da folha
+Private aTabFer     := {}		// Tabela para calculo dos dias de ferias
+Private lProp     	:=.F.
+Private cDiasMes	:= Getmv("MV_DIASMES")
+Private nUlt_Dia  	:= F_ULTDIA(If(Empty(mv_par11), dDataBase, mv_par11))
+Private ULT_DATA	:= CtoD("  /  /  ")
+Private PRI_DATA  	:= CtoD("  /  /  ")
+Private DiasTrab  	:= 0
+Private nDiasAfas 	:= 0
+Private nDiasFal  	:= 0
+Private nDiasVt	    := 0  	//-- Variavel para ser usada no ponto de Entrada
+Private nDiasTrb	:= 0    //-- Variavel para ser usada no ponto de entrada
+Private nDiasDom	:= 0	//-- Variavel para ser usada no ponto retorna numero de Domingos
+Private nDiasSab	:= 0	//-- Variavel para ser usada no ponto retorna numero de sabados
+Private cSemana		:= Space(2)
+Private aPeriodo	:= {}
+
+
+//ÚÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ¿
+//³ mv_par01  - Calcular por 1-Matricula  2-C.Custo              ³
+//³ mv_par02  - Calculo  1-Vale Transporte 2-Dif. Calculo        ³
+//³ mv_par03  - Filial De                                        ³
+//³ mv_par04  - Filial Ate                                       ³
+//³ mv_par05  - Centro de Custo De                               ³
+//³ mv_par06  - Centro de Custo Ate                              ³  
+//³ mv_par07  - Matricula De                                     ³
+//³ mv_par08  - Matricula Ate                                    ³
+//³ mv_par09  - Situacao Funcionario                             ³
+//³ mv_par10  - Categoria do Funcionario                         ³
+//³ mv_par11  - Data de Referencia                               ³
+//³ mv_par12  - Proporcional a Admissao                          ³
+//³ mv_par13  - Descontar Faltas                                 ³
+//³ mv_par14  - Proporcional a Afastados                         ³
+//³ mv_par15  - Arred. no calculo Abaixo / Acima                 ³
+//³ mv_par16  - Ferias Programadas                               ³
+//³ mv_par17  - Numero de Vales a Deduzir                        ³
+//ÀÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÙ
+
+//ÚÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ¿
+//³ Carregando as Perguntas                                      ³
+//ÀÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÙ
+nOrdem      :=  mv_par01
+nTipCal     :=  mv_par02
+cFilDe      :=  mv_par03
+cFilAte     :=  mv_par04
+cCcDe       :=  mv_par05
+cCcAte      :=  mv_par06
+cMatDe      :=  mv_par07
+cMatAte     :=  mv_par08
+cSituacao   :=  mv_par09
+cCategoria  :=  mv_par10
+dDataRef    :=  If(Empty(mv_par11), dDataBase, mv_par11)
+nPropAdm    :=  mv_par12
+nDFaltas    :=  mv_par13
+nDFerias    :=  mv_par14
+nCriterio	:=  mv_par15
+nFerProg    :=  mv_par16
+nQtdDed		:=  mv_par17
+
+ULT_DATA  := CtoD(StrZero(NUlt_Dia,2)+"/"+StrZero(Month(dDataRef),2)+"/"+STRZERO(YEAR(dDataRef),4))
+PRI_DATA  := CtoD("01"+"/"+StrZero(Month(dDataRef),2)+"/"+STRZERO(YEAR(dDataRef),4))
+
+aFeriado := {}
+DbSelectArea("SP3")
+ProcRegua(RecCount())
+DbGotop()
+While !EOF()
+   IncProc("Carregando Feriados")
+   If SP3->P3_FIXO = "N"
+      If SP3->P3_DATA >= pri_data .or. SP3->P3_DATA <= ult_data
+         aAdd(aFeriado,{SP3->P3_FILIAL,SP3->P3_DATA})
+      EndIF
+   Else      
+	     aAdd(aFeriado,{SP3->P3_FILIAL,STOD(Strzero(Year(pri_data),4)+sp3->p3_mesdia)})
+   EndIf
+   DbSkip()
+EndDo   
+
+aTabdias := {}
+DbSelectArea("SZ9")
+ProcRegua(RecCount())
+DbGotop()
+While !EOF()
+    IncProc("Carregando Tabela de Dias")
+    cDSemana  := SZ9->Z9_DIASVT
+    ndiasTrab := 0
+ 	 fCalcDia(PRI_DATA,ULT_DATA,cDSemana,@nDiasTrab,SZ9->Z9_FILIAL)
+    Aadd(aTabDias,{SZ9->Z9_FILIAL,SZ9->Z9_CODIGO,nDiasTrab,cDSemana})
+    DbSkip()
+EndDo
+
+//ÚÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ¿
+//³ Verifica a existencia dos campos de programacao ferias no SRF³
+//ÀÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÙ
+
+//ÚÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ¿
+//³ Procura primeiro funcionario                                 ³
+//ÀÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÙ
+dbSelectArea( "SRA" )
+nSavRec  := RecNO()
+dbGotop( )
+If nOrdem = 1
+	dbSetOrder( 1 )
+	dbSeek( cFilDe + cMatDe , .T. )
+Elseif nOrdem = 2
+	dbSetOrder( 2 )
+	dbSeek( cFilDe + cCcDe + cMatDe , .T. )
+Endif
+cFilAnte := "  "
+
+//ÚÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ¿
+//³ Carrega Regua Processamento	                                ³
+//ÀÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÙ
+ProcRegua(SRA->(RecCount()))
+
+While !Eof( )
+	
+	//ÚÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ¿
+	//³ Move Regua Processamento	                                   ³
+	//ÀÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÙ
+   IncProc("Calculando Vale Transporte "+ sra->ra_filial+"-"+sra->ra_mat) //"Calculando Vale Transporte"
+
+	//ÚÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ¿
+	//³ Consiste o De / Ate  nOrdem = 1-Matricula / 2-Centro Custo   ³
+	//ÀÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÙ
+	IF nOrdem = 1
+		If Eof() .Or. (SRA->RA_FILIAL + SRA->RA_MAT > cFilAte + cMatAte )
+			Exit
+		Endif
+	ElseIf nOrdem = 2
+		If Eof() .Or. (SRA->RA_FILIAL + SRA->RA_CC + SRA->RA_MAT > cFilAte + cCcAte + cMatAte)
+			Exit
+		Endif
+	Endif
+	
+	//ÚÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ¿
+	//³ Testa Categoria e Situacao do Funcionario                    ³
+	//ÀÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÙ
+	If !(SRA->RA_SITFOLH $ cSituacao) .Or. !(SRA->RA_CATFUNC $ cCategoria)
+		dbSkip( )
+		Loop
+	Endif
+	
+	
+	//ÚÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ¿
+	//³ Testa se Funcionario demitido no mes/ano de referencia       ³
+	//ÀÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÙ
+	If  (SRA->RA_SITFOLH $"D") .and.  MesAno(SRA->RA_DEMISSA)< MesAno(dDataRef) .or. ;   //se demitido fora do mes corrente
+		MesAno(SRA->RA_ADMISSA) > MesAno(dDataRef)										 //se admitido apos mes de referencia
+		dbSkip()	
+		Loop
+	endif 
+
+	If SRA->RA_FILIAL # cFilAnte
+		cFilAnte := SRA->RA_FILIAL
+		//ÚÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ¿
+		//³ Carrega Variaveis Codigos da Folha					  	     ³
+		//ÀÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÙ
+		If !FP_CODFOL(@aCodFol,SRA->RA_FILIAL)
+			Exit
+		Endif
+	Endif
+
+	
+	//ÚÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ¿
+	//³ Busca no Calendario  os Dias de Vale                         ³
+	//ÀÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÙ
+
+    iF ( nPOs := Ascan(aTabDias,{ |x| X[2] = SRA->RA_CODBENE }) ) > 0 //carrega quantidade de dias
+        nDiaVales := aTabDias[nPos,3]
+    Else
+         DbSelectArea("SR0")
+         If DbSeek(SRA->RA_FILIAL+SRA->RA_MAT)
+	        Alert('Tabela nao cadastrada '+SRA->RA_FILIAL+'-'+SRA->RA_MAT)
+   	   EndIF  
+   	   DbSelectArea("SRA")
+   	   DbSkip()
+      	Loop
+    EndIF
+   
+   lDiasProp := .f. // variavel indica se o calculo é proporcional
+   IF SRA->RA_ADMISSA > PRI_DATA // Recalcula tabela dias se entrou depois do inicio do periodo
+	   nDiaVales := 0
+	   nPOs := Ascan(aTabDias,{ |x|  X[2] = SRA->RA_CODBENE })
+	   cDSemana := aTabDias[nPos,4]
+	   fCalcDia(SRA->RA_ADMISSA,ULT_DATA,cDSemana,@nDiaVales,SRA->RA_FILIAL)  
+      lDiasProp := .t.
+    EndIf
+
+
+	If nTipCal == 1 
+		If nDiaVales == 0 
+			Help(" ",1,"GPM050NTVT") 
+			Exit
+		Endif
+	Endif 
+
+	//--Calcular Dias Trabalhados do Mes de Referencia
+
+	nDiasAfas := 0
+
+	If nDFerias == 1 .AND. SRA->RA_SITFOLH $ 'A-F'
+
+
+   	DbSelectARea("SR8")
+    DbSeek(SRA->RA_FILIAL+SRA->RA_MAT)
+   	While SRA->RA_FILIAL+SRA->RA_MAT = sr8->r8_filial+sr8->r8_mat .and. !eof()
+		If ( Empty(SR8->R8_DATAFIM) ) .or. ( SR8->R8_DATAFIM > ULT_DATA ) 
+         		__dDataFimAfas := ULT_DATA 
+		Else
+				__dDataFimAfas := SR8->R8_DATAFIM
+   	 	EndIf
+	   	  
+		If SR8->R8_DATAINI < PRI_DATA 
+	 	      __dDataIniAFas := PRI_DATA 
+	   	Else
+ 	   	      __dDataIniAFas  := SR8->R8_DATAINI
+	    ENDiF
+ 	   	  
+		If ( __dDataIniAfas > ULT_DATA ) .or. ( __dDataFimAfas < PRI_DATA )
+			  Dbskip()
+		     Loop
+		EndIf   
+ 	
+ 	    nPOs := Ascan(aTabDias,{ |x|  X[2] = SRA->RA_CODBENE })
+	    cDSemana := aTabDias[nPos,4]
+
+		fCalcDia(__dDataIniAfas,__dDataFimAfas,cDSemana,@nDiasAfas,SR8->R8_FILIAL)
+
+	    DbSkip()
+
+	EndDo   
+
+
+	Endif
+	
+	//--Verifica as Faltas no Arquivo de Movimento
+	IF nDFaltas == 1
+		dbSelectArea( "SRC" )
+		dbSeek( SRA->RA_FILIAL+SRA->RA_MAT)
+		While ! Eof() .And. SRA->RA_FILIAL+SRA->RA_MAT == SRC->RC_FILIAL+SRC->RC_MAT
+			If SRC->RC_PD == aCodFol[54,1]
+				If SRC->RC_TIPO1 = "D"
+					nDiasFal += SRC->RC_HORAS
+				ElseIf SRC->RC_TIPO1 = "H"
+					nDia := (SRC->RC_HORAS/(SRA->RA_HRSMES/30)) - Int(SRC->RC_HORAS/(SRA->RA_HRSMES/30))
+					If nDia < 0.5
+						nDiasFal+=Int(SRC->RC_HORAS/(SRA->RA_HRSMES/30))
+					Else
+						nDiasFal+=(Int(SRC->RC_HORAS/(SRA->RA_HRSMES/30)) + 1)
+					Endif
+				Endif
+			Endif
+			dbSkip()
+		Enddo
+	Endif
+	
+	nDiaVales -= nDiasAfas - nDiasFal
+
+   if nDiasAfas > 0  .and. nDiaVales > 0
+         lDiasProp := .t.
+   EndIF
+
+	If nTipCal == 1 
+		fCalcVale(SRA->RA_FILIAL,SRA->RA_MAT,nDiaVales,nDiaNUtil,SRA->RA_CC,SRA->RA_SALARIO,lDiasProp) 
+	ElseIf nTipCal == 2
+		fCalcDifi(SRA->RA_FILIAL,SRA->RA_MAT,nDiaDifer,SRA->RA_CC,SRA->RA_SALARIO)
+	Endif
+
+	dbSelectArea( "SRA" )
+	dbSkip( )
+
+Enddo
+//ÚÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ¿
+//³ Recupera a Integridade dos dados                             ³
+//ÀÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÙ
+dbSelectArea( "SRA" )
+dbGoTo( nSavRec )
+
+Return
+
+Static Function fCalcDia(dDataIni,dDataFim,cDSemana,nDias,cFil)
+
+For n := dDataIni to dDataFim
+   
+   If Str(Dow(dDataIni),1) $ cDSemana
+      If Ascan(aFeriado,{ |x| x[1] = cFil .AND. x[2] = dDataIni } ) = 0  // se nao for feriado soma 
+         nDias ++
+      EndIf   
+   EndIf
+   dDataIni ++
+
+Next
+
+Return
+
+
+*---------------------------------------------*
+Static Function fCalcVale(cFil,cMat,nDias,nDiaNUt, cCC,nSalario,lDiasProp)
+*---------------------------------------------*
+Local nValUni  := 0
+Local nValCal  := 0
+Local nDiaInf  := 0									//-- Qtde Vales utilizados nos dias Uteis 
+Local nDiaSab  := 0									//-- Qtde Vales utilizados no Sabado 
+Local nSR0NUtil:= 0									//-- Qtde Vales utilizados nos dias Nao Uteis
+Local nDiaCal  := 0									//-- Qtde de Vales no periodo 
+Local nSalBase := 0
+Local nDiaTran := 0									//-- Dias de Vale Transporte 
+Local nDSabCal := 0 								//-- Qtde de Vales no Periodo
+Local nNUtilCal:= 0 								//-- Qtde de Vales no Periodo ( Nao Util ) 
+Local lExistSab:= .F.							
+
+dbSelectArea( "SR0" )
+//--Verifica se existe o campo para controle dos sabados
+If Type("SR0->R0_QDIASAB") # "U"
+   lExistSab := .T.
+Endif 
+
+If dbSeek( cFil + cMat )
+	While ! Eof() .And. cFil + cMat = SR0->R0_FILIAL + SR0->R0_MAT 
+		If lExistSab 
+			nDiaSab := SR0->R0_QDIASAB
+		Endif                
+
+		nSR0NUtil	:= SR0->R0_QDNUTIL 				//-- Qtde de Vales Utilizados Por dias Nao Uteis 
+		nDiaInf 	:= SR0->R0_QDIAINF				//-- Qtde de Vales Utilizados Por dias Uteis 
+		nDiaTran 	:= nDias						//-- Qtde de Dias de Vale 
+		nDiaNutil 	:= nDiaNUt						//-- Qtde de Dias Nao Uteis de Vale  
+
+		//--Verifica se Dias Proporcionais Informado no Arquivo de V.T.
+		If SR0->R0_DIASPRO > 0 .And. SR0->R0_DIASPRO < 99
+			nDiaTran := SR0->R0_DIASPRO
+		//-- Se Dias (( Nao deve Calcular Vale no Mes Para o Funcionarios
+		ElseIf SR0->R0_DIASPRO=99
+			nDiaTran := 0
+      ENDIF
+		//--Verifica se Calculo Proporcional e Nao Informado 
+		//ÚÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ¿
+		//³ Desconta faltas                                              ³
+		//ÀÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÙ
+		If nDFaltas == 1 
+			nDiaTran -= nDiasFal
+		EndIF
+		If nDiaTran < 0
+			nDiaTran := 0
+		Endif
+		dbSelectArea( "SRN" )
+		If dbSeek( If( cFilial == "  " , "  " , SR0->R0_FILIAL ) + SR0->R0_MEIO )
+			nValUni := SRN->RN_VUNIATU
+		Else
+			nValUni := 0.00
+		Endif
+
+		//-- Calculo dos Dias Uteis     ( Qtde dias * No vales no periodo ) 
+		nDiaCal  := ( nDiatran  * nDiaInf ) - nQtdDed
+
+		//-- Calculo dos Dias Nao Uteis 
+		nNUtilCal:= ( nDiaNutil * nSR0NUtil )
+	
+		//--Calculo dos Dias de Sabado 
+		nDSabCal := ( nDiaSab  * nDiasSab) 
+		
+		//--Calculo do Valor Total  
+		nValCal  := ( (nDiaCal+nNUtilCal + nDSabCal)  * nValUni )
+		nSalBase := nSalario
+
+		//ÚÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ¿
+		//³ Gravar o calculo do Vale Transporte no Arquivo (SR0)         ³
+		//ÀÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÙ 
+		GravarSr0(SR0->R0_FILIAL , SR0->R0_MAT , SR0->R0_MEIO , (nDiaCal+nDSabCal+nNUtilCal) , nValCal , cCC , nSalBase , (nDiaTran +nDiaNUtil) , (nDias+ nDiaNUt),lDiasProp )
+		dbSelectArea( "SR0" )
+		dbSkip( )
+	Enddo
+Endif
+Return Nil
+
+*----------------------------------------------------*
+Static Function fCalcDifi(cFil,cMat,nDiasDif,cCC,nSalario)
+*----------------------------------------------------*
+Local nValAnt  := 0
+Local nValAtu  := 0
+Local nValCalv := 0
+Local nValCaln := 0
+Local nDiaInf  := 0
+Local nSalBase := 0
+
+dbSelectArea( "SR0" )
+If dbSeek( cFil + cMat )
+	While !Eof() .And. cFil + cMat = SR0->R0_FILIAL + SR0->R0_MAT
+
+		nDiaInf := SR0->R0_QDIAINF
+		dbSelectArea( "SRN" )
+		If dbSeek( If( cFilial == "  " , "  " , SR0->R0_FILIAL ) + SR0->R0_MEIO )
+			nValAnt := SRN->RN_VUNIANT
+			nValAtu := SRN->RN_VUNIATU
+			nDiasDif:= If( SRN->RN_DIASDIF>0,SRN->RN_DIASDIF,nDiasDif)
+		Else
+			nValUni := nValAtu := nDiaDif := 0
+		Endif
+
+		//ÚÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ¿
+		//³ Calc. dias proporc.Dt Admissao ou Calc.Prop.p/ Afastados     ³
+		//ÀÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÙ
+		If (nPropAdm == 1 .Or. nDFerias == 1)
+			If DiasTrab == 0
+				nDiasDif := 0 
+			Endif                                                             
+
+			If DiasTrab > 0 .and. DiasTrab < 30 
+				nDiasDif := (DiasTrab * nDiasDif)/ If(cDiasMes=="S",nUlt_Dia,30)
+				
+				If nDiasDif > INT(nDiasDif)
+					If nCriterio == 1
+						nDiasDif := NoRound(nDiasDif,0)
+					ElseIf nDiasDif > NoRound(nDiasDif,0) 
+						nDiasDif := NoRound(nDiasDif,0)+1
+					EndIf
+				Endif
+			Endif
+		Endif
+
+		//ÚÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ¿
+		//³ Desconta faltas                                              ³
+		//ÀÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÙ
+		IF nDFaltas == 1 
+			nDiasDif -= nDiasFal
+		Endif
+
+		If nDiasDif < 0
+			nDiasDif := 0
+		Endif
+
+		nDiaCal   := ( nDiasDif * nDiaInf )
+		nValCalv  := ( nDiaCal * nValAnt )
+		nValCaln  := ( nDiaCal * nValAtu )
+		nValDif   := ( nValCaln - nValCalv ) 
+		nSalBase  := nSalario 
+
+		//ÚÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ¿
+		//³ Gravar o calculo da Difernca Vale Transporte no Arquivo (SR0)³
+		//ÀÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÙ
+		GravarSr0(SR0->R0_FILIAL , SR0->R0_MAT , SR0->R0_MEIO , nDiasDif , nValDif , cCC , nSalBase , 0 , 0)
+		dbSelectArea( "SR0" )
+		dbSkip( )
+	Enddo
+Endif
+Return Nil
+
+*-------------------------------------------------------------------------------------------*
+Static Function GravarSr0( cFil, cMat, cMeio, nDia, nVal, cCC, nSal, nDiaPro , nDiasVale ,lDiasProp)
+*-------------------------------------------------------------------------------------------*
+dbSelectArea ( "SR0" )
+Begin Transaction
+	RecLock("SR0",.F.)
+	SR0->R0_FILIAL  := cFil
+	SR0->R0_MAT     := cMat
+	SR0->R0_MEIO    := cMeio
+	SR0->R0_CC      := cCC
+	SR0->R0_SALBASE := nSal
+	If nDiaPro <> nDiasVale .or. lDiasProp
+		SR0->R0_DIASPRO := nDiaPro
+	EndIf
+	If nTipCal == 1
+		SR0->R0_QDIACAL := nDia
+		SR0->R0_VALCAL  := nVal
+		SR0->R0_QDIADIF := 0
+		SR0->R0_VALDIF  := 0
+	ElseIf nTipCal == 2
+		SR0->R0_QDIADIF := nDia
+		SR0->R0_VALDIF  := nVal
+	Endif
+	MsUnlock()
+End Transaction
+Return Nil

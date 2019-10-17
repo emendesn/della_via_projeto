@@ -1,0 +1,53 @@
+Group Novo Grupo de Projetos
+   Version=7.0
+   VSSDB=
+   HasProperties=1
+   Properties
+      BeforeApply=
+      AfterApply=
+      Icon=
+      ID=
+      Version=
+      PalmName=
+      OutPut=
+   End
+   ProjectsCount=1
+   Project Novo Projeto
+      FoldersCount=2
+      Folder Fontes
+         VSSPath=Fontes
+         FilesCount=9
+         File \especif\ver811\Della Via\projeto\DELA061.prw
+             Type=T
+         End
+         File \especif\ver811\Della Via\projeto\delxfun.prw
+             Type=T
+         End
+         File \especif\ver811\Della Via\projeto\MTA360MNU.prw
+             Type=T
+         End
+         File \especif\ver811\Della Via\projeto\DELA062.prw
+             Type=T
+         End
+         File \especif\ver811\Della Via\projeto\DELA063.prw
+             Type=T
+         End
+         File \especif\ver811\Della Via\projeto\OS010Btn.prw
+             Type=T
+         End
+         File \especif\ver811\Della Via\projeto\DELA064.prw
+             Type=T
+         End
+         File \especif\ver811\Della Via\projeto\DELA006.prw
+             Type=T
+         End
+         File \especif\ver811\Della Via\projeto\DELA065.prw
+             Type=T
+         End
+      End
+      Folder Definições
+         VSSPath=Definições
+         FilesCount=0
+      End
+   End
+End

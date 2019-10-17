@@ -1,0 +1,375 @@
+/*
+ÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜ
+±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±
+±±ÉÍÍÍÍÍÍÍÍÍÍÑÍÍÍÍÍÍÍÍÍÍËÍÍÍÍÍÍÍÑÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍËÍÍÍÍÍÍÑÍÍÍÍÍÍÍÍÍÍÍÍÍ»±±
+±±ºPrograma  ³DFATR10   ºAutor  ³ Reinaldo Caldas    º Data ³  27/08/05   º±±
+±±ÌÍÍÍÍÍÍÍÍÍÍØÍÍÍÍÍÍÍÍÍÍÊÍÍÍÍÍÍÍÏÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÊÍÍÍÍÍÍÏÍÍÍÍÍÍÍÍÍÍÍÍÍ¹±±
+±±ºDesc.     ³ Resumo de vendas Motorista/Vend/Indicacao(Desmembra novos) º±±
+±±ÌÍÍÍÍÍÍÍÍÍÍØÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍ¹±±
+±±ºUso       ³ Durapol Renovadora de Pneus LTDA.                          º±±
+±±ÈÍÍÍÍÍÍÍÍÍÍÏÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍ¼±±
+±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±
+ßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßß
+*/
+
+User Function DFATR10()
+//ÚÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ¿
+//³ Declaracao de Variaveis                                             ³
+//ÀÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÙ
+
+Private cString
+Private aOrd 		:= {}
+Private CbTxt       := ""
+Private cDesc1      := "Relatorio de Resumo de vendas por vendedor "
+Private cDesc2      := ""
+Private cDesc3      := ""
+Private cPict       := ""
+Private lEnd        := .F.
+Private lAbortPrint := .F.
+Private limite      := 78
+Private tamanho     := "P"
+Private nomeprog    := "DFATR10"
+Private nTipo       := 18
+Private aReturn     := { "Zebrado", 1, "Administracao", 2, 2, 1, "", 1}
+Private nLastKey    := 0
+Private titulo      := "Resumo de Vendas"
+Private nLin        := 80
+Private nPag		:= 0
+Private Cabec1      := " "
+Private Cabec2      := " "
+Private cbtxt      	:= Space(10)
+Private cbcont     	:= 00
+Private CONTFL     	:= 01
+Private m_pag      	:= 01
+Private imprime     := .T.
+Private wnrel      	:= "DFATR10"
+Private _cPerg     	:= "DFAT10"
+
+Private cString 	:= "SF2"
+
+dbSelectArea("SF2")
+dbSetOrder(1)
+
+//ÚÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ¿
+//³ Monta a interface padrao com o usuario...                           ³
+//ÀÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÙ
+
+_aRegs:={}
+
+AAdd(_aRegs,{_cPerg,"01","Da  Data ?"        ,"Da  Data"       ,"Da  Data"       ,"mv_ch1","D", 8,0,0,"G","","mv_par01","","","","","","","","","","","","","","","","","","","","","","","","",""})
+AAdd(_aRegs,{_cPerg,"02","Ate Data ?"        ,"Ate Data"       ,"Ate Data"       ,"mv_ch2","D", 8,0,0,"G","","mv_par02","","","","","","","","","","","","","","","","","","","","","","","","",""})
+AAdd(_aRegs,{_cPerg,"03","Do  Motorista ?"   ,"Do Vendedor"    ,"Do Vendedor"    ,"mv_ch3","C", 6,0,0,"G","","mv_par03","","","","","","","","","","","","","","","","","","","","","","","","","SA3"})
+AAdd(_aRegs,{_cPerg,"04","Ate Motorista ?"   ,"Ate Vendedor"   ,"Ate Vendedor"   ,"mv_ch4","C", 6,0,0,"G","","mv_par04","","","","","","","","","","","","","","","","","","","","","","","","","SA3"})
+AAdd(_aRegs,{_cPerg,"05","Do  Vendedor ?"    ,"Do Vendedor"    ,"Do Vendedor"    ,"mv_ch5","C", 6,0,0,"G","","mv_par05","","","","","","","","","","","","","","","","","","","","","","","","","SA3"})
+AAdd(_aRegs,{_cPerg,"06","Ate Vendedor ?"    ,"Ate Vendedor"   ,"Ate Vendedor"   ,"mv_ch6","C", 6,0,0,"G","","mv_par06","","","","","","","","","","","","","","","","","","","","","","","","","SA3"})
+AAdd(_aRegs,{_cPerg,"07","Do  Indicador ?"   ,"Do Vendedor"    ,"Do Vendedor"    ,"mv_ch7","C", 6,0,0,"G","","mv_par07","","","","","","","","","","","","","","","","","","","","","","","","","SA3"})
+AAdd(_aRegs,{_cPerg,"08","Ate indicador ?"   ,"Ate Vendedor"   ,"Ate Vendedor"   ,"mv_ch8","C", 6,0,0,"G","","mv_par08","","","","","","","","","","","","","","","","","","","","","","","","","SA3"})
+
+ValidPerg(_aRegs,_cPerg)
+
+Pergunte(_cPerg,.F.)
+
+aOrd :={"Por Motorista", "Por Vendedor","Por Indicador" }
+
+wnrel := SetPrint(cString,NomeProg,_cPerg,@titulo,cDesc1,cDesc2,cDesc3,.F.,aOrd,,Tamanho)
+
+If nLastKey == 27
+	Return
+Endif
+
+SetDefault(aReturn,cString)
+
+If nLastKey == 27
+	Return
+Endif
+
+nTipo := If(aReturn[4]==1,15,18)
+
+Processa( {|| ImpRel() } )
+
+Return
+
+
+/*
+ÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜ
+±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±
+±±ÉÍÍÍÍÍÍÍÍÍÍÑÍÍÍÍÍÍÍÍÍÍËÍÍÍÍÍÍÍÑÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍËÍÍÍÍÍÍÑÍÍÍÍÍÍÍÍÍÍÍÍÍ»±±
+±±ºPrograma  ³ ImpRel   ºAutor  ³ Reinaldo Caldas    º Data ³  17/08/05   º±±
+±±ÌÍÍÍÍÍÍÍÍÍÍØÍÍÍÍÍÍÍÍÍÍÊÍÍÍÍÍÍÍÏÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÊÍÍÍÍÍÍÏÍÍÍÍÍÍÍÍÍÍÍÍÍ¹±±
+±±ºDesc.     ³ Funcao para impressao do relatorio                         º±±
+±±º          ³                                                            º±±
+±±ÈÍÍÍÍÍÍÍÍÍÍÏÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍ¼±±
+±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±
+ßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßß
+*/
+
+Static Function ImpRel()
+
+LOCAL _cQry
+LOCAL cCod     := ""
+LOCAL _aTam    := _aEstrutura := {}
+LOCAL nOrdem   := aReturn[8]
+LOCAL nTotVlr  := nTotNovo := nTotGer := 0
+LOCAL cabec1   := " "+IIF(nOrdem = 1,"Por Motorista",IIF(nOrdem = 2,"Por Vendedor","Por Indicacao"))+" "
+LOCAL cabec2   := " Codigo    Nome                                Valor      Servico      Mercantil  "
+
+ProcRegua(100)
+
+IF Select("TRB") > 0
+	TRB->(dbCloseArea())
+EndIF
+
+_cQry := "select F2_FILIAL, F2_DOC, F2_SERIE, F2_VEND3, F2_VEND4, F2_VEND5 "
+_cQry += " from " + RetSqlName("SF2")+ " SF2 " 
+_cQry += " where SF2.D_E_L_E_T_ = ' ' "
+_cQry += " and F2_FILIAL = '" + xFilial("SF2") + "' "
+_cQry += " and F2_EMISSAO >= '" + DtoS(mv_par01) + "' and F2_EMISSAO <= '" + DtoS(mv_par02) + "' "
+IF nOrdem = 1
+	_cQry += " and F2_VEND3 >= '" + mv_par03 + "' and F2_VEND3 <= '" + mv_par04 + "' "
+	_cQry += " order by F2_VEND3 "
+ElseIF nOrdem = 2
+	_cQry += " and F2_VEND4 >= '" + mv_par05 + "' and F2_VEND3 <= '" + mv_par06 + "' "
+	_cQry += " order by F2_VEND4 "
+Else
+	_cQry += " and F2_VEND5 >= '" + mv_par07 + "' and F2_VEND5 <= '" + mv_par08 + "' "
+	_cQry += " order by F2_VEND5 "
+EndIF	
+
+memowrite("teste.sql",_cQry)
+
+_cQry := ChangeQuery(_cQry)
+
+dbUseArea(.T.,"TOPCONN",TCGenQry(,,_cQry),"TRB",.F.,.T.)
+
+dbSelectArea("TRB")
+dbGoTop()
+
+_aEstrutura := {}
+
+_aTam := TamSX3("A3_NOME")
+aAdd(_aEstrutura,{"TMP_NOME"    ,"C",_aTam[1],_aTam[2]})
+_aTam := TamSX3("F2_VEND3")
+aAdd(_aEstrutura,{"TMP_VEND"   ,"C",_aTam[1],_aTam[2]})
+_aTam := TamSX3("F2_VALFAT")
+aAdd(_aEstrutura,{"TMP_VLFAT"   ,"N",_aTam[1],_aTam[2]}) //Vendas
+aAdd(_aEstrutura,{"TMP_SERV"    ,"N",_aTam[1],_aTam[2]}) //Servico
+aAdd(_aEstrutura,{"TMP_NOVO"    ,"N",_aTam[1],_aTam[2]}) //Mercantil/Novo
+
+cNomArq := CriaTrab(_aEstrutura,.T.)
+
+dbUseArea(.T.,,cNomArq,"TMP",.T.,.F.)
+
+dbSelectArea("TMP")
+IndRegua("TMP",cNomArq,"TMP_VEND",,,"Selecionando Registros")
+
+dbSetIndex(cNomArq+OrdbagExt())
+
+dbSelectArea("TRB")
+
+cCod := IIF(nOrdem = 1 ,TRB->F2_VEND3,IIF(nOrdem =2,TRB->F2_VEND4,TRB->F2_VEND5))
+
+While ! Eof()
+	
+	IF nOrdem = 1 .and. cCod == TRB->F2_VEND3
+		cCod := TRB->F2_VEND3
+		dbSelectArea("SD2")
+		dbSetOrder(3)
+		dbSeek(xFilial("SD2")+TRB->F2_DOC+TRB->F2_SERIE)
+			
+		While !Eof() .and. TRB->F2_FILIAL+TRB->F2_DOC+TRB->F2_SERIE == SD2->D2_FILIAL+SD2->D2_DOC+SD2->D2_SERIE
+		
+			IF SD2->D2_TES $ '594/902/903'  //Nao considero os itens nao agregados
+				dbSkip()
+				Loop
+			EndIF
+			
+			IF SD2->D2_TES = '901' .AND. SD2->D2_GRUPO == "SERV" //Total Vendas Servico
+				nTotVlr += SD2->D2_TOTAL
+				nTotGer += SD2->D2_TOTAL
+			EndIF
+					    
+			IF SD2->D2_GRUPO $ "0001" // Grupo de Pneus novos
+				nTotNovo += SD2->D2_TOTAL
+				nTotGer += SD2->D2_TOTAL
+			EndIF
+						
+			dbSelectArea("SD2")
+			dbSkip()
+		EndDo
+	EndIF
+	IF nOrdem = 2 .and. cCod == TRB->F2_VEND4
+		cCod := TRB->F2_VEND4
+		dbSelectArea("SD2")
+		dbSetOrder(3)
+		dbSeek(xFilial("SD2")+TRB->F2_DOC+TRB->F2_SERIE)
+			
+		While !Eof() .and. TRB->F2_FILIAL+TRB->F2_DOC+TRB->F2_SERIE == SD2->D2_FILIAL+SD2->D2_DOC+SD2->D2_SERIE
+		
+			IF SD2->D2_TES $ '594/902/903'  //Nao considero os itens nao agregados
+				dbSkip()
+				Loop
+			EndIF
+			
+			IF SD2->D2_TES = '901' .AND. SD2->D2_GRUPO == "SERV" //Total Vendas Servico
+				nTotVlr += SD2->D2_TOTAL
+				nTotGer += SD2->D2_TOTAL
+			EndIF
+					    
+			IF SD2->D2_GRUPO $ "0001" // Grupo de Pneus novos
+				nTotNovo += SD2->D2_TOTAL
+				nTotGer += SD2->D2_TOTAL
+			EndIF
+			
+		
+			dbSelectArea("SD2")
+			dbSkip()
+		EndDo
+	EndIF
+	IF nOrdem = 3 .and. cCod == TRB->F2_VEND5
+		cCod := TRB->F2_VEND5
+		dbSelectArea("SD2")
+		dbSetOrder(3)
+		dbSeek(xFilial("SD2")+TRB->F2_DOC+TRB->F2_SERIE)
+			
+		While !Eof() .and. TRB->F2_FILIAL+TRB->F2_DOC+TRB->F2_SERIE == SD2->D2_FILIAL+SD2->D2_DOC+SD2->D2_SERIE
+		
+			IF SD2->D2_TES $ '594/902/903'  //Nao considero os itens nao agregados
+				dbSkip()
+				Loop
+			EndIF
+			
+			IF SD2->D2_TES = '901' .AND. SD2->D2_GRUPO == "SERV" //Total Vendas Servico
+				nTotVlr += SD2->D2_TOTAL
+				nTotGer += SD2->D2_TOTAL
+			EndIF
+					    
+			IF SD2->D2_GRUPO $ "0001" // Grupo de Pneus novos
+				nTotNovo += SD2->D2_TOTAL
+				nTotGer += SD2->D2_TOTAL
+			EndIF
+			
+			dbSelectArea("SD2")
+			dbSkip()
+		EndDo
+	EndIF    
+    cCod := IIF(nOrdem = 1 ,TRB->F2_VEND3,IIF(nOrdem =2,TRB->F2_VEND4,TRB->F2_VEND5))
+    
+	dbSelectArea("TRB")
+	dbSkip()
+	
+	IF nOrdem = 1 .and. cCod != TRB->F2_VEND3	
+		dbSelectArea("SA3")
+		dbSetOrder(1)
+		dbSeek(xFilial("SA3")+cCod)
+		dbSelectArea("TMP")
+		Reclock("TMP",.T.)
+			TMP->TMP_VEND    := cCod
+			TMP->TMP_NOME    := Alltrim(SA3->A3_NOME)
+			TMP->TMP_VLFAT   := nTotGer
+			TMP->TMP_SERV    := nTotVlr
+			TMP->TMP_NOVO    := nTotNovo
+		MsUnlock()
+		nTotVlr  := nTotGer  := nTotNovo := 0
+		cCod := TRB->F2_VEND3	
+    EndIF
+    IF nOrdem = 2 .and. cCod != TRB->F2_VEND4	
+		dbSelectArea("SA3")
+		dbSetOrder(1)
+		dbSeek(xFilial("SA3")+cCod)
+		dbSelectArea("TMP")
+		Reclock("TMP",.T.)
+			TMP->TMP_VEND    := cCod
+			TMP->TMP_NOME    := Alltrim(SA3->A3_NOME)
+			TMP->TMP_VLFAT   := nTotGer
+			TMP->TMP_SERV    := nTotVlr
+			TMP->TMP_NOVO    := nTotNovo
+		MsUnlock()
+		nTotVlr  := nTotGer  := nTotNovo := 0
+		cCod := TRB->F2_VEND4
+    EndIF
+    IF nOrdem = 3 .and. cCod != TRB->F2_VEND5
+		dbSelectArea("SA3")
+		dbSetOrder(1)
+		dbSeek(xFilial("SA3")+cCod)
+		dbSelectArea("TMP")
+		Reclock("TMP",.T.)
+			TMP->TMP_VEND    := cCod
+			TMP->TMP_NOME    := Alltrim(SA3->A3_NOME)
+			TMP->TMP_VLFAT   := nTotGer
+			TMP->TMP_SERV    := nTotVlr
+			TMP->TMP_NOVO    := nTotNovo
+		MsUnlock()
+		nTotVlr  := nTotGer  := nTotNovo := 0
+		cCod != TRB->F2_VEND5	
+    EndIF
+EndDo
+
+dbSelectArea("TRB")
+dbCloseArea()
+
+dbSelectArea("TMP")
+dbGoTop()
+dbSetOrder(1)
+
+While ! Eof()
+	IF lEnd
+		@Prow()+1, 001 Psay "Cancelado pelo operador "
+		Exit
+	EndIF
+	
+	IncProc()
+	
+	IF nLin > 60
+		Cabec(Titulo,cabec1,cabec2,nomeprog,tamanho,GetMV("MV_COMP"))
+		nLin := 9
+	EndIF
+	
+	@ nLin, 003 Psay TMP->TMP_VEND
+	@ nLin, 013 Psay Substr(TMP->TMP_NOME,1,25)
+	@ nLin, 040 Psay TMP->TMP_VLFAT  Picture "@E 99,999,999.99"
+	@ nLin, 055 Psay TMP->TMP_SERV   Picture "@E 99,999,999.99"
+	@ nLin, 070 Psay TMP->TMP_NOVO   Picture "@E 99,999,999.99"
+	
+	nLin ++
+	
+	nTotGer += TMP->TMP_VLFAT
+	nTotVlr += TMP->TMP_SERV
+	nTotNovo += TMP->TMP_NOVO
+	dbSelectArea("TMP")
+	dbSkip()
+EndDo
+
+nLin ++
+
+IF nLin != 80
+	IF nLin > 60
+		cabec(titulo,cabec1,cabec2,nomeprog,tamanho,GetMv("MV_COMP"))
+	EndIF
+	@ nLin, 003 Psay "Total : "
+	@ nLin, 040 Psay nTotGer Picture "@E 99,999,999.99"
+	@ nLin, 055 Psay nTotVlr Picture "@E 99,999,999.99"
+	@ nLin, 063 Psay nTotNovo Picture "@E 99,999,999.99"
+
+	Roda(cbcont,cbtxt,"P")
+EndIF
+
+//ÚÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ¿
+//³ Se impressao em disco, chama o gerenciador de impressao...          ³
+//ÀÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÙ
+
+SetPgEject(.F.)
+
+dbSelectArea("TMP")
+dbCloseArea()
+fErase(cNomArq+GetDBExtension())
+fErase(cNomArq+OrdbagExt())
+
+If aReturn[5]==1
+	dbCommitAll()
+	SET PRINTER TO
+	OurSpool(wnrel)
+EndiF
+
+MS_FLUSH()
+
+Return

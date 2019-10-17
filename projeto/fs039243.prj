@@ -1,0 +1,545 @@
+Group 13797 - Della Via Pneus
+   Version=7.0
+   VSSDB=
+   HasProperties=1
+   Properties
+      BeforeApply=
+      AfterApply=
+      Icon=
+      ID=
+      Version=
+      PalmName=
+      OutPut=
+   End
+   ProjectsCount=5
+   Project Controle de Lojas
+      FoldersCount=5
+      Folder Pontos de Entrada
+         VSSPath=Fontes
+         FilesCount=17
+         File \especif\v811\Della_Via\LJ7001.prw
+             Type=T
+         End
+         File \especif\v811\Della_Via\LJ7002.prw
+             Type=T
+         End
+         File \especif\v811\Della_Via\LJ7007.prw
+             Type=T
+         End
+         File \especif\v811\Della_Via\LJ7010.prw
+             Type=T
+         End
+         File \especif\v811\Della_Via\LJ7012.prw
+             Type=T
+         End
+         File \especif\v811\Della_Via\LJ7016.prw
+             Type=T
+         End
+         File \especif\v811\Della_Via\LJ7021.prw
+             Type=T
+         End
+         File \especif\v811\Della_Via\LJ7023.prw
+             Type=T
+         End
+         File \especif\v811\Della_Via\LOJA140B.prw
+             Type=T
+         End
+         File \especif\v811\Della_Via\LJHOMTEF.prw
+             Type=T
+         End
+         File \especif\v811\Della_Via\Lj140DEL.prw
+             Type=T
+         End
+         File \especif\v811\Della_Via\LJ140CAN.prw
+             Type=T
+         End
+         File \especif\v811\Della_Via\Lj920aCols.prw
+             Type=T
+         End
+         File \especif\v811\Della_Via\LOJA020.prw
+             Type=T
+         End
+         File \especif\v811\Della_Via\LJD1TEST.prw
+             Type=T
+         End
+         File \especif\v811\Della_Via\LJ7013.prw
+             Type=T
+         End
+         File \especif\v811\Della_Via\LJ7031.prw
+             Type=T
+         End
+      End
+      Folder Atualizações
+         VSSPath=Definições
+         FilesCount=41
+         File \especif\v811\Della_Via\DELA001.prw
+             Type=T
+         End
+         File \especif\v811\Della_Via\DELA002.prw
+             Type=T
+         End
+         File \especif\v811\Della_Via\DELA003.prw
+             Type=T
+         End
+         File \especif\v811\Della_Via\DELA004.prw
+             Type=T
+         End
+         File \especif\v811\Della_Via\DELA005.prw
+             Type=T
+         End
+         File \especif\v811\Della_Via\DELA006.prw
+             Type=T
+         End
+         File \especif\v811\Della_Via\DELA007.prw
+             Type=T
+         End
+         File \especif\v811\Della_Via\DELA008.prw
+             Type=T
+         End
+         File \especif\v811\Della_Via\DELA009.prw
+             Type=T
+         End
+         File \especif\v811\Della_Via\DELA010.prw
+             Type=T
+         End
+         File \especif\v811\Della_Via\DELA011.prw
+             Type=T
+         End
+         File \especif\v811\Della_Via\DELA012.prw
+             Type=T
+         End
+         File \especif\v811\Della_Via\DELA013.prw
+             Type=T
+         End
+         File \especif\v811\Della_Via\DELA014.prw
+             Type=T
+         End
+         File \especif\v811\Della_Via\DELA015.prw
+             Type=T
+         End
+         File \especif\v811\Della_Via\DELA016.prw
+             Type=T
+         End
+         File \especif\v811\Della_Via\DELA017.prw
+             Type=T
+         End
+         File \especif\v811\Della_Via\DELA018.prw
+             Type=T
+         End
+         File \especif\v811\Della_Via\DELA019.prw
+             Type=T
+         End
+         File \especif\v811\Della_Via\DELA020.prw
+             Type=T
+         End
+         File \especif\v811\Della_Via\DELA021.prw
+             Type=T
+         End
+         File \especif\v811\Della_Via\DELA022.prw
+             Type=T
+         End
+         File \especif\v811\Della_Via\DELA023.prw
+             Type=T
+         End
+         File \especif\v811\Della_Via\DELA024.prw
+             Type=T
+         End
+         File \especif\v811\Della_Via\DELA025.prw
+             Type=T
+         End
+         File \especif\v811\Della_Via\DELA026.prw
+             Type=T
+         End
+         File \especif\v811\Della_Via\DELA029.PRW
+             Type=T
+         End
+         File \especif\v811\Della_Via\DELA028.PRW
+             Type=T
+         End
+         File \especif\v811\Della_Via\DELA027.PRW
+             Type=T
+         End
+         File \especif\v811\Della_Via\DELA030.PRW
+             Type=T
+         End
+         File \especif\v811\Della_Via\DELA033.prw
+             Type=T
+         End
+         File \especif\v811\Della_Via\DELA038.PRW
+             Type=T
+         End
+         File \especif\v811\Della_Via\DELA039.prw
+             Type=T
+         End
+         File \especif\v811\Della_Via\DELA041.PRW
+             Type=T
+         End
+         File \especif\v811\Della_Via\DELA042.PRW
+             Type=T
+         End
+         File \especif\v811\Della_Via\DELA043.PRW
+             Type=T
+         End
+         File \especif\v811\Della_Via\DELA047.PRW
+             Type=T
+         End
+         File \especif\v811\Della_Via\DELA046.PRW
+             Type=T
+         End
+         File \especif\v811\Della_Via\DELA045.PRW
+             Type=T
+         End
+         File \especif\v811\Della_Via\DELA052.PRW
+             Type=T
+         End
+         File \especif\v811\Della_Via\DEVSEG.PRW
+             Type=T
+         End
+      End
+      Folder Consultas
+         VSSPath=Nova Pasta3
+         FilesCount=6
+         File \especif\v811\Della_Via\DELC001.prw
+             Type=T
+         End
+         File \especif\v811\Della_Via\DELC002.prw
+             Type=T
+         End
+         File \especif\v811\Della_Via\DELC003.prw
+             Type=T
+         End
+         File \especif\v811\Della_Via\DELC005.PRW
+             Type=T
+         End
+         File \especif\v811\Della_Via\DELC006.PRW
+             Type=T
+         End
+         File \especif\v811\Della_Via\DELC007.PRW
+             Type=T
+         End
+      End
+      Folder Genérico
+         VSSPath=Nova Pasta4
+         FilesCount=6
+         File \especif\v811\Della_Via\DELXFUN.prw
+             Type=T
+         End
+         File \especif\v811\Della_Via\LJNFISCA.prx
+             Type=T
+         End
+         File \especif\v811\Della_Via\DELA036.prw
+             Type=T
+         End
+         File \especif\v811\Della_Via\DELM003.prw
+             Type=T
+         End
+         File \especif\v811\Della_Via\DELM004.prw
+             Type=T
+         End
+         File \especif\v811\Della_Via\DELA053.prw
+             Type=T
+         End
+      End
+      Folder Relatorios
+         VSSPath=Nova Pasta5
+         FilesCount=13
+         File \especif\v811\Della_Via\DELR001.prw
+             Type=T
+         End
+         File \especif\v811\Della_Via\DELR002.prw
+             Type=T
+         End
+         File \especif\v811\Della_Via\DELR003.prw
+             Type=T
+         End
+         File \especif\v811\Della_Via\DELR004.prw
+             Type=T
+         End
+         File \especif\v811\Della_Via\DELR005.prw
+             Type=T
+         End
+         File \especif\v811\Della_Via\DELR006.prw
+             Type=T
+         End
+         File \especif\v811\Della_Via\DELR007.prw
+             Type=T
+         End
+         File \especif\v811\Della_Via\DELR008.prw
+             Type=T
+         End
+         File \especif\v811\Della_Via\DELR009.prw
+             Type=T
+         End
+         File \especif\v811\Della_Via\DELR010.prw
+             Type=T
+         End
+         File \especif\v811\Della_Via\DELR011.prw
+             Type=T
+         End
+         File \especif\v811\DELLA_VIA\DVLOJR01.prw
+             Type=T
+         End
+         File \especif\v811\Della_Via\DELR004C.prw
+             Type=T
+         End
+      End
+   End
+   Project Call Center
+      FoldersCount=3
+      Folder Relatórios
+         VSSPath=Nova Pasta1
+         FilesCount=0
+      End
+      Folder Pontos de Entrada
+         VSSPath=Nova Pasta2
+         FilesCount=9
+         File \especif\v811\Della_Via\TMKBARLA.prw
+             Type=T
+         End
+         File \especif\v811\Della_Via\TKGRPED.prw
+             Type=T
+         End
+         File \especif\v811\Della_Via\TMKVDC.prw
+             Type=T
+         End
+         File \especif\v811\Della_Via\TMKVFIM.prw
+             Type=T
+         End
+         File \especif\v811\Della_Via\TMKVCP.prw
+             Type=T
+         End
+         File \especif\v811\Della_Via\TMKVLDE4.PRW
+             Type=T
+         End
+         File \especif\v811\Della_Via\TK271DesRod.prw
+             Type=T
+         End
+         File \especif\v811\Della_Via\TMKACTIVE.prw
+             Type=T
+         End
+         File \especif\v811\Della_Via\TMKVDEL.prw
+             Type=T
+         End
+      End
+      Folder Atualizações
+         VSSPath=Nova Pasta4
+         FilesCount=4
+         File \especif\v811\Della_Via\DELA044.prw
+             Type=T
+         End
+         File \especif\v811\Della_Via\DELA049.prw
+             Type=T
+         End
+         File \especif\v811\Della_Via\DELA050.prw
+             Type=T
+         End
+         File \especif\v811\DELLA_VIA\CrdAtuMal.prw
+             Type=T
+         End
+      End
+   End
+   Project Sigacrd
+      FoldersCount=5
+      Folder Relatórios
+         VSSPath=Nova Pasta1
+         FilesCount=0
+      End
+      Folder Pontos de Entrada
+         VSSPath=Nova Pasta2
+         FilesCount=10
+         File \especif\v811\Della_Via\CRD010PG.prw
+             Type=T
+         End
+         File \especif\v811\Della_Via\CrdGrava.prw
+             Type=T
+         End
+         File \especif\v811\Della_Via\CrdLibCr.prw
+             Type=T
+         End
+         File \especif\v811\Della_Via\CrdCriaBut.prw
+             Type=T
+         End
+         File \especif\v811\Della_Via\CRD080ROT.prw
+             Type=T
+         End
+         File \especif\v811\Della_Via\CRD180ROT.prw
+             Type=T
+         End
+         File \especif\v811\Della_Via\CRD003.prw
+             Type=T
+         End
+         File \especif\v811\Della_Via\CRD004.prw
+             Type=T
+         End
+         File \especif\v811\Della_Via\CRD080GRV.PRW
+             Type=T
+         End
+         File \especif\v811\Della_Via\CRDOFFLINE.prw
+             Type=T
+         End
+      End
+      Folder Atualizações
+         VSSPath=Nova Pasta3
+         FilesCount=8
+         File \especif\v811\Della_Via\DELA031.prw
+             Type=T
+         End
+         File \especif\v811\Della_Via\DELA032.prw
+             Type=T
+         End
+         File \especif\v811\Della_Via\DelA035.prw
+             Type=T
+         End
+         File \especif\v811\Della_Via\DelA034.prw
+             Type=T
+         End
+         File \especif\v811\Della_Via\Dela037.prw
+             Type=T
+         End
+         File \especif\v811\Della_Via\DELA040.prw
+             Type=T
+         End
+         File \especif\v811\Della_Via\DELA048.PRW
+             Type=T
+         End
+         File \especif\v811\Della_Via\DELA054.PRW
+             Type=T
+         End
+      End
+      Folder Consultas
+         VSSPath=Nova Pasta4
+         FilesCount=1
+         File \especif\v811\Della_Via\DelC004.prw
+             Type=T
+         End
+      End
+      Folder Generico
+         VSSPath=Nova Pasta5
+         FilesCount=2
+         File \especif\v811\Della_Via\DELM001.prw
+             Type=T
+         End
+         File \especif\v811\Della_Via\DELM002.prw
+             Type=T
+         End
+      End
+   End
+   Project Materiais
+      FoldersCount=3
+      Folder Atualizações
+         VSSPath=Nova Pasta1
+         FilesCount=1
+         File \especif\v811\Della_Via\Mt089.PRW
+             Type=T
+         End
+      End
+      Folder Pontos de Entrada
+         VSSPath=Nova Pasta2
+         FilesCount=7
+         File \especif\v811\Della_Via\MT010BRW.prw
+             Type=T
+         End
+         File \especif\v811\Della_Via\MT010INC.prw
+             Type=T
+         End
+         File \especif\v811\Della_Via\MT100TOK.prw
+             Type=T
+         End
+         File \especif\v811\Della_Via\SD1100E.prw
+             Type=T
+         End
+         File \especif\v811\Della_Via\SF1100I.prw
+             Type=T
+         End
+         File \especif\v811\Della_Via\A100DEL.prw
+             Type=T
+         End
+         File \especif\v811\Della_Via\MTA010OK.prw
+             Type=T
+         End
+      End
+      Folder Relatórios
+         VSSPath=Nova Pasta3
+         FilesCount=4
+         File \especif\v811\Della_Via\DELR200.PRW
+             Type=T
+         End
+         File \especif\v811\Della_Via\DELR201.PRW
+             Type=T
+         End
+         File \especif\v811\Della_Via\DELR202.PRW
+             Type=T
+         End
+         File \especif\v811\Della_Via\DELR203.prw
+             Type=T
+         End
+      End
+   End
+   Project Sistema de Contingencia
+      FoldersCount=1
+      Folder Atualizações
+         VSSPath=Nova Pasta1
+         FilesCount=20
+         File \especif\v811\Della_Via\IniSched.prw
+             Type=T
+         End
+         File \especif\v811\Della_Via\FSEA050.prw
+             Type=T
+         End
+         File \especif\v811\Della_Via\FSEA140.prw
+             Type=T
+         End
+         File \especif\v811\Della_Via\FSEXFUN.prw
+             Type=T
+         End
+         File \especif\v811\Della_Via\FSES002.prw
+             Type=T
+         End
+         File \especif\v811\Della_Via\FSES001.prw
+             Type=T
+         End
+         File \especif\v811\Della_Via\FSER010.prw
+             Type=T
+         End
+         File \especif\v811\Della_Via\FSEA160.prw
+             Type=T
+         End
+         File \especif\v811\Della_Via\FSEA150.prw
+             Type=T
+         End
+         File \especif\v811\Della_Via\FSEA040.prw
+             Type=T
+         End
+         File \especif\v811\Della_Via\FSEA021.prw
+             Type=T
+         End
+         File \especif\v811\Della_Via\FSEA020.prw
+             Type=T
+         End
+         File \especif\v811\Della_Via\FSEA010.prw
+             Type=T
+         End
+         File \especif\v811\Della_Via\FSEA030.prw
+             Type=T
+         End
+         File \especif\v811\Della_Via\FSEA130.prw
+             Type=T
+         End
+         File \especif\v811\Della_Via\FSEA120.prw
+             Type=T
+         End
+         File \especif\v811\Della_Via\FSEA090.prw
+             Type=T
+         End
+         File \especif\v811\Della_Via\FSEA070.prw
+             Type=T
+         End
+         File \especif\v811\Della_Via\FSEA060.prw
+             Type=T
+         End
+         File \especif\v811\Della_Via\FSEA900.PRW
+             Type=T
+         End
+      End
+   End
+End

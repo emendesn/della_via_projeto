@@ -1,0 +1,73 @@
+Group Workflow
+   Version=7.0
+   VSSDB=
+   HasProperties=1
+   Properties
+      BeforeApply=
+      AfterApply=
+      Icon=
+      ID=
+      Version=
+      PalmName=
+      OutPut=
+   End
+   ProjectsCount=4
+   Project SC
+      FoldersCount=1
+      Folder Fontes
+         VSSPath=Fontes
+         FilesCount=3
+         File \my projects\workflow\Compras\WFSC.PRW
+             Type=T
+         End
+         File \my projects\workflow\Compras\SZZ.PRW
+             Type=T
+         End
+         File \my projects\workflow\Compras\MT110GRV.prw
+             Type=T
+         End
+      End
+   End
+   Project PC
+      FoldersCount=1
+      Folder Fontes
+         VSSPath=Nova Pasta1
+         FilesCount=3
+         File \my projects\workflow\Compras\WFPC.PRW
+             Type=T
+         End
+         File \my projects\workflow\Compras\WFW120P.prw
+             Type=T
+         End
+         File \my projects\workflow\Compras\AXSZY.prw
+             Type=T
+         End
+      End
+   End
+   Project SCAD
+      FoldersCount=1
+      Folder Fontes
+         VSSPath=Nova Pasta1
+         FilesCount=3
+         File \my projects\workflow\Compras\RWF001.prw
+             Type=T
+         End
+         File \my projects\materiais\M030INC.prw
+             Type=T
+         End
+         File \my projects\materiais\MT010INC.prw
+             Type=T
+         End
+      End
+   End
+   Project Funcoes
+      FoldersCount=1
+      Folder Fontes
+         VSSPath=Nova Pasta1
+         FilesCount=1
+         File \my projects\workflow\Compras\WFFN.PRW
+             Type=T
+         End
+      End
+   End
+End

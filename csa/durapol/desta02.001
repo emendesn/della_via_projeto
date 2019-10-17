@@ -1,0 +1,321 @@
+#Include 'rwmake.ch'
+#Include 'protheus.ch'
+
+/*
+ÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜ
+±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±
+±±ÚÄÄÄÄÄÄÄÄÄÄÂÄÄÄÄÄÄÄÄÄÄÂÄÄÄÄÄÄÄÂÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÂÄÄÄÄÄÄÂÄÄÄÄÄÄÄÄÄÄ¿±±
+±±³Fun‡„o    ³ DESTA02  ³ Autor ³ Jader                 ³ Data ³18.08.2005³±±
+±±ÃÄÄÄÄÄÄÄÄÄÄÅÄÄÄÄÄÄÄÄÄÄÁÄÄÄÄÄÄÄÁÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÁÄÄÄÄÄÄÁÄÄÄÄÄÄÄÄÄÄ´±±
+±±³Descri‡„o ³ Rotina para Informe dos dados da Auto-Clave                ³±±
+±±ÃÄÄÄÄÄÄÄÄÄÄÅÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ´±±
+±±³ Uso      ³ DuraPol                                                    ³±±
+±±ÀÄÄÄÄÄÄÄÄÄÄÁÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÙ±±
+±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±
+ßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßß
+*/
+
+User Function DESTA02()
+
+Local cQuery        := ""
+Local oGetDe,oGetAte,oGetRod,oGetAutc,oGetTri
+Local _nX
+
+//-- GetDados
+Private aHeader	:= {}
+Private aCols		:= {}
+
+//-- Outras variaveis
+Private dDataDe     := CtoD("")
+Private dDataAte    := CtoD("")
+Private cAutoClave  := Space(2)
+Private cTrilho     := Space(1)
+Private cRodada     := Space(5)
+Private cBico       := Space(2)
+Private aRegs       := {}
+Private cPerg       := "ESTA02"
+Private cCadastro   := "Auto-Clave"
+Private aRotina     := {}
+Private cMarca      := GetMark()
+Private oDlgEsp   
+                
+//-- cria grupo de perguntas no SX1
+aRegs:={}
+AAdd(aRegs,{cPerg,"01","Entrega De?"   ,"Entrega De?"   ,"Entrega De?"   ,"mv_ch1","D", 8,0,0,"G","","mv_par01","","","","","","","","","","","","","","","","","","","","","","","","",""})
+AAdd(aRegs,{cPerg,"02","Entrega Ate?"  ,"Entrega Ate?"  ,"Entrega Ate?"  ,"mv_ch2","D", 8,0,0,"G","","mv_par02","","","","","","","","","","","","","","","","","","","","","","","","",""})
+ValidPerg(aRegs,cPerg)
+
+//-- faz pergunta
+Pergunte(cPerg,.T.)
+
+dDataDe  := mv_par01
+dDataAte := mv_par02
+
+//-- posicona neste campo que e' visual para nao pemitir a alteracao dos campos do acols
+SX3->( dbSetOrder( 2 ) )
+SX3->( MsSeek( "C2_XNREDUZ" ) )
+
+AAdd( aHeader, { "   "          , SX3->X3_CAMPO  , "@!"               ,  3, 0, ".F."              , SX3->X3_USADO, "C",                , SX3->X3_CONTEXT } )
+AAdd( aHeader, { "Bico"         , "cBico"        , "@9"               ,  2, 0, "U_VldBico(cBico)" , SX3->X3_USADO, "C",                , SX3->X3_CONTEXT} )
+AAdd( aHeader, { "Numero da OP" , SX3->X3_CAMPO  , "@!"               ,  6, 0, ".F."              , SX3->X3_USADO, "C", SX3->X3_ARQUIVO, SX3->X3_CONTEXT } )
+AAdd( aHeader, { "Item"         , SX3->X3_CAMPO  , "@!"               ,  2, 0, ".F."              , SX3->X3_USADO, "C", SX3->X3_ARQUIVO, SX3->X3_CONTEXT } )
+AAdd( aHeader, { "Sequencia"    , SX3->X3_CAMPO  , "@!"               ,  3, 0, ".F."              , SX3->X3_USADO, "C", SX3->X3_ARQUIVO, SX3->X3_CONTEXT } )
+AAdd( aHeader, { "Cliente"      , SX3->X3_CAMPO  , "@!"               , 20, 0, ".F."              , SX3->X3_USADO, "C", SX3->X3_ARQUIVO, SX3->X3_CONTEXT } )
+AAdd( aHeader, { "Entrega"      , SX3->X3_CAMPO  , "@D"               ,  8, 0, ".F."              , SX3->X3_USADO, "D", SX3->X3_ARQUIVO, SX3->X3_CONTEXT } )
+AAdd( aHeader, { "Codigo"       , SX3->X3_CAMPO  , "@!"               , 15, 0, ".F."              , SX3->X3_USADO, "C", SX3->X3_ARQUIVO, SX3->X3_CONTEXT } )
+AAdd( aHeader, { "Produto"      , SX3->X3_CAMPO  , "@!"               , 40, 0, ".F."              , SX3->X3_USADO, "C", SX3->X3_ARQUIVO, SX3->X3_CONTEXT } )
+AAdd( aHeader, { "Quantidade"   , SX3->X3_CAMPO  , "@E 999,999,999.99", 12, 2, ".F."              , SX3->X3_USADO, "N", SX3->X3_ARQUIVO, SX3->X3_CONTEXT } )
+
+cQuery := "SELECT * FROM " + RetSqlName("SC2")
+cQuery += " WHERE C2_FILIAL = '" + xFilial('SC2') + "' "
+cQuery += "   AND C2_DATPRF >= '" + DtoS(dDataDe) + "' "        
+cQuery += "   AND C2_DATPRF <= '" + DtoS(dDataAte) + "' "        
+cQuery += "   AND C2_QUANT <> C2_QUJE "
+//cQuery += "   AND C2_XACLAVE = '  ' "
+cQuery += "   AND D_E_L_E_T_ = ' '"
+cQuery += " ORDER BY C2_NUM, C2_ITEM, C2_SEQUEN"
+
+cQuery := ChangeQuery( cQuery )
+
+dbUseArea( .T., "TOPCONN", TCGenQry(,, cQuery), "TRBSC2", .F., .F. )
+
+//TCSetField( "TRBSC2", "C2_EMISSAO", "D", 8 )
+//TCSetField( "TRBSC2", "C2_DATRF"  , "D", 8 )
+
+dbGoTop()
+
+While !Eof()
+	                    
+	dbSelectArea("SB1")
+	dbSetOrder(1)
+	MsSeek(xFilial("SB1")+TRBSC2->C2_PRODUTO)
+	
+	AAdd( aCols, Array( Len( aHeader ) + 1 ) )
+	
+	aCols[Len( aCols ), 1 ] := ' '
+	aCols[Len( aCols ), 2 ] := Space(2)
+	aCols[Len( aCols ), 3 ] := TRBSC2->C2_NUM
+	aCols[Len( aCols ), 4 ] := TRBSC2->C2_ITEM
+	aCols[Len( aCols ), 5 ] := TRBSC2->C2_SEQUEN
+	aCols[Len( aCols ), 6 ] := TRBSC2->C2_XNREDUZ
+	aCols[Len( aCols ), 7 ] := StoD(TRBSC2->C2_DATPRF)
+	aCols[Len( aCols ), 8 ] := TRBSC2->C2_PRODUTO
+	aCols[Len( aCols ), 9 ] := SB1->B1_DESC
+	aCols[Len( aCols ), 10] := TRBSC2->C2_QUANT
+		
+	aCols[Len( aCols ),Len( aHeader ) + 1] := .F.
+	         
+	dbSelectArea("TRBSC2")
+	dbSkip() 
+
+EndDo	
+
+TRBSC2->( dbCloseArea() )
+
+If Empty( aCols )
+	Aadd( aCols, Array( Len( aHeader ) + 1 ) )
+	For _nX:=1 To Len(aHeader)
+		If aHeader[_nX,8] == "C"
+			xConteudo := Space(aHeader[_nX,4])
+		ElseIf aHeader[_nX,8] == "N"
+			xConteudo := 0
+		ElseIf aHeader[_nX,8] == "D"
+			xConteudo := CtoD("")
+		Else
+			xConteudo := ""	
+		Endif
+		aCols[Len( aCols ), _nX ] := xConteudo
+	Next	
+	aCols[1,Len(aHeader)+1] := .F.
+EndIf
+
+dbSelectArea("SC2")
+
+@ 0,0 TO 500,900 DIALOG oDlgEsp TITLE cCadastro
+
+    @ 0,0.4 TO 2.6,56.2
+
+	@ 7,08 SAY "Entrega De" PIXEL OF oDlgEsp SIZE 70,7
+	@ 7,40 MSGET oGetDe VAR dDataDe PICTURE "@D" WHEN .F. PIXEL OF oDlgEsp SIZE 20,7
+
+	@ 7,85 SAY "Ate" PIXEL OF oDlgEsp SIZE 70,7
+	@ 7,100 MSGET oGetAte VAR dDataAte PICTURE "@D" WHEN .F. PIXEL OF oDlgEsp SIZE 20,7
+
+	@ 22,08 SAY "Rodada" PIXEL OF oDlgEsp SIZE 70,7
+	@ 22,40 MSGET oGetRod VAR cRodada  PICTURE "99:99" VALID ! Empty(cRodada) WHEN .T. PIXEL OF oDlgEsp SIZE 10,7
+
+	@ 22,85 SAY "Auto-Clave" PIXEL OF oDlgEsp SIZE 70,7
+	@ 22,120 MSGET oGetAutC VAR cAutoClave  PICTURE "@!" VALID ! Empty(cAutoClave) WHEN .T. PIXEL OF oDlgEsp SIZE 15,7
+
+	@ 22,150 SAY "Trilho" PIXEL OF oDlgEsp SIZE 70,7
+	@ 22,170 MSGET oGetTri VAR cTrilho  PICTURE "@!" VALID ! Empty(cTrilho) WHEN .T. PIXEL OF oDlgEsp SIZE 10,7
+
+	@ 40,0 TO 225,450 MULTILINE MODIFY VALID U_LINOK() FREEZE 1
+	
+	DEFINE SBUTTON FROM 233,370 TYPE 1 ENABLE OF oDlgEsp ACTION If(DESTA02a(),Close(oDlgEsp),NIL)
+	DEFINE SBUTTON FROM 233,405 TYPE 2 ENABLE OF oDlgEsp ACTION If(DESTA02b(),Close(oDlgEsp),NIL)
+
+ACTIVATE DIALOG oDlgEsp CENTERED
+
+Return Nil
+
+
+/*
+ÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜ
+±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±
+±±ÚÄÄÄÄÄÄÄÄÄÄÂÄÄÄÄÄÄÄÄÄÄÂÄÄÄÄÄÄÄÂÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÂÄÄÄÄÄÄÂÄÄÄÄÄÄÄÄÄÄ¿±±
+±±³Fun‡„o    ³ DESTA02a ³ Autor ³ Jader                 ³ Data ³18.08.2005³±±
+±±ÃÄÄÄÄÄÄÄÄÄÄÅÄÄÄÄÄÄÄÄÄÄÁÄÄÄÄÄÄÄÁÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÁÄÄÄÄÄÄÁÄÄÄÄÄÄÄÄÄÄ´±±
+±±³Descri‡„o ³ Funcao para gravacao dos dados da Auto-Clave na OP         ³±±
+±±ÀÄÄÄÄÄÄÄÄÄÄÁÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÙ±±
+±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±
+ßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßß
+*/
+
+Static Function DESTA02a()
+        
+Local _lRet := .F.
+
+If MsgYesNo("Confirma gravacao dos dados da Auto-Clave?","Confirmação")
+
+	_lRet := .T.
+
+	Processa({|| GravaSC2()},"Gravando dados da Auto-Clave...")
+
+Endif	
+
+Return(_lRet)
+
+
+/*
+ÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜ
+±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±
+±±ÚÄÄÄÄÄÄÄÄÄÄÂÄÄÄÄÄÄÄÄÄÄÂÄÄÄÄÄÄÄÂÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÂÄÄÄÄÄÄÂÄÄÄÄÄÄÄÄÄÄ¿±±
+±±³Fun‡„o    ³ GravaSC2 ³ Autor ³ Jader                 ³ Data ³18.08.2005³±±
+±±ÃÄÄÄÄÄÄÄÄÄÄÅÄÄÄÄÄÄÄÄÄÄÁÄÄÄÄÄÄÄÁÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÁÄÄÄÄÄÄÁÄÄÄÄÄÄÄÄÄÄ´±±
+±±³Descri‡„o ³ Funcao para gravacao dos dados da Auto-Clave na OP         ³±±
+±±ÀÄÄÄÄÄÄÄÄÄÄÁÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÙ±±
+±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±
+ßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßß
+*/
+
+Static Function GravaSC2()
+                        
+Local _nX,_cNum,_cItem,_cSeq,_cBico,_cMarca
+
+ProcRegua(Len(aCols))
+
+For _nX:=1 To Len(aCols)
+
+	_cMarca := aCols[_nX,1]
+	_cBico  := aCols[_nX,2]
+	_cNum   := aCols[_nX,3]
+	_cItem  := aCols[_nX,4]
+	_cSeq   := aCols[_nX,5]
+	
+	If ! Empty(_cMarca) .And. ! Empty(_cNum)
+
+		IncProc("OP "+_cNum+_cItem+_cSeq)
+		
+		dbSelectArea("SC2")
+		dbSetOrder(1)
+		MsSeek(xFilial("SC2")+_cNum+_cItem+_cSeq)
+	
+	    If ! Eof()
+	    	RecLock("SC2",.F.)
+		    	SC2->C2_XACLAVE := cAutoClave    
+		    	SC2->C2_XRODADA := cRodada
+		    	SC2->C2_XTRILHO := cTrilho
+		    	SC2->C2_XBICO   := _cBico
+	    	MsUnlock()
+	    Endif
+	
+    Endif
+
+Next
+
+Return(.T.)
+
+
+/*
+ÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜ
+±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±
+±±ÚÄÄÄÄÄÄÄÄÄÄÂÄÄÄÄÄÄÄÄÄÄÂÄÄÄÄÄÄÄÂÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÂÄÄÄÄÄÄÂÄÄÄÄÄÄÄÄÄÄ¿±±
+±±³Fun‡„o    ³ DESTA02b ³ Autor ³ Jader                 ³ Data ³18.08.2005³±±
+±±ÃÄÄÄÄÄÄÄÄÄÄÅÄÄÄÄÄÄÄÄÄÄÁÄÄÄÄÄÄÄÁÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÁÄÄÄÄÄÄÁÄÄÄÄÄÄÄÄÄÄ´±±
+±±³Descri‡„o ³ Funcao para cancelamento dos dados digitados               ³±±
+±±ÀÄÄÄÄÄÄÄÄÄÄÁÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÙ±±
+±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±
+ßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßß
+*/
+
+Static Function DESTA02b()
+
+Local _lRet := .F.
+
+If MsgYesNo("Os dados digitados serão perdidos. Confirma?","Confirmação")
+	MsgStop("Os dados digitados não foram gravados.","Atenção")
+	_lRet := .T.
+Endif
+
+Return(_lRet)
+
+
+/*
+ÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜ
+±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±
+±±ÚÄÄÄÄÄÄÄÄÄÄÂÄÄÄÄÄÄÄÄÄÄÂÄÄÄÄÄÄÄÂÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÂÄÄÄÄÄÄÂÄÄÄÄÄÄÄÄÄÄ¿±±
+±±³Fun‡„o    ³ VldBico  ³ Autor ³ Jader                 ³ Data ³18.08.2005³±±
+±±ÃÄÄÄÄÄÄÄÄÄÄÅÄÄÄÄÄÄÄÄÄÄÁÄÄÄÄÄÄÄÁÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÁÄÄÄÄÄÄÁÄÄÄÄÄÄÄÄÄÄ´±±
+±±³Descri‡„o ³ Funcao para validacao do campo Bico para gravar marcar     ³±±
+±±ÀÄÄÄÄÄÄÄÄÄÄÁÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÙ±±
+±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±
+ßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßß
+*/
+
+User Function VldBico(cBico)
+
+If Empty(cBico)
+	aCols[n,1] := " "
+Else	
+	aCols[n,1] := "X"
+Endif
+
+Return(.T.)	
+
+
+/*
+ÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜ
+±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±
+±±ÚÄÄÄÄÄÄÄÄÄÄÂÄÄÄÄÄÄÄÄÄÄÂÄÄÄÄÄÄÄÂÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÂÄÄÄÄÄÄÂÄÄÄÄÄÄÄÄÄÄ¿±±
+±±³Fun‡„o    ³ LinOk    ³ Autor ³ Jader                 ³ Data ³18.08.2005³±±
+±±ÃÄÄÄÄÄÄÄÄÄÄÅÄÄÄÄÄÄÄÄÄÄÁÄÄÄÄÄÄÄÁÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÁÄÄÄÄÄÄÁÄÄÄÄÄÄÄÄÄÄ´±±
+±±³Descri‡„o ³ Funcao para validacao da linha, para nao permitir em branco³±±
+±±ÀÄÄÄÄÄÄÄÄÄÄÁÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÙ±±
+±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±
+ßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßß
+*/
+
+User Function LinOk()
+
+Local _lRet := .T.
+Local _nX
+Local _cBico := aCols[n,2]
+
+If ! Empty(aCols[n,1]) .And. Empty(aCols[n,3])
+	MsgStop("Novas linhas não podem ser incluidas.","Atenção")
+	ADel(aCols,n)
+	aCols:=ASize(aCols,n-1)
+	n:=n-1
+	oDlgEsp:Refresh()
+Endif    
+
+For _nX:=1 To Len(aCols)
+	If ! Empty(_cBico) .And. aCols[_nX,2] == _cBico .And. _nX <> n
+		MsgStop("Número de bico já digitado. Verifique.","Atenção")
+		_lRet := .F.
+		Exit
+	Endif
+Next
+	
+Return(_lRet)	

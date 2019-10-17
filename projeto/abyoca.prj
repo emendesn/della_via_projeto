@@ -1,0 +1,35 @@
+Group ABYOCA
+   Version=7.0
+   VSSDB=
+   HasProperties=1
+   Properties
+      BeforeApply=
+      AfterApply=
+      Icon=
+      ID=
+      Version=
+      PalmName=
+      OutPut=
+   End
+   ProjectsCount=1
+   Project Novo Projeto
+      FoldersCount=2
+      Folder Fontes
+         VSSPath=Fontes
+         FilesCount=0
+      End
+      Folder Definições
+         VSSPath=Definições
+         FilesCount=3
+         File \especif\ver811\Della Via\projeto\CRD180ROT.prw
+             Type=T
+         End
+         File \especif\ver811\Della Via\projeto\CRD080ROT.prw
+             Type=T
+         End
+         File \especif\ver811\Della Via\projeto\DELA051.prw
+             Type=T
+         End
+      End
+   End
+End

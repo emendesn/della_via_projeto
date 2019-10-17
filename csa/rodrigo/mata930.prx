@@ -1,0 +1,1747 @@
+
+#INCLUDE "Mata930.ch"
+#INCLUDE "FIVEWIN.CH"
+
+#define __CFO			1	// C¢digo do CFO
+#define __ICMS  		2	// Aliquota do ICMS
+#define __VALTOT		3	// Valor total da Mercadoria
+#define __VALIPI		4 	// Valor do IPI
+#define __VALICM		5	// Valor do ICMS
+#define __ALIQIPI	6	// Aliquota de IPI
+#define __TES			7	// C¢digo do TES
+#define __ISS			8	// C¢digo de Servi‡o do ISS
+#define __DESCON		9	// Desconto do Item
+/*/
+ÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜ
+±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±
+±±ÚÄÄÄÄÄÄÄÄÄÄÂÄÄÄÄÄÄÄÄÄÄÂÄÄÄÄÄÄÄÂÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÂÄÄÄÄÄÄÂÄÄÄÄÄÄÄÄÄÄÄÄ¿±±
+±±³Program   ³ MATA930  ³ Autor ³ Eduardo / Edson       ³ Data ³08.08.2001  ³±±
+±±ÃÄÄÄÄÄÄÄÄÄÄÅÄÄÄÄÄÄÄÄÄÄÁÄÄÄÄÄÄÄÁÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÁÄÄÄÄÄÄÁÄÄÄÄÄÄÄÄÄÄÄÄ´±±
+±±³Descri‡…o ³Reprocessamento dos Livros Fiscais                            ³±±
+±±ÃÄÄÄÄÄÄÄÄÄÄÅÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ´±±
+±±³Retorno   ³Nenhum                                                        ³±±
+±±ÃÄÄÄÄÄÄÄÄÄÄÅÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ´±±
+±±³Parametros³ExpL1: Indica se foi chamado por uma rotina automatica        ³±±
+±±³          ³ExpA2: Parametros da rotina automatica                        ³±±
+±±³          ³                                                              ³±±
+±±ÃÄÄÄÄÄÄÄÄÄÄÁÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ´±±
+±±³ ATUALIZACOES SOFRIDAS DESDE A CONSTRUCAO INICIAL.                       ³±±
+±±ÃÄÄÄÄÄÄÄÄÄÄÄÄÄÄÂÄÄÄÄÄÄÄÄÂÄÄÄÄÄÄÂÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ´±±
+±±³ PROGRAMADOR  ³ DATA   ³ BOPS ³  MOTIVO DA ALTERACAO                     ³±±
+±±ÃÄÄÄÄÄÄÄÄÄÄÄÄÄÄÅÄÄÄÄÄÄÄÄÅÄÄÄÄÄÄÅÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ´±±
+±±³ Edilson      ³19/12/02³      ³ Implementada a rotina para que o programa³±±
+±±³              ³        ³      ³ possa ser executada dentro do modulo     ³±±
+±±³              ³        ³      ³ SIGALOJA.                                ³±±
+±±ÀÄÄÄÄÄÄÄÄÄÄÄÄÄÄÁÄÄÄÄÄÄÄÄÁÄÄÄÄÄÄÁÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÙ±±
+±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±
+ßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßß
+/*/
+FUNCTION MATA930(lAutoA930,aPergA930)
+
+LOCAL nOpcA		:=	0
+LOCAL aSays		:=	{}
+LOCAL aButtons	:=	{}
+
+DEFAULT lAutoA930 := .F.
+DEFAULT aPergA930 := {}
+
+If (AMIIn(9,12))
+
+	AjustaSX1()
+	Pergunte("MTA930",.T.)
+	//ÚÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ¿
+	//³ mv_par01 - Data Inicial                                        ³
+	//³ mv_par02 - Data Final                                          ³
+	//³ mv_par03 - Entradas ou Saidas                                  ³
+	//| mv_par12 - Da Filial                                           |
+	//| mv_par13 - Ate a Filial	                                       |
+	//ÀÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÙ
+
+	AADD(aSays,STR0001 ) //"Esta  rotina ira refazer os Livros Fiscais referente ao periodo"
+	AADD(aSays,STR0002 ) //"informado e o tipo, se Entrada ou Sa¡da. ATENCAO! Esta rotina"
+	AADD(aSays,STR0003 ) //"devera ser executada em modo mono-usuario."
+
+	AADD(aButtons,{ 5,.T.,{|o| Pergunte("MTA930",.T.) }} )
+	AADD(aButtons,{ 1,.T.,{|o| nOpca:= 1, o:oWnd:End() }} )
+	AADD(aButtons,{ 2,.T.,{|o| o:oWnd:End() }} )
+
+	FormBatch(STR0004,aSays,aButtons,,190,395 ) //"Reprocessamento Fiscal"
+
+	IF nOpcA == 1
+		//ÚÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ¿
+		//³ Verifica ultima data para operacoes fiscais                  ³
+		//ÀÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÙ
+		If FisChkDt(mv_par01) .And. FisChkDt(mv_par02)
+			If cPaisLoc == "BRA"
+				If mv_par03  == 2
+					If lAutoA930
+						A930RPSaida(lAutoA930)
+					Else
+						Processa({||A930RPSaida(lAutoA930)},,"")
+					Endif
+				Else
+					If lAutoA930
+						A930RPEntrada(lAutoA930)
+					Else
+						Processa({||A930RPEntrada(lAutoA930)},,"")
+					Endif
+				EndIf
+			Else
+				If lAutoA930
+					A930RepLoc(lAutoA930)
+				Else
+					Processa({||A930RepLoc(lAutoA930)})
+				Endif
+			EndIf
+		EndIf
+	EndIf
+EndIf
+Return(.T.)
+/*/
+±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±
+±±ÚÄÄÄÄÄÄÄÄÄÄÂÄÄÄÄÄÄÄÄÄÄÂÄÄÄÄÄÄÄÂÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÂÄÄÄÄÄÄÂÄÄÄÄÄÄÄÄÄÄÄ¿±±
+±±³Fun‡„o    ³A930RPEntr³ Autor ³ Eduardo Riera         ³ Data ³08.08.2001 ³±±
+±±ÃÄÄÄÄÄÄÄÄÄÄÅÄÄÄÄÄÄÄÄÄÄÁÄÄÄÄÄÄÄÁÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÁÄÄÄÄÄÄÁÄÄÄÄÄÄÄÄÄÄÄ´±±
+±±³          ³Rotina de reprocessamento das notas fiscal de entrada        ³±±
+±±³          ³                                                             ³±±
+±±ÃÄÄÄÄÄÄÄÄÄÄÅÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ´±±
+±±³Parametros³ExpL1: Indica se nao existe interface                        ³±±
+±±ÃÄÄÄÄÄÄÄÄÄÄÅÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ´±±
+±±³Retorno   ³Nenhum                                                       ³±±
+±±³          ³                                                             ³±±
+±±ÃÄÄÄÄÄÄÄÄÄÄÅÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ´±±
+±±³Descri‡„o ³Esta rotina tem como objetivo reprocessar os livros fiscais  ³±±
+±±³          ³das notas de entrada.                                        ³±±
+±±³          ³                                                             ³±±
+±±ÃÄÄÄÄÄÄÄÄÄÄÅÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ´±±
+±±³Uso       ³ Materiais                                                   ³±±
+±±ÀÄÄÄÄÄÄÄÄÄÄÁÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÙ±±
+±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±
+ßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßß
+/*/
+Function A930RPEntrada(lAuto)
+
+Local aOtimizacao := {}
+Local cQuery      := ""
+Local cAlias      := "SF1"
+Local cIndex      := ""
+Local lQuery      := .F.
+Local lRefaz      := .F.
+Local lUsaCfps	  := GetNewPar("MV_USACFPS",.F.)
+Local xWhile	  := ""
+Local cFilOri		:= SM0->M0_CODFIL
+Local cFilIni 		:= Iif(Empty(MV_PAR12),cFilAnt,MV_PAR12)
+Local cFilFin 		:= Iif(Empty(MV_PAR13),cFilAnt,MV_PAR13)
+
+#IFDEF TOP
+	Local nX          := 0
+	Local aStru       := {}
+#ENDIF		
+
+//ÚÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ¿
+//³Quando é automatico, efetua o reprocessamento apenas da filial atual -> CFILANT³
+//ÀÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÙ
+If lAuto
+	cFilIni := cFilAnt
+	cFilFin := cFilAnt
+Endif
+
+dbSelectArea("SM0")
+SM0->(dbSeek(cEmpAnt+cFilIni,.T.))
+	
+While ! SM0->(Eof()) .And. SM0->M0_CODIGO == cEmpAnt .And. SM0->M0_CODFIL <= cFilFin
+	
+	cFilAnt 	:= SM0->M0_CODFIL
+	#IFDEF TOP
+		aStru		:= {}
+	#ENDIF
+	aOtimizacao	:= {}
+	cQuery		:= ""
+   	cAlias		:= "SF1"
+	cIndex		:= ""
+	lQuery		:= .F.
+	lRefaz		:= .F.
+	nX			:= 0
+	xWhile		:= ""
+
+	dbSelectArea("SF1")
+	dbSetOrder(1)
+	#IFDEF TOP
+		If ( TcSrvType()!="AS/400" )
+			lQuery := .T.
+			cAlias := "MA930GRVQ1"
+			aStru  := SF1->(dbStruct())
+			cQuery := "SELECT SF1.*,SF1.R_E_C_N_O_  SF1RECNO "
+			cQuery += "FROM "+RetSqlName("SF1")+" SF1 "
+			cQuery += "WHERE SF1.F1_FILIAL='"+xFilial("SF1")+"' AND "
+			cQuery +=       "SF1.F1_DTDIGIT>='"+DTOS(MV_PAR01)+"' AND "
+			cQuery +=       "SF1.F1_DTDIGIT<='"+DTOS(MV_PAR02)+"' AND "
+			cQuery +=       "SF1.F1_DOC>='"+MV_PAR04+"' AND "
+			cQuery +=       "SF1.F1_DOC<='"+MV_PAR05+"' AND "
+			cQuery +=       "SF1.F1_SERIE>='"+MV_PAR06+"' AND "
+			cQuery +=       "SF1.F1_SERIE<='"+MV_PAR07+"' AND "
+			cQuery +=       "SF1.F1_FORNECE>='"+MV_PAR08+"' AND "
+			cQuery +=       "SF1.F1_FORNECE<='"+MV_PAR09+"' AND "
+			cQuery +=       "SF1.F1_LOJA>='"+MV_PAR10+"' AND "
+			cQuery +=       "SF1.F1_LOJA<='"+MV_PAR11+"' AND "
+			cQuery +=       "SF1.D_E_L_E_T_<>'*' "
+			cQuery += "ORDER BY "+SqlOrder(IndexKey())
+	
+			cQuery := ChangeQuery(cQuery)
+			dbUseArea(.T.,"TOPCONN",TcGenQry(,,cQuery),cAlias,.T.,.T.)	
+			For nX := 1 To Len(aStru)
+				If aStru[nX][2]<>"C"
+					TcSetField(cAlias,aStru[nX][1],aStru[nX][2],aStru[nX][3],aStru[nX][4])
+				EndIf
+			Next nX
+		Else
+	#ENDIF		
+		cQuery += "F1_FILIAL='"+xFilial("SF1")+"'.AND."
+		cQuery += "DTOS(F1_DTDIGIT)>='"+DTOS(MV_PAR01)+"'.AND."
+		cQuery += "DTOS(F1_DTDIGIT)<='"+DTOS(MV_PAR02)+"'.AND."
+		cQuery += "F1_DOC>='"+MV_PAR04+"'.AND."
+		cQuery += "F1_DOC<='"+MV_PAR05+"'.AND."
+		cQuery += "F1_SERIE>='"+MV_PAR06+"'.AND."
+		cQuery += "F1_SERIE<='"+MV_PAR07+"'.AND."
+		cQuery += "F1_FORNECE>='"+MV_PAR08+"'.AND."
+		cQuery += "F1_FORNECE<='"+MV_PAR09+"'.AND."
+		cQuery += "F1_LOJA>='"+MV_PAR10+"'.AND."
+		cQuery += "F1_LOJA<='"+MV_PAR11+"' "
+
+		cIndex := CriaTrab(,.F.)
+		IndRegua("SF1",cIndex,IndexKey(),,cQuery)
+		dbGotop()
+		#IFDEF TOP
+		EndIf
+		#ENDIF
+	dbSelectArea(cAlias)
+	
+	While ( !Eof() )
+	
+		If (ExistBlock ("MTA930F1"))
+			If !(ExecBlock ("MTA930F1",.F.,.F.,{cAlias}))
+				(cAlias)->(DbSkip ())
+				Loop
+			EndIf
+		EndIf
+	
+		lRefaz := .T.
+		dbSelectArea("SF3")
+		dbSetOrder(1)
+		MsSeek(xFilial("SF3")+Dtos((cAlias)->F1_DTDIGIT)+(cAlias)->F1_DOC+(cAlias)->F1_SERIE+(cAlias)->F1_FORNECE+(cAlias)->F1_LOJA)
+	
+		xWhile := "SF3->F3_FILIAL == xFilial('SF3') .And. SF3->F3_NFISCAL == (cAlias)->F1_DOC .And. "
+		xWhile += "SF3->F3_SERIE == (cAlias)->F1_SERIE .And. SF3->F3_CLIEFOR == (cAlias)->F1_FORNECE .And. "
+		xWhile += "SF3->F3_LOJA == (cAlias)->F1_LOJA .And. "
+	
+		If lUsaCfps
+			xWhile += "(SubStr(SF3->F3_CFO,1,1)<'5' .Or. FisChkCfps('E',SF3->F3_CFO))"
+		Else
+			xWhile += "SubStr(SF3->F3_CFO,1,1)<'5'"	
+		Endif
+		xWhile := &('{||'+xWhile+'}')
+	
+		While !Eof() .And. Eval(xWhile)
+			If SF3->F3_FORMUL=(cAlias)->F1_FORMUL .And. SF3->F3_REPROC == "N"
+				lRefaz := .F.
+				Exit
+			EndIf
+			dbSelectArea("SF3")		
+			dbSkip()
+		EndDo
+		If lRefaz
+			//ÚÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ¿
+			//³ Carrega a Nota Fiscal SF3 referente a Notas Fiscais de Entrada³
+			//ÀÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÙ
+			MaFisIniNF(1,IIf(lQuery,(cAlias)->SF1RECNO,SF1->(RecNo())),@aOtimizacao,cAlias,((cAlias)->F1_IMPORT<>"S"))
+			
+			Begin Transaction
+				//ÚÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ¿
+				//³ Efetua a exclusao dos registros referente a Nota Fiscal no SF3³
+				//ÀÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÙ
+				dbSelectArea("SF3")
+				dbSetOrder(1)
+				MsSeek(xFilial("SF3")+Dtos((cAlias)->F1_DTDIGIT)+(cAlias)->F1_DOC+(cAlias)->F1_SERIE+(cAlias)->F1_FORNECE+(cAlias)->F1_LOJA)
+				While !Eof() .And. Eval(xWhile)
+					If Empty(SF3->F3_DTCANC)
+						RecLock('SF3',.F.,.T.)
+						dbDelete()
+						MsUnlock()
+					EndIf
+					dbSelectArea("SF3")
+					dbSkip()
+				EndDo
+				//ÚÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ¿
+				//³ Inicializa a gravacao nas funcoes Fiscais               ³
+				//ÀÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÙ
+				MaFisWrite()
+				//ÚÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ¿
+				//³ Efetua a gravacao dos registros referente a Nota no SF3 ³
+				//ÀÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÙ
+				MaFisAtuSF3(1,"E",IIf(lQuery,(cAlias)->SF1RECNO,SF1->(RecNo())))
+				//ÚÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ¿
+				//³ Ponto de entrada, na gravacao do livro            ³
+				//³ fiscal															³
+				//ÀÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÙ
+				If ExistBlock("MT930SF3")
+					dbSelectArea("SF3")
+					dbSetOrder(1)
+					MsSeek(xFilial("SF3")+Dtos((cAlias)->F1_DTDIGIT)+(cAlias)->F1_DOC+(cAlias)->F1_SERIE+(cAlias)->F1_FORNECE+(cAlias)->F1_LOJA)
+					ExecBlock("MT930SF3",.f.,.f.)
+				EndIf
+			End Transaction
+			MaFisEnd()
+		EndIf
+		dbSelectArea(cAlias)
+		dbSkip()
+		If !lAuto
+			IncProc(STR0006+" "+Dtoc((cAlias)->F1_DTDIGIT)+" "+STR0007+" "+(cAlias)->F1_SERIE+"-"+(cAlias)->F1_DOC)
+		Endif
+	EndDo
+	SM0->(dbSkip())
+	If ( lQuery )
+		dbSelectArea(cAlias)
+		dbCloseArea()
+		dbSelectArea("SF1")
+	Else
+		dbSelectArea("SF1")
+		RetIndex("SF1")
+	EndIf
+Enddo
+	
+//ÚÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ¿
+//³Volta a empresa anteriormente selecionada.³
+//ÀÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÙ
+dbSelectArea("SM0")
+SM0->(dbSeek(cEmpAnt+cFilOri,.T.))
+cFilAnt := SM0->M0_CODFIL
+
+Return( .T. )
+/*/
+±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±
+±±ÚÄÄÄÄÄÄÄÄÄÄÂÄÄÄÄÄÄÄÄÄÄÂÄÄÄÄÄÄÄÂÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÂÄÄÄÄÄÄÂÄÄÄÄÄÄÄÄÄÄÄ¿±±
+±±³Fun‡„o    ³A930RPSaid³ Autor ³ Eduardo Riera         ³ Data ³08.08.2001 ³±±
+±±ÃÄÄÄÄÄÄÄÄÄÄÅÄÄÄÄÄÄÄÄÄÄÁÄÄÄÄÄÄÄÁÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÁÄÄÄÄÄÄÁÄÄÄÄÄÄÄÄÄÄÄ´±±
+±±³          ³Rotina de reprocessamento das notas fiscal de Saida          ³±±
+±±³          ³                                                             ³±±
+±±ÃÄÄÄÄÄÄÄÄÄÄÅÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ´±±
+±±³Parametros³ExpL1: Indica se nao existe interface                        ³±±
+±±ÃÄÄÄÄÄÄÄÄÄÄÅÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ´±±
+±±³Retorno   ³Nenhum                                                       ³±±
+±±³          ³                                                             ³±±
+±±ÃÄÄÄÄÄÄÄÄÄÄÅÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ´±±
+±±³Descri‡„o ³Esta rotina tem como objetivo reprocessar os livros fiscais  ³±±
+±±³          ³das notas de saida.                                          ³±±
+±±³          ³                                                             ³±±
+±±ÃÄÄÄÄÄÄÄÄÄÄÅÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ´±±
+±±³Uso       ³ Materiais                                                   ³±±
+±±ÀÄÄÄÄÄÄÄÄÄÄÁÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÙ±±
+±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±
+ßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßß
+/*/
+Function A930RPSaida(lAuto)
+
+Local aOtimizacao := {}
+Local cQuery      := ""
+Local cAlias      := "SF2"
+Local cIndex      := ""
+Local lQuery      := .F.
+Local lRefaz      := .F.
+Local lUsaCfps	  := GetNewPar("MV_USACFPS",.F.)
+Local xWhile	  := ""
+
+#IFDEF TOP
+	Local nX          := 0
+	Local aStru       := {}
+#ENDIF
+
+Local cFilOri		:= SM0->M0_CODFIL
+Local cFilIni 		:= Iif(Empty(MV_PAR12),cFilAnt,MV_PAR12)
+Local cFilFin 		:= Iif(Empty(MV_PAR13),cFilAnt,MV_PAR13)
+
+//ÚÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ¿
+//³Quando é automatico, efetua o reprocessamento apenas da filial atual -> CFILANT³
+//ÀÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÙ
+If lAuto
+	cFilIni := cFilAnt
+	cFilFin := cFilAnt
+Endif
+
+dbSelectArea("SM0")
+SM0->(dbSeek(cEmpAnt+cFilIni,.T.))
+	
+While ! SM0->(Eof()) .And. SM0->M0_CODIGO == cEmpAnt .And. SM0->M0_CODFIL <= cFilFin
+	
+	cFilAnt 	:= SM0->M0_CODFIL
+	#IFDEF TOP
+		aStru       := {}
+	#ENDIF
+	aOtimizacao := {}
+	cQuery      := ""
+	cAlias      := "SF2"
+	cIndex      := ""
+	lQuery      := .F.
+	lRefaz      := .F.
+	nX          := 0
+	xWhile	  	:= ""
+
+	dbSelectArea("SF2")
+	dbSetOrder(1)
+	#IFDEF TOP
+		If ( TcSrvType()!="AS/400" )
+			aStru  := SF2->(dbStruct())
+			lQuery := .T.
+			cAlias := "A930RPSaida"
+			cQuery := "SELECT SF2.*,SF2.R_E_C_N_O_  SF2RECNO "
+			cQuery += "FROM "+RetSqlName("SF2")+" SF2 "
+			cQuery += "WHERE SF2.F2_FILIAL='"+xFilial("SF2")+"' AND "
+			cQuery +=       "SF2.F2_EMISSAO>='"+DTOS(MV_PAR01)+"' AND "
+			cQuery +=       "SF2.F2_EMISSAO<='"+DTOS(MV_PAR02)+"' AND "
+			cQuery +=       "SF2.F2_DOC>='"+MV_PAR04+"' AND "
+			cQuery +=       "SF2.F2_DOC<='"+MV_PAR05+"' AND "
+			cQuery +=       "SF2.F2_SERIE>='"+MV_PAR06+"' AND "
+			cQuery +=       "SF2.F2_SERIE<='"+MV_PAR07+"' AND "
+			cQuery +=       "SF2.F2_CLIENTE>='"+MV_PAR08+"' AND "
+			cQuery +=       "SF2.F2_CLIENTE<='"+MV_PAR09+"' AND "
+			cQuery +=       "SF2.F2_LOJA>='"+MV_PAR10+"' AND "	
+			cQuery +=       "SF2.F2_LOJA<='"+MV_PAR11+"' AND "
+			cQuery +=       "SF2.F2_ECF<>'S' AND "
+			cQuery +=       "SF2.D_E_L_E_T_<>'*' "
+			cQuery += "ORDER BY "+SqlOrder(IndexKey())
+	
+			cQuery := ChangeQuery(cQuery)
+			dbUseArea(.T.,"TOPCONN",TcGenQry(,,cQuery),cAlias,.T.,.T.)
+			For nX := 1 To Len(aStru)
+				If aStru[nX][2] <> "C"
+					TcSetField(cAlias,aStru[nX][1],aStru[nX][2],aStru[nX][3],aStru[nX][4])
+				EndIf
+			Next nX
+		Else
+	#ENDIF
+		cQuery += "F2_FILIAL='"+xFilial("SF2")+"'.AND."
+		cQuery += "DTOS(F2_EMISSAO)>='"+DTOS(MV_PAR01)+"'.AND."
+		cQuery += "DTOS(F2_EMISSAO)<='"+DTOS(MV_PAR02)+"'.AND."
+		cQuery += "F2_DOC>='"+MV_PAR04+"'.AND."
+		cQuery += "F2_DOC<='"+MV_PAR05+"'.AND."
+		cQuery += "F2_SERIE>='"+MV_PAR06+"'.AND."
+		cQuery += "F2_SERIE<='"+MV_PAR07+"'.AND."
+		cQuery += "F2_CLIENTE>='"+MV_PAR08+"'.AND."
+		cQuery += "F2_CLIENTE<='"+MV_PAR09+"'.AND."
+		cQuery += "F2_LOJA>='"+MV_PAR10+"'.AND."	
+		cQuery += "F2_LOJA<='"+MV_PAR11+"' "
+	
+		cIndex := CriaTrab(,.F.)
+		IndRegua('SF2',cIndex,IndexKey(),,cQuery)
+		dbGotop()
+		#IFDEF TOP
+		EndIf
+		#ENDIF
+	dbSelectArea(cAlias)
+	While !Eof()
+
+		If (ExistBlock ("MTA930F2"))
+			If !(ExecBlock ("MTA930F2",.F.,.F.,{cAlias}))
+				(cAlias)->(DbSkip ())
+				Loop
+			EndIf
+		EndIf	
+	
+		If !(cAlias)->F2_ECF=="S"
+			lRefaz := .T.
+			dbSelectArea("SF3")
+			dbSetOrder(1)
+			MsSeek(xFilial("SF3")+Dtos((cAlias)->F2_EMISSAO)+(cAlias)->F2_DOC+(cAlias)->F2_SERIE+(cAlias)->F2_CLIENTE+(cAlias)->F2_LOJA+"5",.T.)
+	
+			xWhile := "SF3->F3_FILIAL == xFilial('SF3') .And. SF3->F3_NFISCAL == (cAlias)->F2_DOC .And. "
+			xWhile += "SF3->F3_SERIE == (cAlias)->F2_SERIE .And. SF3->F3_CLIEFOR == (cAlias)->F2_CLIENTE .And. "
+			xWhile += "SF3->F3_LOJA == (cAlias)->F2_LOJA .And. "
+			
+			If lUsaCfps
+				xWhile += "((Left(SF3->F3_CFO,1)>='5' .And. Left(SF3->F3_CFO,1)<='7') .Or. FisChkCfps('S',SF3->F3_CFO))"
+			Else
+				xWhile += "Left(SF3->F3_CFO,1)>='5'"
+			Endif
+			xWhile := &('{||'+xWhile+'}')
+	
+			While !Eof() .And. Eval(xWhile)
+				If SF3->F3_REPROC == "N"
+					lRefaz := .F.
+					Exit
+				EndIf
+				dbSelectArea("SF3")		
+				dbSkip()
+			EndDo
+			If lRefaz
+				//ÚÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ¿
+				//³ Carrega a Nota Fiscal SF3 referente a Notas Fiscais de Entrada³
+				//ÀÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÙ
+				MaFisIniNF(2,IIf(lQuery,(cAlias)->SF2RECNO,SF2->(RecNo())),@aOtimizacao,cAlias,.T.)
+				//ÚÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ¿
+				//³ Efetua a exclusao dos registros referente a Nota Fiscal no SF3³
+				//ÀÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÙ
+				Begin Transaction
+					dbSelectArea("SF3")
+					dbSetOrder(1)
+					MsSeek(xFilial("SF3")+Dtos((cAlias)->F2_EMISSAO)+(cAlias)->F2_DOC+(cAlias)->F2_SERIE+(cAlias)->F2_CLIENTE+(cAlias)->F2_LOJA+"5",.T.)
+					While !Eof() .And. Eval(xWhile)
+						If Empty(SF3->F3_DTCANC)
+							RecLock('SF3',.F.,.T.)
+							dbDelete()
+							MsUnlock()
+						EndIf
+						dbSelectArea("SF3")
+						dbSkip()
+					EndDo
+					//ÚÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ¿
+					//³ Inicializa a gravacao nas funcoes Fiscais               ³
+					//ÀÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÙ
+					MaFisWrite()
+					//ÚÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ¿
+					//³ Efetua a gravacao dos registros referente a Nota no SF3 ³
+					//ÀÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÙ
+					MaFisAtuSF3(1,"S",IIf(lQuery,(cAlias)->SF2RECNO,SF2->(RecNo())),cAlias)
+					//ÚÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ¿
+					//³ Ponto de entrada, na gravacao do livro            ³
+					//³ fiscal															³
+					//ÀÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÙ
+					If ExistBlock("MT930SF3")
+						dbSelectArea("SF3")
+						dbSetOrder(1)
+						MsSeek(xFilial("SF3")+Dtos((cAlias)->F2_EMISSAO)+(cAlias)->F2_DOC+(cAlias)->F2_SERIE+(cAlias)->F2_CLIENTE+(cAlias)->F2_LOJA+"5",.T.)
+						ExecBlock("MT930SF3",.F.,.F.)
+					EndIf
+				End Transaction
+			EndIf
+		EndIf
+		dbSelectArea(cAlias)
+		dbSkip()
+		If !lAuto
+			IncProc(STR0006+" "+Dtoc((cAlias)->F2_EMISSAO)+" "+STR0007+" "+(cAlias)->F2_SERIE+"-"+(cAlias)->F2_DOC)
+		Endif
+	EndDo
+	SM0->(dbSkip())
+	If lQuery
+		dbSelectArea(cAlias)
+		dbCloseArea()
+		dbSelectArea("SF2")	
+	Else
+		dbSelectArea("SF2")
+		RetIndex("SF2")
+	EndIf
+Enddo
+	
+//ÚÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ¿
+//³Volta a empresa anteriormente selecionada.³
+//ÀÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÙ
+dbSelectArea("SM0")
+SM0->(dbSeek(cEmpAnt+cFilOri,.T.))
+cFilAnt := SM0->M0_CODFIL
+
+Return .T.
+
+/*/
+ÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜ
+±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±
+±±ÚÄÄÄÄÄÄÄÄÄÄÂÄÄÄÄÄÄÄÄÄÄÄÄÄÄÂÄÄÄÄÄÄÄÂÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÂÄÄÄÄÄÄÂÄÄÄÄÄÄÄÄÄÄ¿±±
+±±³Fun‡…o    ³ A930RepLoc   ³ Autor ³ Lucas             ³ Data ³ 23/07/00 ³±±
+±±ÃÄÄÄÄÄÄÄÄÄÄÅÄÄÄÄÄÄÄÄÄÄÄÄÄÄÁÄÄÄÄÄÄÄÁÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÁÄÄÄÄÄÄÁÄÄÄÄÄÄÄÄÄÄ´±±
+±±³Descri‡…o ³ Efetua reprocessamento para outros paises...               ³±±
+±±ÃÄÄÄÄÄÄÄÄÄÄÅÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ´±±
+±±³ Uso      ³ MATA930                                                    ³±±
+±±ÀÄÄÄÄÄÄÄÄÄÄÁÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÙ±±
+±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±
+ßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßß
+/*/
+Function A930RepLoc(lAuto)
+LOCAL bBaseD1 := { |x| "D1_BASIMP"+x }
+LOCAL bBaseD2 := { |x| "D2_BASIMP"+x }
+LOCAL bBaseF3 := { |x| "F3_BASIMP"+x }
+LOCAL bVImpD1 := { |x| "D1_VALIMP"+x }
+LOCAL bVImpD2 := { |x| "D2_VALIMP"+x }
+LOCAL bVImpF3 := { |x| "F3_VALIMP"+x }
+LOCAL bAliqD1 := { |x| "D1_ALQIMP"+x }
+LOCAL bAliqD2 := { |x| "D2_ALQIMP"+x }
+LOCAL bAliqF3 := { |x| "F3_ALQIMP"+x }
+LOCAL aBase:={},aVImp:={},aAliq:={},aExentas:={}
+LOCAL aImpVarSD1 := { 0,0,0,0,0,{} }
+LOCAL aImpVarSD2 := { 0,0,0,0,0,{} }
+LOCAL aLivro     := {}
+
+//ÚÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ¿
+//³ Define tipo de Filtro a utilizar.                  ³
+//ÀÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÙ
+LOCAL cTipoMov := Str(mv_par03,1)
+LOCAL nTotImpItem := 0
+LOCAL nTotBase		:= 0
+Local lAchou		:=	.F.
+LOCAL aGetBook
+
+PRIVATE cNFiscal  := CriaVar("F3_NFISCAL")
+PRIVATE cSerie	   := CriaVar("F3_SERIE")
+PRIVATE cEspecie  := CriaVar("F3_ESPECIE")
+PRIVATE cTipo     := CriaVar("F3_ESPECIE")
+PRIVATE dDEmissao := dDataBase
+PRIVATE nMoedaCor := 1
+PRIVATE nTxMoeda  := 1.00
+//Temporario. Bruno. Nao foi usado a variuavel nTaxa como estava previsto
+//o que pode dar problemas no calculo de livros, por isso se define nTaxa
+PRIVATE nTaXa  := 1.00
+
+//ÚÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ¿
+//³ Apagar do LIVROS FISCAIS os registros a REPROCESSAR³
+//ÀÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÙ
+A930DelSF3()
+
+//ÚÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ¿
+//³ Reprocessar entradas...				                ³
+//ÀÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÙ
+If cTipoMov == "1"
+
+	//ÚÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ¿
+	//³ Cria Indice Condicional de SF1 para processar entradas.	 	  ³
+	//ÀÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÙ
+	aInd := {}
+	cIndexSF1 := CriaTrab(Nil,.F.)
+	AADD(aInd,cIndexSF1)
+	dbSelectArea("SF1")
+	cKeySF1 := "F1_FILIAL+DTOS(F1_DTDIGIT)"
+	cFiSF1 := 'F1_TIPO=="C".Or.F1_TIPO=="N".Or.F1_TIPO==" "'
+	#IFDEF TOP
+		cFiSF1 +=" .And. DTOS(F1_DTDIGIT) >= '"+DTOS(MV_PAR01)+"' .And. DTOS(F1_DTDIGIT) <= '"+DTOS(MV_PAR02)+" ' "
+	#ELSE
+		cFiSF1 +='.And. DTOS(F1_DTDIGIT) >= "'+DTOS(MV_PAR01)+'" .And. DTOS(F1_DTDIGIT) <= "'+DTOS(MV_PAR02)+'"'
+	#ENDIF
+	IndRegua("SF1",cIndexSF1,cKeySF1,,cFISF1,"Seleccionando Registros...")
+
+	nIndexSF1 := RetIndex("SF1")
+	dbSelectArea("SF1")
+
+	#IFNDEF TOP
+		dbSetIndex(cIndexSF1+OrdBagExt())
+	#ENDIF
+
+	dbSetOrder(nIndexSF1+1)
+	dbGoTop()
+
+	//ÚÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ¿
+	//³ Cria Indice Condicional de SF1 para processar entradas.	 	  ³
+	//ÀÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÙ
+	aInd := {}
+	cIndexSD1 := CriaTrab(Nil,.F.)
+	AADD(aInd,cIndexSD1)
+	dbSelectArea("SD1")
+	cKeySD1 := "D1_FILIAL+D1_DOC+D1_SERIE+D1_FORNECE+D1_LOJA+D1_CF"
+
+	IndRegua("SD1",cIndexSD1,cKeySD1,,,"Seleccionando Registros...")
+
+	nIndexSD1 := RetIndex("SD1")
+	dbSelectArea("SD1")
+
+	#IFNDEF TOP
+		dbSetIndex(cIndexSD1+OrdBagExt())
+	#ENDIF
+	dbSetOrder(nIndexSD1+1)
+	dbGoTop()
+
+	//ÚÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ¿
+	//³ Inicia reprocessamento                             ³
+	//ÀÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÙ
+	If !lAuto
+		ProcRegua( SF1->(RecCount()) )
+	Endif
+
+	dbSelectArea("SF1")
+	MsSeek(xFilial("SF1")+DTOS(mv_par01),.T.)
+	While !Eof() .and. F1_FILIAL == xFilial("SF1") .and. SF1->F1_DTDIGIT >= mv_par01 ;
+			.and. SF1->F1_DTDIGIT<= mv_par02
+
+		cNFiscal  := SF1->F1_DOC
+		cSerie    := SF1->F1_SERIE
+		cEspecie  := SF1->F1_ESPECIE
+		cTipo	  := SF1->F1_ESPECIE
+		dDEmissao := SF1->F1_EMISSAO
+		nMoedaCor := SF1->F1_MOEDA
+		nTxMoeda  := SF1->F1_TXMOEDA
+		nTaxa     := SF1->F1_TXMOEDA
+
+		SA2->( dbSetOrder(1) )
+		SA2->( MsSeek(xFilial("SA2")+SF1->F1_FORNECE+SF1->F1_LOJA) )
+
+		//ÚÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ¿
+		//³ Movimenta a Regua de processamento  ³
+		//ÀÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÙ
+		If !lAuto
+			IncProc()
+		Endif
+		lAchou	:=	.F.
+		dbSelectArea("SD1")
+		MsSeek(xFilial("SD1")+SF1->F1_DOC+SF1->F1_SERIE+SF1->F1_FORNECE+SF1->F1_LOJA)
+		If Found()
+			While !eof() .and. Alltrim(SF1->F1_ESPECIE) <>  Alltrim(SD1->D1_ESPECIE) .And. ;
+					SF1->F1_DOC+SF1->F1_SERIE+SF1->F1_FORNECE+SF1->F1_LOJA == D1_DOC+D1_SERIE+D1_FORNECE+D1_LOJA
+				DbSkip()
+				Loop
+			EndDo
+			If Alltrim(SF1->F1_ESPECIE) ==  Alltrim(SD1->D1_ESPECIE) .And. ;
+					SF1->F1_DOC+SF1->F1_SERIE+SF1->F1_FORNECE+SF1->F1_LOJA == D1_DOC+D1_SERIE+D1_FORNECE+D1_LOJA
+				lAchou	:=	.T.
+			EndIf
+		EndIf
+		If lAchou
+			cTES     := "   "
+			cCFO     := "   "
+
+			While !Eof() .and. D1_FILIAL == xFilial("SD1");
+					.and. D1_DOC == SF1->F1_DOC;
+					.and. D1_SERIE == SF1->F1_SERIE;
+					.and. D1_FORNECE == SF1->F1_FORNECE;
+					.and. D1_LOJA == SF1->F1_LOJA
+
+				If Alltrim(SF1->F1_ESPECIE) <>  Alltrim(SD1->D1_ESPECIE)
+					dbSkip()
+					Loop
+				EndIf
+
+				cTES     := SD1->D1_TES
+				cCFO     := SD1->D1_CF
+				aLivro   := {}
+				aBase    := {}
+				aVImp    := {}
+				aAliq    := {}
+				aExentas := { 0,0 }
+
+				While !Eof() .and. D1_FILIAL == xFilial("SD1");
+						.and. D1_DOC == SF1->F1_DOC;
+						.and. D1_SERIE == SF1->F1_SERIE;
+						.and. D1_FORNECE == SF1->F1_FORNECE;
+						.and. D1_LOJA == SF1->F1_LOJA;
+						.and. D1_CF == cCFO
+
+					If Alltrim(SF1->F1_ESPECIE) <>  Alltrim(SD1->D1_ESPECIE)
+						dbSkip()
+						Loop
+					EndIf
+
+					nTotImpItem := 0
+					nTotBase    := 0
+					cI := "1"
+					nI	:=	1
+					While .T.
+						If  SD1->(Type(EVAL(bBaseD1,cI))) # "U"
+							If nI > Len(aBase)
+								Aadd(aBase, SD1->&(EVAL(bBaseD1,cI)))
+								Aadd(aVImp, SD1->&(EVAL(bVImpD1,cI)))
+								Aadd(aAliq, SD1->&(EVAL(bAliqD1,cI)))
+							Else
+								aBase[nI] += SD1->&(EVAL(bBaseD1,cI))
+								aVImp[nI] += SD1->&(EVAL(bVImpD1,cI))
+								aAliq[nI] := IIf(aAliq[nI]==0,SD1->&(EVAL(bAliqD1,cI)),aAliq[nI])
+							EndIf
+							nTotImpItem += SD1->&(EVAL(bVImpD1,cI))
+							nTotBase		+=	aBase[nI]
+							cI	:=	Soma1(cI,1)
+							nI ++
+						Else
+							Exit
+						EndIf
+					Enddo
+
+					If nTotImpItem <= 0
+						aExentas[1] := aExentas[1] + xMoeda(SD1->D1_TOTAL-SD1->D1_VALDESC,SF1->F1_MOEDA,1,SF1->F1_DTDIGIT,,SF1->F1_TXMOEDA)
+					EndIf
+
+					dbSelectArea("SF4")
+					dbSetOrder(1)
+					MsSeek(xFilial("SF4")+SD1->D1_TES)
+					If Found()
+						// Calcula o Livro
+						aLivro := GetBook( @aGetBook, aImpVarSD1, "C", nTaxa, aLivro, "E" )
+					EndIf
+
+					dbSelectArea("SD1")
+					dbSkip()
+				End
+
+				If Len(aLivro) > 0
+
+					If aBase[1]+aBase[2]+aBase[3]+aBase[4]+aBase[5]+aBase[6] > 0 .or.;
+							aExentas[1] > 0
+
+						dbSelectArea("SF3")
+						dbSetOrder(1)
+						MsSeek(xFilial("SF3")+DTOS(SF1->F1_DTDIGIT)+SF1->F1_DOC+SF1->F1_SERIE+SF1->F1_FORNECE+SF1->F1_LOJA+cCFO)
+						If ! Found()
+							RecLock("SF3",.T.)
+							Replace F3_FILIAL		With xFilial("SF3")
+							Replace F3_ENTRADA	With SF1->F1_DTDIGIT
+							Replace F3_NFISCAL   With SF1->F1_DOC
+							Replace F3_SERIE	 	With SF1->F1_SERIE
+							Replace F3_CLIEFOR	With SF1->F1_FORNECE
+							Replace F3_LOJA      With SF1->F1_LOJA
+							Replace F3_ESTADO    With SF1->F1_EST
+							Replace F3_EMISSAO   With SF1->F1_EMISSAO
+							Replace F3_ESPECIE   With SF1->F1_ESPECIE
+							Replace F3_VALCONT   With xMoeda(SF1->F1_VALBRUT,SF1->F1_MOEDA,1,SF1->F1_DTDIGIT,,nTaxa)
+							Replace F3_REPROC    With "S"
+							Replace F3_TES	      With cTES
+							Replace F3_CFO       With cCFO
+							Replace F3_TIPOMOV   With "C"
+							Replace F3_TIPO      With SF1->F1_TIPO
+							MsUnLock()
+						EndIf
+						if SF3->F3_REPROC != "N"
+							RecLock("SF3",.F.)
+							cI := "1"
+							nI := 1
+							While .T.
+								If  SF3->(Type(EVAL(bBaseF3,cI))) # "U"
+									Replace &(EVAL(bBaseF3,cI))  With xMoeda(aBase[nI],SF1->F1_MOEDA,1,SF1->F1_DTDIGIT,,SF1->F1_TXMOEDA)
+									Replace &(EVAL(bVImpF3,cI))  With xMoeda(aVImp[nI],SF1->F1_MOEDA,1,SF1->F1_DTDIGIT,,SF1->F1_TXMOEDA)
+									Replace &(EVAL(bAliqF3,cI))  With aAliq[nI]
+									cI	:=	Soma1(cI,1)
+									nI	++
+								Else
+									Exit
+								EndIf
+							Enddo
+							Replace F3_EXENTAS	With aExentas[1]
+							Replace F3_OUTRAS		With aExentas[2]
+							If SF1->( Deleted() )
+								Replace F3_CANCEL	With "S"
+							EndIf
+							MsUnLock()
+						EndIf
+						//ÚÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ¿
+						//³ Ponto de entrada, na gravacao do livro            ³
+						//³ fiscal															³
+						//ÀÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÙ
+						If ExistBlock("M930SF1")
+							ExecBlock("M930SF1",.f.,.f.)
+						EndIf
+
+					EndIf
+				EndIf
+				dbSelectArea("SD1")
+			End
+		EndIf
+		dbSelectArea("SF1")
+		dbSkip()
+	End
+
+	//ÚÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ¿
+	//³ Cria Indice Condicional de SF1 para processar entradas.	 	  ³
+	//ÀÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÙ
+	aInd := {}
+	cIndexSF2 := CriaTrab(Nil,.F.)
+	AADD(aInd,cIndexSF2)
+	dbSelectArea("SF2")
+	cKeySF2 := "F2_FILIAL+DTOS(F2_EMISSAO)"
+	cFiSF2 := 'F2_TIPO=="D"'
+	#IFDEF TOP
+		cFiSF2 +=" .And. DTOS(F2_EMISSAO) >= '"+DTOS(MV_PAR01)+"' .And. DTOS(F2_EMISSAO) <= '"+DTOS(MV_PAR02)+" ' "
+	#ELSE
+		cFiSF2 +='.And. DTOS(F2_EMISSAO) >= "'+DTOS(MV_PAR01)+'" .And. DTOS(F2_EMISSAO) <= "'+DTOS(MV_PAR02)+'"'
+	#ENDIF
+	IndRegua("SF2",cIndexSF2,cKeySF2,,cFISF2,"Seleccionando Registros...")
+
+	nIndexSF2 := RetIndex("SF2")
+	dbSelectArea("SF2")
+
+	#IFNDEF TOP
+		dbSetIndex(cIndexSF2+OrdBagExt())
+	#ENDIF
+	dbSetOrder(nIndexSF2+1)
+	dbGoTop()
+
+	//ÚÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ¿
+	//³ Cria Indice Condicional de SF2 para processar entradas.	 	  ³
+	//ÀÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÙ
+	aInd := {}
+	cIndexSD2 := CriaTrab(Nil,.F.)
+	AADD(aInd,cIndexSD2)
+	dbSelectArea("SD2")
+	cKeySD2 := "D2_FILIAL+D2_DOC+D2_SERIE+D2_CLIENTE+D2_LOJA+D2_CF"
+
+	IndRegua("SD2",cIndexSD2,cKeySD2,,,"Seleccionando Registros...")
+
+	nIndexSD2 := RetIndex("SD2")
+	dbSelectArea("SD2")
+
+	#IFNDEF TOP
+		dbSetIndex(cIndexSD2+OrdBagExt())
+	#ENDIF
+	dbSetOrder(nIndexSD2+1)
+	dbGoTop()
+
+	//ÚÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ¿
+	//³ Inicia reprocessamento                             ³
+	//ÀÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÙ
+	If !lAuto
+		ProcRegua( SF2->(RecCount()) )
+	Endif
+
+	dbSelectArea("SF2")
+	dbSeek(xFilial("SF2")+DTOS(mv_par01),.T.)
+	While !Eof() .and. F2_FILIAL == xFilial("SF2")  .AND. F2_EMISSAO >= mv_par01 ;
+			.and. F2_EMISSAO <= mv_par02
+
+		cNFiscal  := SF2->F2_DOC
+		cSerie    := SF2->F2_SERIE
+		cEspecie  := SF2->F2_ESPECIE
+		cTipo		 := SF2->F2_ESPECIE
+		dDEmissao := SF2->F2_EMISSAO
+		nMoedaCor := SF2->F2_MOEDA
+		nTxMoeda  := SF2->F2_TXMOEDA
+		nTaxa     := SF2->F2_TXMOEDA
+
+		SA1->( dbSetOrder(1) )
+		SA1->( dbSeek(xFilial("SA1")+SF2->F2_CLIENTE+SF2->F2_LOJA) )
+
+		//ÚÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ¿
+		//³ Movimenta a Regua de processamento  ³
+		//ÀÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÙ
+		If !lAuto
+			IncProc()
+		Endif
+
+		lAchou	:=	.F.
+		dbSelectArea("SD2")
+		dbSeek(xFilial("SD2")+SF2->F2_DOC+SF2->F2_SERIE+SF2->F2_CLIENTE+SF2->F2_LOJA)
+
+		If Found()
+			While !eof() .and. Alltrim(SF2->F2_ESPECIE) <>  Alltrim(SD2->D2_ESPECIE) .And. ;
+					SF2->F2_DOC+SF2->F2_SERIE+SF2->F2_CLIENTE+SF2->F2_LOJA == D2_DOC+D2_SERIE+D2_CLIENTE+D2_LOJA
+				DbSkip()
+				Loop
+			EndDo
+			If Alltrim(SF2->F2_ESPECIE) ==  Alltrim(SD2->D2_ESPECIE) .And. ;
+					SF2->F2_DOC+SF2->F2_SERIE+SF2->F2_CLIENTE+SF2->F2_LOJA == D2_DOC+D2_SERIE+D2_CLIENTE+D2_LOJA
+				lAchou	:=	.T.
+			EndIf
+		EndIf
+
+		If lAchou
+
+			cCFO  := "   "
+			cTES  := "   "
+
+			While !Eof() .and. D2_FILIAL == xFilial("SD2");
+					.and. D2_DOC == SF2->F2_DOC;
+					.and. D2_SERIE == SF2->F2_SERIE;
+					.and. D2_CLIENTE == SF2->F2_CLIENTE;
+					.and. D2_LOJA == SF2->F2_LOJA
+
+				If Alltrim(SF2->F2_ESPECIE) <>  Alltrim(SD2->D2_ESPECIE)
+					dbSkip()
+					Loop
+				EndIf
+
+				cCFO := SD2->D2_CF
+				cTES := SD2->D2_TES
+
+				aLivro   := {}
+				aBase    := {}
+				aVImp    := {}
+				aAliq    := {}
+				aExentas := { 0,0 }
+
+				While !Eof() .and. D2_FILIAL == xFilial("SD2");
+						.and. D2_DOC == SF2->F2_DOC;
+						.and. D2_SERIE == SF2->F2_SERIE;
+						.and. D2_CLIENTE == SF2->F2_CLIENTE;
+						.and. D2_LOJA == SF2->F2_LOJA;
+						.and. D2_CF == cCFO
+
+					If Alltrim(SF2->F2_ESPECIE) <>  Alltrim(SD2->D2_ESPECIE)
+						dbSkip()
+						Loop
+					EndIf
+
+					nTotImpItem := 0
+					nTotBase    := 0
+					cI := "1"
+					nI := 1
+					While .T.
+						If  SD2->(Type(EVAL(bBaseD2,cI))) # "U"
+							If nI > Len(aBase)
+								Aadd(aBase, SD2->&(EVAL(bBaseD2,cI)))
+								Aadd(aVImp, SD2->&(EVAL(bVImpD2,cI)))
+								Aadd(aAliq, SD2->&(EVAL(bAliqD2,cI)))
+							Else
+								aBase[nI] += SD2->&(EVAL(bBaseD2,cI))
+								aVImp[nI] += SD2->&(EVAL(bVImpD2,cI))
+								aAliq[nI] := IIf(aAliq[nI]==0,SD2->&(EVAL(bAliqD2,cI)),aAliq[nI])
+							EndIf
+							nTotImpItem += SD2->&(EVAL(bVImpD2,cI))
+							nTotBase		+=	aBase[nI]
+							cI := Soma1(cI,1)
+							nI ++
+						Else
+							Exit
+						EndIf
+					Enddo
+
+					If nTotImpItem <= 0
+						aExentas[1] := aExentas[1] + xMoeda(SD2->D2_TOTAL-SD2->D2_DESCON,SF2->F2_MOEDA,1,SF2->F2_EMISSAO,,SF2->F2_TXMOEDA)
+					EndIf
+
+					dbSelectArea("SF4")
+					dbSetOrder(1)
+					dbSeek(xFilial("SF4")+SD2->D2_TES)
+					If Found()
+						// Calcula o Livro
+						aLivro := GetBook( @aGetBook, aImpVarSD2, "V", nTaxa, aLivro, "S" )
+					EndIf
+
+					dbSelectArea("SD2")
+					dbSkip()
+				End
+
+				If Len(aLivro) > 0
+					If aBase[1]+aBase[2]+aBase[3]+aBase[4]+aBase[5]+aBase[6] > 0 .or.;
+							aExentas[1] > 0
+
+						dbSelectArea("SF3")
+						dbSetOrder(1)
+						dbSeek(xFilial("SF3")+DTOS(SF2->F2_EMISSAO)+SF2->F2_DOC+SF2->F2_SERIE+SF2->F2_CLIENTE+SF2->F2_LOJA+cCFO)
+						If ! Found()
+							RecLock("SF3",.T.)
+							Replace F3_FILIAL		With xFilial("SF3")
+							Replace F3_ENTRADA	With SF2->F2_EMISSAO
+							Replace F3_NFISCAL   With SF2->F2_DOC
+							Replace F3_SERIE	 	With SF2->F2_SERIE
+							Replace F3_CLIEFOR	With SF2->F2_CLIENTE
+							Replace F3_LOJA      With SF2->F2_LOJA
+							Replace F3_ESTADO    With SF2->F2_EST
+							Replace F3_VALCONT   With xMoeda(SF2->F2_VALBRUT,SF2->F2_MOEDA,1,SF2->F2_EMISSAO,,nTaxa)
+							Replace F3_EMISSAO   With SF2->F2_EMISSAO
+							Replace F3_ESPECIE   With SF2->F2_ESPECIE
+							Replace F3_REPROC    With "S"
+							Replace F3_TES       With cTES
+							Replace F3_CFO       With cCFO
+							Replace F3_TIPOMOV   With "C"
+							Replace F3_TIPO		With SF2->F2_TIPO
+							MsUnLock()
+						EndIf
+						if SF3->F3_REPROC != "N"
+							RecLock("SF3",.F.)
+							cI := "1"
+							nI := 1
+							While .T.
+								If  SF3->(Type(EVAL(bBaseF3,cI))) # "U"
+									Replace &(EVAL(bBaseF3,cI))  With xMoeda(aBase[nI],SF2->F2_MOEDA,1,SF2->F2_EMISSAO,,SF2->F2_TXMOEDA)
+									Replace &(EVAL(bVImpF3,cI))  With xMoeda(aVImp[nI],SF2->F2_MOEDA,1,SF2->F2_EMISSAO,,SF2->F2_TXMOEDA)
+									Replace &(EVAL(bAliqF3,cI))  With aAliq[nI]
+									cI := Soma1(cI,1)
+									nI ++
+								Else
+									Exit
+								EndIf
+							EndDo
+
+							Replace F3_EXENTAS	With aExentas[1]
+							Replace F3_OUTRAS		With aExentas[2]
+							If SF2->( Deleted() )
+								Replace F3_CANCEL	With "S"
+							EndIf
+							MsUnLock()
+						EndIf	
+
+						//ÚÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ¿
+						//³ Ponto de entrada, na gravacao do livro            ³
+						//³ fiscal															³
+						//ÀÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÙ
+						If ExistBlock("M930SF2")
+							ExecBlock("M930SF2",.f.,.f.)
+						EndIf
+					EndIf
+				EndIf
+				dbSelectArea("SD2")
+			End
+		EndIf
+		dbSelectArea("SF2")
+		dbSkip()
+	End
+
+	dbSelectArea("SD2")
+	RetIndex("SD2")
+	FErase( cIndexSD2+OrdBagExt())
+
+	dbSelectArea("SF2")
+	RetIndex("SF2")
+	FErase( cIndexSF2+OrdBagExt())
+
+	dbSelectArea("SD1")
+	RetIndex("SD1")
+	FErase( cIndexSD1+OrdBagExt())
+
+	dbSelectArea("SF1")
+	RetIndex("SF1")
+	FErase( cIndexSF1+OrdBagExt())
+
+Else
+
+	//ÚÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ¿
+	//³ Cria Indice Condicional de SF1 para processar entradas.	 	  ³
+	//ÀÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÙ
+	aInd := {}
+	cIndexSF1 := CriaTrab(Nil,.F.)
+	AADD(aInd,cIndexSF1)
+	dbSelectArea("SF1")
+	cKeySF1 := "F1_FILIAL+DTOS(F1_DTDIGIT)"
+	cFiSF1 := 'F1_TIPO=="D"'
+	#IFDEF TOP
+		cFiSF1 +=" .And. DTOS(F1_DTDIGIT) >= '"+DTOS(MV_PAR01)+"' .And. DTOS(F1_DTDIGIT) <= '"+DTOS(MV_PAR02)+" ' "
+	#ELSE
+		cFiSF1 +='.And. DTOS(F1_DTDIGIT) >= "'+DTOS(MV_PAR01)+'" .And. DTOS(F1_DTDIGIT) <= "'+DTOS(MV_PAR02)+'"'
+	#ENDIF
+
+
+	IndRegua("SF1",cIndexSF1,cKeySF1,,CFISF1,"Seleccionando Registros...")
+
+	nIndexSF1 := RetIndex("SF1")
+	dbSelectArea("SF1")
+
+	#IFNDEF TOP
+		dbSetIndex(cIndexSF1+OrdBagExt())
+
+	#ENDIF
+	dbSetOrder(nIndexSF1+1)
+	dbGoTop()
+
+	//ÚÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ¿
+	//³ Cria Indice Condicional de SF1 para processar entradas.	 	  ³
+	//ÀÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÙ
+	aInd := {}
+	cIndexSD1 := CriaTrab(Nil,.F.)
+	AADD(aInd,cIndexSD1)
+	dbSelectArea("SD1")
+	cKeySD1 := "D1_FILIAL+D1_DOC+D1_SERIE+D1_FORNECE+D1_LOJA+D1_CF"
+
+	IndRegua("SD1",cIndexSD1,cKeySD1,,,"Seleccionando Registros...")
+
+	nIndexSD1 := RetIndex("SD1")
+	dbSelectArea("SD1")
+
+	#IFNDEF TOP
+		dbSetIndex(cIndexSD1+OrdBagExt())
+		dbSetOrder(nIndexSD1+1)
+		dbGoTop()
+	#ENDIF
+
+	//ÚÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ¿
+	//³ Inicia reprocessamento                             ³
+	//ÀÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÙ
+	#IFDEF WINDOWS
+		If !lAuto
+			ProcRegua( SF1->(RecCount()) )
+		Endif
+	#ENDIF
+
+	dbSelectArea("SF1")
+	dbSeek(xFilial("SF1")+DTOS(mv_par01),.T.)
+	While !Eof() .and. F1_FILIAL == xFilial("SF1") .and.;
+			DTOS(F1_DTDIGIT) >= DTOS(mv_par01) .and.;
+			DTOS(F1_DTDIGIT) <= DTOS(mv_par02)
+
+		cNFiscal  := SF1->F1_DOC
+		cSerie    := SF1->F1_SERIE
+		cEspecie  := SF1->F1_ESPECIE
+		cTipo		 := SF1->F1_ESPECIE
+		dDEmissao := SF1->F1_EMISSAO
+		nMoedaCor := SF1->F1_MOEDA
+		nTxMoeda  := SF1->F1_TXMOEDA
+		nTaxa     := SF1->F1_TXMOEDA
+
+		SA2->( dbSetOrder(1) )
+		SA2->( dbSeek(xFilial("SA2")+SF1->F1_FORNECE+SF1->F1_LOJA) )
+
+		//ÚÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ¿
+		//³ Movimenta a Regua de processamento  ³
+		//ÀÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÙ
+		If !lAuto
+			IncProc()
+		Endif
+		lAchou	:=	.T.
+		dbSelectArea("SD1")
+		dbSeek(xFilial("SD1")+SF1->F1_DOC+SF1->F1_SERIE+SF1->F1_FORNECE+SF1->F1_LOJA)
+		If Found()
+			While !eof() .and. Alltrim(SF1->F1_ESPECIE) <>  Alltrim(SD1->D1_ESPECIE) .And. ;
+					SF1->F1_DOC+SF1->F1_SERIE+SF1->F1_FORNECE+SF1->F1_LOJA == D1_DOC+D1_SERIE+D1_FORNECE+D1_LOJA
+				DbSkip()
+				Loop
+			Enddo
+			If Alltrim(SF1->F1_ESPECIE) ==  Alltrim(SD1->D1_ESPECIE) .And. ;
+					SF1->F1_DOC+SF1->F1_SERIE+SF1->F1_FORNECE+SF1->F1_LOJA == D1_DOC+D1_SERIE+D1_FORNECE+D1_LOJA
+				lAchou	:=	.T.
+			EndIf
+		EndIf
+
+		If Found()
+
+			cTES     := "   "
+			cCFO     := "   "
+
+			While !Eof() .and. D1_FILIAL == xFilial("SD1");
+					.and. D1_DOC == SF1->F1_DOC;
+					.and. D1_SERIE == SF1->F1_SERIE;
+					.and. D1_FORNECE == SF1->F1_FORNECE;
+					.and. D1_LOJA == SF1->F1_LOJA
+
+				If Alltrim(SF1->F1_ESPECIE) <>  Alltrim(SD1->D1_ESPECIE)
+					dbSkip()
+					Loop
+				EndIf
+
+				cTES     := SD1->D1_TES
+				cCFO     := SD1->D1_CF
+				aLivro   := {}
+				aBase	 := {}
+				aVImp	 := {}
+				aAliq	 := {}
+				aExentas := { 0,0 }
+
+				While !Eof() .and. D1_FILIAL == xFilial("SD1");
+						.and. D1_DOC == SF1->F1_DOC;
+						.and. D1_SERIE == SF1->F1_SERIE;
+						.and. D1_FORNECE == SF1->F1_FORNECE;
+						.and. D1_LOJA == SF1->F1_LOJA;
+						.and. D1_CF == cCFO
+
+					If Alltrim(SF1->F1_ESPECIE) <>  Alltrim(SD1->D1_ESPECIE)
+						dbSkip()
+						Loop
+					EndIf
+
+					nTotImpItem := 0
+					nTotBase    := 0
+					cI := "1"
+					nI := 1
+					While .T.
+						If  SD1->(Type(EVAL(bBaseD1,cI))) # "U"
+							If nI > Len(aBase)
+								Aadd(aBase, SD1->&(EVAL(bBaseD1,cI)))
+								Aadd(aVImp, SD1->&(EVAL(bVImpD1,cI)))
+								Aadd(aAliq, SD1->&(EVAL(bAliqD1,cI)))
+							Else
+								aBase[nI] += SD1->&(EVAL(bBaseD1,cI))
+								aVImp[nI] += SD1->&(EVAL(bVImpD1,cI))
+								aAliq[nI] := IIf(aAliq[nI]==0,SD1->&(EVAL(bAliqD1,cI)),aAliq[nI])
+							EndIf
+							nTotImpItem += SD1->&(EVAL(bVImpD1,cI))
+							nTotBase	+= aBase[nI]
+							cI	:=	Soma1(cI,1)
+							nI	++
+						Else
+							Exit
+						EndIf
+					Enddo
+
+					If nTotImpItem <= 0
+						aExentas[1] := aExentas[1] + xMoeda(SD1->D1_TOTAL-SD1->D1_VALDESC,SF1->F1_MOEDA,1,SF1->F1_DTDIGIT,,nTaxa)
+					EndIf
+
+					dbSelectArea("SF4")
+					dbSetOrder(1)
+					dbSeek(xFilial("SF4")+SD1->D1_TES)
+					If Found()
+						// Calcula o Livro
+						aLivro := GetBook( @aGetBook, aImpVarSD1, "C", nTaxa, aLivro, "E" )
+					EndIf
+
+					dbSelectArea("SD1")
+					dbSkip()
+				End
+
+				If Len(aLivro) > 0
+
+					If aBase[1]+aBase[2]+aBase[3]+aBase[4]+aBase[5]+aBase[6] > 0 .or.;
+							aExentas[1] > 0
+
+						dbSelectArea("SF3")
+						dbSetOrder(1)
+						dbSeek(xFilial("SF3")+DTOS(SF1->F1_DTDIGIT)+SF1->F1_DOC+SF1->F1_SERIE+SF1->F1_FORNECE+SF1->F1_LOJA+cCFO)
+						If ! Found()
+							RecLock("SF3",.T.)
+							Replace F3_FILIAL		With xFilial("SF3")
+							Replace F3_ENTRADA	With SF1->F1_DTDIGIT
+							Replace F3_NFISCAL   With SF1->F1_DOC
+							Replace F3_SERIE	 	With SF1->F1_SERIE
+							Replace F3_CLIEFOR	With SF1->F1_FORNECE
+							Replace F3_LOJA      With SF1->F1_LOJA
+							Replace F3_ESTADO    With SF1->F1_EST
+							Replace F3_EMISSAO   With SF1->F1_EMISSAO
+							Replace F3_ESPECIE   With SF1->F1_ESPECIE
+							Replace F3_VALCONT   With xMoeda(SF1->F1_VALBRUT,SF1->F1_MOEDA,1,SF1->F1_DTDIGIT,,nTaxa)
+							Replace F3_REPROC    With "S"
+							Replace F3_TES	      With cTES
+							Replace F3_CFO       With cCFO
+							Replace F3_TIPOMOV   With "V"
+							Replace F3_TIPO		With SF1->F1_TIPO
+							MsUnLock()
+						EndIf
+						if SF3->F3_REPROC != "N"
+							RecLock("SF3",.F.)
+							cI := "1"
+							nI := 1
+							While .T.
+								If  SF3->(Type(EVAL(bBaseF3,cI))) # "U"
+									Replace &(EVAL(bBaseF3,cI))  With xMoeda(aBase[nI],SF1->F1_MOEDA,1,SF1->F1_DTDIGIT,,SF1->F1_TXMOEDA)
+									Replace &(EVAL(bVImpF3,cI))  With xMoeda(aVImp[nI],SF1->F1_MOEDA,1,SF1->F1_DTDIGIT,,SF1->F1_TXMOEDA)
+									Replace &(EVAL(bAliqF3,cI))  With aAliq[nI]
+									cI := Soma1(cI,1)
+									nI ++
+								Else
+									Exit
+								EndIf
+							Enddo
+							Replace F3_EXENTAS	With aExentas[1]
+							Replace F3_OUTRAS		With aExentas[2]
+							If SF1->( Deleted() )
+								Replace F3_CANCEL	With "S"
+							EndIf
+							MsUnLock()
+						EndIf
+
+						//ÚÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ¿
+						//³ Ponto de entrada, na gravacao do livro            ³
+						//³ fiscal															³
+						//ÀÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÙ
+						If ExistBlock("M930SF1")
+							ExecBlock("M930SF1",.f.,.f.)
+						EndIf
+					EndIf
+				EndIf
+				dbSelectArea("SD1")
+			End
+		EndIf
+		dbSelectArea("SF1")
+		dbSkip()
+	End
+
+	//ÚÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ¿
+	//³ Cria Indice Condicional de SF1 para processar entradas.	 	  ³
+	//ÀÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÙ
+	aInd := {}
+	cIndexSF2 := CriaTrab(Nil,.F.)
+	AADD(aInd,cIndexSF2)
+	dbSelectArea("SF2")
+	cKeySF2 := "F2_FILIAL+DTOS(F2_EMISSAO)"
+	cFiSF2 := 'F2_TIPO=="C".Or.F2_TIPO=="N".Or.F2_TIPO==" "'
+	#IFDEF TOP
+		cFiSF2 +=" .And. DTOS(F2_Emissao)= '"+DTOS(MV_PAR01)+"' .And. DTOS(F2_EMISSAO) <= '"+DTOS(MV_PAR02)+" ' "
+	#ELSE
+		cFiSF2 +='.And. DTOS(F2_EMISSAO) >= "'+DTOS(MV_PAR01)+'" .And. DTOS(F2_EMISSAO) <= "'+DTOS(MV_PAR02)+'"'
+	#ENDIF
+
+
+	IndRegua("SF2",cIndexSF2,cKeySF2,,cFisF2,"Seleccionando Registros...")
+
+	nIndexSF2 := RetIndex("SF2")
+	dbSelectArea("SF2")
+
+	#IFNDEF TOP
+		dbSetIndex(cIndexSF2+OrdBagExt())
+	#ENDIF
+	dbSetOrder(nIndexSF2+1)
+	dbGoTop()
+
+	//ÚÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ¿
+	//³ Cria Indice Condicional de SF2 para processar entradas.	 	  ³
+	//ÀÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÙ
+	aInd := {}
+	cIndexSD2 := CriaTrab(Nil,.F.)
+	AADD(aInd,cIndexSD2)
+	dbSelectArea("SD2")
+	cKeySD2 := "D2_FILIAL+D2_DOC+D2_SERIE+D2_CLIENTE+D2_LOJA+D2_CF"
+
+	IndRegua("SD2",cIndexSD2,cKeySD2,,,"Seleccionando Registros...")
+
+	nIndexSD2 := RetIndex("SD2")
+	dbSelectArea("SD2")
+
+	#IFNDEF TOP
+		dbSetIndex(cIndexSD2+OrdBagExt())
+	#ENDIF
+	dbSetOrder(nIndexSD2+1)
+	dbGoTop()
+
+	//ÚÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ¿
+	//³ Inicia reprocessamento                             ³
+	//ÀÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÙ
+	#IFDEF WINDOWS
+		If !lAuto
+			ProcRegua( SF2->(RecCount()) )
+		Endif
+	#ENDIF
+
+	dbSelectArea("SF2")
+	dbSeek(xFilial("SF2")+DTOS(mv_par01),.T.)
+	While !Eof() .and. F2_FILIAL == xFilial("SF2") ;
+			.and. DTOS(F2_EMISSAO) >= DTOS(mv_par01) ;
+			.and. DTOS(F2_EMISSAO) <= DTOS(mv_par02)
+
+		cNFiscal  := SF2->F2_DOC
+		cSerie    := SF2->F2_SERIE
+		cEspecie  := SF2->F2_ESPECIE
+		cTipo		 := SF2->F2_ESPECIE
+		dDEmissao := SF2->F2_EMISSAO
+		nMoedaCor := SF2->F2_MOEDA
+		nTxMoeda  := SF2->F2_TXMOEDA
+		nTaxa     := SF2->F2_TXMOEDA
+
+		SA1->( dbSetOrder(1) )
+		SA1->( dbSeek(xFilial("SA1")+SF2->F2_CLIENTE+SF2->F2_LOJA) )
+
+		//ÚÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ¿
+		//³ Movimenta a Regua de processamento  ³
+		//ÀÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÙ
+		If !lAuto
+			IncProc()
+		Endif
+		lAchou   := .F.
+		dbSelectArea("SD2")
+		dbSeek(xFilial("SD2")+SF2->F2_DOC+SF2->F2_SERIE+SF2->F2_CLIENTE+SF2->F2_LOJA)
+		If Found()
+			While !eof() .and. Alltrim(SF2->F2_ESPECIE) <>  Alltrim(SD2->D2_ESPECIE) .And. ;
+					SF2->F2_DOC+SF2->F2_SERIE+SF2->F2_CLIENTE+SF2->F2_LOJA == D2_DOC+D2_SERIE+D2_CLIENTE+D2_LOJA
+				DbSkip()
+				Loop
+			EndDo
+			If Alltrim(SF2->F2_ESPECIE) ==  Alltrim(SD2->D2_ESPECIE) .And. ;
+					SF2->F2_DOC+SF2->F2_SERIE+SF2->F2_CLIENTE+SF2->F2_LOJA == D2_DOC+D2_SERIE+D2_CLIENTE+D2_LOJA
+				lAchou	:=	.T.
+			EndIf
+		EndIf
+
+		If lAchou
+
+			cCFO  := "   "
+			cTES  := "   "
+
+			While !Eof() .and. D2_FILIAL == xFilial("SD2");
+					.and. D2_DOC == SF2->F2_DOC;
+					.and. D2_SERIE == SF2->F2_SERIE;
+					.and. D2_CLIENTE == SF2->F2_CLIENTE;
+					.and. D2_LOJA == SF2->F2_LOJA
+
+				If Alltrim(SF2->F2_ESPECIE) <>  Alltrim(SD2->D2_ESPECIE)
+					dbSkip()
+					Loop
+				EndIf
+
+				cCFO := SD2->D2_CF
+				cTES := SD2->D2_TES
+
+				aLivro   := {}
+				aBase    := {}
+				aVImp    := {}
+				aAliq    := {}
+				aExentas := { 0,0 }
+
+				While !Eof() .and. D2_FILIAL == xFilial("SD2");
+						.and. D2_DOC == SF2->F2_DOC;
+						.and. D2_SERIE == SF2->F2_SERIE;
+						.and. D2_CLIENTE == SF2->F2_CLIENTE;
+						.and. D2_LOJA == SF2->F2_LOJA;
+						.and. D2_CF == cCFO
+
+					If Alltrim(SF2->F2_ESPECIE) <>  Alltrim(SD2->D2_ESPECIE)
+						dbSkip()
+						Loop
+					EndIf
+
+					nTotImpItem := 0
+					nTotBase    := 0
+					cI := "1"
+					nI := 1
+					While .T.
+						If  SD2->(Type(EVAL(bBaseD2,cI))) # "U"
+							If nI > Len(aBase)
+								Aadd(aBase, SD2->&(EVAL(bBaseD2,cI)))
+								Aadd(aVImp, SD2->&(EVAL(bVImpD2,cI)))
+								Aadd(aAliq, SD2->&(EVAL(bAliqD2,cI)))
+							Else
+								aBase[nI] += SD2->&(EVAL(bBaseD2,cI))
+								aVImp[nI] += SD2->&(EVAL(bVImpD2,cI))
+								aAliq[nI] := IIf(aAliq[nI]==0,SD2->&(EVAL(bAliqD2,cI)),aAliq[nI])
+							EndIf
+							nTotImpItem += SD2->&(EVAL(bVImpD2,cI))
+							nTotBase	+= aBase[nI]
+							cI := Soma1(cI,1)
+							nI ++
+						Else
+							Exit
+						EndIf
+					EndDo
+
+					If nTotImpItem <= 0
+						aExentas[1] := aExentas[1] + xMoeda(SD2->D2_TOTAL - SD2->D2_DESCON ,SF2->F2_MOEDA,1,SF2->F2_EMISSAO,,nTaxa)
+					EndIf
+
+					dbSelectArea("SF4")
+					dbSetOrder(1)
+					dbSeek(xFilial("SF4")+SD2->D2_TES)
+					If Found()
+						// Calcula o Livro
+						aLivro := GetBook( @aGetBook, aImpVarSD2, "V", nTaxa, aLivro, "S" )
+					EndIf
+
+					dbSelectArea("SD2")
+					dbSkip()
+				End
+
+				If Len(aLivro) > 0
+					If aBase[1]+aBase[2]+aBase[3]+aBase[4]+aBase[5]+aBase[6] > 0 .or.;
+							aExentas[1] > 0
+
+						dbSelectArea("SF3")
+						dbSetOrder(1)
+						dbSeek(xFilial("SF3")+DTOS(SF2->F2_EMISSAO)+SF2->F2_DOC+SF2->F2_SERIE+SF2->F2_CLIENTE+SF2->F2_LOJA+cCFO)
+						If ! Found()
+							RecLock("SF3",.T.)
+							Replace F3_FILIAL		With xFilial("SF3")
+							Replace F3_ENTRADA	With SF2->F2_EMISSAO
+							Replace F3_NFISCAL   With SF2->F2_DOC
+							Replace F3_SERIE	 	With SF2->F2_SERIE
+							Replace F3_CLIEFOR	With SF2->F2_CLIENTE
+							Replace F3_LOJA      With SF2->F2_LOJA
+							Replace F3_ESTADO    With SF2->F2_EST
+							Replace F3_VALCONT   With xMoeda(SF2->F2_VALBRUT,SF2->F2_MOEDA,1,SF2->F2_EMISSAO,,nTaxa)
+							Replace F3_EMISSAO   With SF2->F2_EMISSAO
+							Replace F3_ESPECIE   With SF2->F2_ESPECIE
+							Replace F3_REPROC    With "S"
+							Replace F3_TES       With cTES
+							Replace F3_CFO       With cCFO
+							Replace F3_TIPOMOV   With "V"
+							Replace F3_TIPO		With SF2->F2_TIPO
+							MsUnLock()
+						EndIf
+						if SF3->F3_REPROC != "N"
+							RecLock("SF3",.F.)
+							cI := "1"
+							nI := 1
+							While .T.
+								If SF3->(Type(EVAL(bBaseF3,cI))) # "U"
+									Replace &(EVAL(bBaseF3,cI))  With xMoeda(aBase[nI],SF2->F2_MOEDA,1,SF2->F2_EMISSAO,,SF2->F2_TXMOEDA)
+									Replace &(EVAL(bVImpF3,cI))  With xMoeda(aVImp[nI],SF2->F2_MOEDA,1,SF2->F2_EMISSAO,,SF2->F2_TXMOEDA)
+									Replace &(EVAL(bAliqF3,cI))  With aAliq[nI]
+									cI := Soma1(cI,1)
+									nI ++
+								Else
+									Exit
+								EndIf
+							EndDo
+							Replace F3_EXENTAS	With aExentas[1]
+							Replace F3_OUTRAS		With aExentas[2]
+							If SF2->( Deleted() )
+								Replace F3_CANCEL	With "S"
+							EndIf
+							MsUnLock()
+						EndIf
+						//ÚÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ¿
+						//³ Ponto de entrada, na gravacao do livro            ³
+						//³ fiscal															³
+						//ÀÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÙ
+						If ExistBlock("M930SF2")
+							ExecBlock("M930SF2",.f.,.f.)
+						EndIf
+
+					EndIf
+				EndIf
+				dbSelectArea("SD2")
+			End
+		EndIf
+		dbSelectArea("SF2")
+		dbSkip()
+	End
+
+	dbSelectArea("SD2")
+	RetIndex("SD2")
+	FErase( cIndexSD2+OrdBagExt())
+
+	dbSelectArea("SF2")
+	RetIndex("SF2")
+	FErase( cIndexSF2+OrdBagExt())
+
+	dbSelectArea("SD1")
+	RetIndex("SD1")
+	FErase( cIndexSD1+OrdBagExt())
+
+	dbSelectArea("SF1")
+	RetIndex("SF1")
+	FErase( cIndexSF1+OrdBagExt())
+
+EndIf
+
+dbSelectArea("SF3")
+dbGoTop()
+
+
+Static Function A930DelSF3(cExprcF3,cTipoMov)
+
+Local nRegs   := 0
+Local ni      := 0
+Local cCompl  := ""
+Local cString := ""
+Local nRegSf3 := 0
+
+If cPaisLoc=="BRA"
+	#IFDEF TOP
+		If ( TcSrvType()!="AS/400" )
+			nRegs := SF3->(RecCount())
+			cString := "DELETE FROM "+RetSqlName("SF3")+" "
+			cString += "WHERE F3_FILIAL='"+xFilial("SF3")+"' AND "
+			cString += "F3_REPROC <> 'N' AND "
+			cString += "F3_SERIE <> 'ECF' AND "
+			cString += "F3_DTLANC = '"+Dtos(Ctod(""))+"' AND "
+			cString += "F3_DTCANC = '"+Dtos(Ctod(""))+"' AND "
+			cString += "F3_ENTRADA >= '"+Dtos(MV_PAR01)+"' AND "
+			cString += "F3_ENTRADA <= '"+Dtos(MV_PAR02)+"' AND "
+			If ( cTipoMov == "1" )
+				cString += "F3_CFO < '5" +Space(Len(SF3->F3_CFO)-1)+"' AND "
+			Else
+				cString += "F3_CFO >= '5"+Space(Len(SF3->F3_CFO)-1)+"' AND "
+			EndIf
+			For ni := 1 to nRegs STEP 1024
+				cCompl := "R_E_C_N_O_ >= "+Str(ni,10,0)+" AND R_E_C_N_O_ <= "+Str(ni+1023,10,0)
+				TcSqlExec(cString+cCompl)
+			Next Ni
+			dbSelectArea("SF3")
+			dbCloseArea()
+			ChkFile("SF3",.F.)
+		Else
+	#ENDIF
+		dbSelectArea("SF3")
+		dbSetOrder(1)
+		MsSeek(xFilial()+DTOS(mv_par01),.t.)
+
+		While !eof() .and. xFilial()==SF3->F3_FILIAL ;
+				.and. SF3->F3_ENTRADA >= mv_par01 ;
+				.and. SF3->F3_ENTRADA <= mv_par02
+
+			nRegSf3 := 0
+
+			IF &cExprcF3.
+				//ÚÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ¿
+				//³ Se um dos campos F3_DTLANC ou F3_DTCANC, existirem e estiverem ³
+				//³ preenchido, nao executa reprocessamento deste registro.			 ³
+				//ÀÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÙ
+				If !empty(SF3->F3_DTLANC) .or. !empty(SF3->F3_DTCANC)
+					dbskip()
+					Loop
+				EndIf
+
+				If ( SF3->F3_REPROC $ "S " .And. !(SF3->F3_SERIE=="ECF") )
+					nRegs ++
+					dbSkip()
+					nRegSf3 := RecNo()
+					dbSkip(-1)
+					RecLock("SF3",.F.,.T.)
+					SF3->F3_FILIAL := Chr(31)+Chr(31)
+					dbDelete()
+					MSUnlock()
+					MsGoto(nRegSf3)
+				EndIf
+			EndIf
+			If nRegSf3 == 0		// verifica se ja executou o dbSkip()
+				dbSkip()
+			EndIf
+		EndDo
+		#IFDEF TOP
+		EndIf
+		#ENDIF
+	dbSelectArea("SF"+cTipoMov)
+	MsSeek(xFilial())
+
+Else  //cPaisLoc != "BRA"
+
+	dbSelectArea("SF3")
+	dbSetOrder(1)
+	MsSeek(xFilial()+DTOS(mv_par01),.t.)
+
+	While !eof() .and. xFilial()==SF3->F3_FILIAL ;
+			.and. SF3->F3_ENTRADA >= mv_par01 ;
+			.and. SF3->F3_ENTRADA <= mv_par02
+
+		//ÚÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ¿
+		//³ Se o campo F3_DTLANC existir e estiver preenchido, nao executa ³
+		//³ reprocessamento deste registro.											 ³
+		//ÀÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÙ
+		
+		If !(SF3->F3_REPROC $ "S " )
+			dbskip()
+			Loop
+		EndIf	
+		
+		
+		If SF3->(Fieldpos("F3_DTLANC")) <> 0
+			If !empty(SF3->F3_DTLANC)
+				dbskip()
+				Loop
+			EndIf
+		EndIf
+
+	
+
+		If mv_par03 == 1
+			If ( SF3->F3_TIPOMOV == "C" ) .and. Empty(SF3->F3_DTCANC)
+				RecLock("SF3",.F.,.T.)
+				dbDelete()
+				MSUnlock()
+			EndIf
+		Else
+			If ( SF3->F3_TIPOMOV == "V" ) .and. Empty(SF3->F3_DTCANC)
+				RecLock("SF3",.F.,.T.)
+				dbDelete()
+				MSUnlock()
+			EndIf
+		EndIf
+		dbSkip()
+	EndDo
+EndIf
+RETURN(NIL)
+
+/*
+ÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜ
+±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±
+±±ÉÍÍÍÍÍÍÍÍÍÍÑÍÍÍÍÍÍÍÍÍÍËÍÍÍÍÍÍÍÑÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍËÍÍÍÍÍÍÑÍÍÍÍÍÍÍÍÍÍÍÍÍ»±±
+±±ºPrograma  ³AjustaSX1 ºAutor  ³Mary C. Hergert     º Data ³ 28/02/2005  º±±
+±±ÌÍÍÍÍÍÍÍÍÍÍØÍÍÍÍÍÍÍÍÍÍÊÍÍÍÍÍÍÍÏÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÊÍÍÍÍÍÍÏÍÍÍÍÍÍÍÍÍÍÍÍÍ¹±±
+±±ºDesc.     ³Ajusta grupo de perguntas                                   º±±
+±±ÌÍÍÍÍÍÍÍÍÍÍØÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍ¹±±
+±±ºUso       |MATA930                                                     º±±
+±±ÈÍÍÍÍÍÍÍÍÍÍÏÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍ¼±±
+±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±
+ßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßß
+*/
+
+Static Function AjustaSX1()    
+
+Local aHelpP  := {}
+Local aHelpE  := {}
+Local aHelpS  := {}  
+
+// mv_par12 - Da Filial?
+Aadd( aHelpP, "Informe a filial inicial para o         " )
+Aadd( aHelpP, "reprocessamento.                        " )
+Aadd( aHelpP, "                                        " )
+Aadd( aHelpE, "Informe a filial inicial para o         " )
+Aadd( aHelpE, "reprocessamento.                        " )
+Aadd( aHelpE, "                                        " )
+Aadd( aHelpS, "Informe a filial inicial para o         " )
+Aadd( aHelpS, "reprocessamento.                        " )
+Aadd( aHelpS, "                                        " )
+PutSX1("MTA930"	,"12","Da Filial","Da Filial","Da Filial","mv_chc","C",2,0,0,"G"," "," "," "," ","mv_par12"," "," "," "," "," "," "," "," "," "," "," "," "," "," "," "," ",aHelpP,aHelpE,aHelpS) 
+
+// mv_par13 - Ate Filial?
+Aadd( aHelpP, "Informe a filial final para o           " )
+Aadd( aHelpP, "reprocessamento.                        " )
+Aadd( aHelpP, "                                        " )
+Aadd( aHelpE, "Informe a filial final para o           " )
+Aadd( aHelpE, "reprocessamento.                        " )
+Aadd( aHelpE, "                                        " )
+Aadd( aHelpS, "Informe a filial final para o           " )
+Aadd( aHelpS, "reprocessamento.                        " )
+Aadd( aHelpS, "                                        " )
+PutSX1("MTA930"	,"13","Ate a Filial","Ate a Filial","Ate a Filial","mv_chd","C",2,0,0,"G"," "," "," "," ","mv_par13"," "," "," "," "," "," "," "," "," "," "," "," "," "," "," "," ",aHelpP,aHelpE,aHelpS) 

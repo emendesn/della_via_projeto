@@ -1,0 +1,2939 @@
+#include "PROTHEUS.CH"
+#INCLUDE "DBINFO.CH"
+/*
+ÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜ
+±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±
+±±ÚÄÄÄÄÄÄÄÄÄÄÂÄÄÄÄÄÄÄÄÄÄÂÄÄÄÄÄÄÄÂÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÂÄÄÄÄÄÄÂÄÄÄÄÄÄÄÄÄÄ¿±±
+±±³Fun‡„o    ³ FINA100  ³ Autor ³ Wagner Xavier         ³ Data ³ 03/06/92 ³±±
+±±ÃÄÄÄÄÄÄÄÄÄÄÅÄÄÄÄÄÄÄÄÄÄÁÄÄÄÄÄÄÄÁÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÁÄÄÄÄÄÄÁÄÄÄÄÄÄÄÄÄÄ´±±
+±±³Descri‡„o ³ Programa de manuten‡„o no cadastro de Movimento de Caixa   ³±±
+±±ÃÄÄÄÄÄÄÄÄÄÄÅÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ´±±
+±±³Sintaxe   ³ FINA100()                                                  ³±±
+±±ÃÄÄÄÄÄÄÄÄÄÄÅÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ´±±
+±±³ Uso      ³ SIGAFIN                                                    ³±±
+±±ÃÄÄÄÄÄÄÄÄÄÄÁÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ´±±
+±±³                         ATUAIZACOES SOFRIDAS                         ³±±
+±±ÃÄÄÄÄÄÄÄÄÄÄÄÄÂÄÄÄÄÄÄÄÄÂÄÄÄÄÄÄÂÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ´±±
+±±³Programador ³ Data   ³ BOPS ³           Motivo da Alteracao            ³±±
+±±ÃÄÄÄÄÄÄÄÄÄÄÄÄÅÄÄÄÄÄÄÄÄÅÄÄÄÄÄÄÅÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ´±±
+±±³Sergio F.   ³26.07.02³016836³Substituicao da IndRegua pela FilBrowse,  ³±±
+±±³            ³        ³      ³somente Localizacoes.                     ³±±
+±±³Edilson     ³21.08.02³xxxxxx³Implementada a pesquisa da tabela SX5 na  ³±±
+±±³            ³        ³      ³funcao IsCaixaLoja(), utilizando a funcao ³±±
+±±³            ³        ³      ³xFilial, prevendo casos em que a tabela   ³±±
+±±³            ³        ³      ³SX5 encontra-se exclusivo.                ³±±
+±±ÀÄÄÄÄÄÄÄÄÄÄÄÄÁÄÄÄÄÄÄÄÄÁÄÄÄÄÄÄÁÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÙ±±
+±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±
+ßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßß
+*/
+Function FinA100
+#INCLUDE "FINA100.CH"
+Local cPesquisa := "AxPesqui"
+Set Key VK_F12 To fA100Perg()
+
+pergunte("AFI100",.F.)
+PRIVATE cPerg := "AFI100"
+PRIVATE cArquivo := " "
+PRIVATE lExterno := .F.
+Private cCondicao := ""
+Private aIndex     := {}
+Private bFiltraBrw
+
+If ExistBlock("F100FBRW")
+	cCondicao := ExecBlock("F100FBRW",.F.,.F.)
+EndIf
+
+If cPaisLoc <> "BRA"
+	DbSelectArea("SE5")
+	DbSetOrder(3)
+	cCondicao  := "SE5->E5_FILIAL == '"+xFilial('SE5')+"'.And. SE5->E5_BANCO <> '"+Space(TamSX3('E5_BANCO')[1])+"'"
+	cPesquisa := "PesqBrw()"
+Endif
+
+If !Empty(cCondicao)
+	bFiltraBrw := {|| FilBrowse("SE5",@aIndex,@cCondicao)}
+	Eval( bFiltraBrw )
+EndIf
+
+PRIVATE aRotina:={ { OemToAnsi(STR0001),cPesquisa , 0 , 1},;  // "Localizar"
+	{ OemToAnsi(STR0064),"AxVisual" , 0 , 2},;  // "Visualizar"
+	{ OemToAnsi(STR0002),"fA100Pag" , 0 , 3},;  // "Pagar"
+	{ OemToAnsi(STR0003),"fA100Rec" , 0 , 3},;  // "Receber"
+	{ OemToAnsi(STR0004),"fA100Can" , 0 , 5},;  // "Excluir"
+	{ OemToAnsi(STR0056),"fA100Can" , 0 , 5,53},;  // "Cancelar"
+	{ OemToAnsi(STR0005),"fA100Tran", 0 , 3},;  //"Transf"
+	{ OemToAnsi(STR0006),"fA100Est" , 1 , 5},;  // "eSt.trnsf"
+	{ OemToAnsi(STR0007),"fA100Clas", 0 , 5},;  // "Classif"
+	{ OemToAnsi(STR0038),"F100Legenda", 0 , 6} } //"Legenda"
+//ÚÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ¿
+//³ Define o cabe‡alho da tela de atualiza‡”es						  ³
+//ÀÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÙ
+If CtbInUse()
+	Aadd(aRotina, { STR0054,"FA100Rateio", 0 , 1}) //"Vis R&ateio"
+Endif
+
+PRIVATE cRecPag	:= " "
+PRIVATE cCadastro := OemToAnsi(STR0009)  //"Movimenta‡„o Banc ria"
+PRIVATE cLote
+PRIVATE nUsado 	:= 0
+PRIVATE nValRat	:= 0
+PRIVATE oValRat
+
+PRIVATE nQtdTot		:= 0		//Utilizado no Rateio Externo do SIGACTB.
+LoteCont( "FIN" )
+
+//ÚÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ¿
+//³ Ponto de entrada para ser utilizado antes do Browse          ³
+//ÀÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÙ
+If ExistBlock("F100BROW")
+	ExecBlock("F100BROW",.F.,.F.)
+EndIf
+
+//ÚÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ¿
+//³ Endere‡a a fun‡„o de BROWSE											  ³
+//ÀÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÙ
+DbSelectArea("SE5")
+DbSetOrder(1)
+mBrowse( 6, 1,22,75,"SE5",,,,,,F100Legenda())
+
+If !Empty(cCondicao)
+	EndFilBrw("SE5",aIndex)
+	Retindex("SE5")
+Endif
+
+Return
+
+/*
+±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±
+±±ÚÄÄÄÄÄÄÄÄÄÄÂÄÄÄÄÄÄÄÄÄÄÂÄÄÄÄÄÄÄÂÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÂÄÄÄÄÄÄÂÄÄÄÄÄÄÄÄÄÄ¿±±
+±±³Fun‡„o    ³FA100Pag  ³ Autor ³ Wagner Xavier         ³ Data ³ 03/06/92 ³±±
+±±ÃÄÄÄÄÄÄÄÄÄÄÅÄÄÄÄÄÄÄÄÄÄÁÄÄÄÄÄÄÄÁÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÁÄÄÄÄÄÄÁÄÄÄÄÄÄÄÄÄÄ´±±
+±±³Descri‡„o ³ Programa para inclusao de Movimento de Caixa               ³±±
+±±ÃÄÄÄÄÄÄÄÄÄÄÅÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ´±±
+±±³Sintaxe   ³ FA100Pag(ExpC1,ExpN1,ExpN2)                                ³±±
+±±ÃÄÄÄÄÄÄÄÄÄÄÅÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ´±±
+±±³Parametros³ ExpC1 = Alias do arquivo                                   ³±±
+±±³          ³ ExpN1 = Numero do registro                                 ³±±
+±±³          ³ ExpN2 = Numero da opcao selecionada                        ³±±
+±±ÃÄÄÄÄÄÄÄÄÄÄÅÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ´±±
+±±³ Uso      ³ FINA100                                                    ³±±
+±±ÀÄÄÄÄÄÄÄÄÄÄÁÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÙ±±
+±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±
+ßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßß
+*/
+Function fA100Pag(cAlias,nReg,nOpc)
+Local nOpca
+Local lPadrao,cPadrao,nHdlPrv:=0,nTotal:=0
+Local lMostra,lAglutina
+Local cArqRat
+Local lFa100Pag := Existblock("FA100PAG")
+Local lMovBco   := .T.
+Local nMoeda   :=1
+Local cSeq
+Local aButtons
+
+pergunte("AFI100",.F.)
+
+PRIVATE bPMSDlgMB	:= {||PmsDlgMB(3,M->E5_PROJPMS,M->E5_HISTOR,"P")}
+PRIVATE aRatAJE		:= {}
+
+PRIVATE aHeader:={}
+Private nSaveSx8Len := GetSx8Len()
+Private cSeqCv4		:= ""
+
+If nOpc == 3 // inclusao
+	cSeqCv4 := GetSx8Num("CV4", "CV4_SEQUEN")
+EndIf	
+
+cRecPag:="P"
+dbSelectArea( cAlias )
+
+//ÚÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ¿
+//³ Inclui o botao de Apontamento no SIGAPMS                   ³
+//ÀÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÙ
+If IntePms()
+	aButtons := {{'PROJETPMS',{|| Eval(bPmsDlgMB) },STR0045,STR0062}} //"Gerenciamento de Projetos" //"Projetos"
+EndIf
+	
+nOpca := AxInclui(cAlias,nReg,nOpc, , , ,"Fa100Bco() .And. (M->E5_RATEIO=='N' .Or. FA050TudCT("+Str(nOpc,2)+",'516','FINA100'"+")).And.PcoVldLan('000007','03','FINA100')",,,aButtons)
+If nOpca == 1
+	//ÚÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ¿
+	//³ Posiciona arquivo Naturezas											³
+	//ÀÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÙ
+	dbSelectArea("SED")
+	dbSeek(xFilial("SED")+SE5->E5_NATUREZ)
+
+	//ÚÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ¿
+	//³ Grava o Identificador de <P>agamento								  ³
+	//ÀÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÙ
+	RecLock("SE5")
+	SE5->E5_RECPAG  := cRecPag
+	SE5->E5_DTDIGIT := dDataBase
+	SE5->E5_DTDISPO := SE5->E5_DATA
+	SE5->E5_FILORIG := cFilAnt
+
+   //Nas localizacoes, as movimentacoes sao feitas na moeda do BANCO, por isso
+   //tanto nas transferencias quanto no PAGAR/RECEBER, e' gravado o valor em moeda 1
+   //no campo E5_vlmoed2 para facilitar a contabilizacao. Bruno 22/08/00 22:01
+
+   If cPaisLoc # "BRA"
+      SA6->(DbSetOrder(1))
+      SA6->(dbSeek(xFilial()+SE5->E5_BANCO+SE5->E5_AGENCIA+SE5->E5_CONTA))
+      nMoeda   := Max(IIf(Type("SA6->A6_MOEDAP")=="U",SA6->A6_MOEDA,If(SA6->A6_MOEDAP>0,SA6->A6_MOEDAP,SA6->A6_MOEDA)),1)
+      If SE5->(FieldPos('E5_TXMOEDA')) > 0 .And. SE5->E5_TXMOEDA > 0
+			SE5->E5_VLMOED2   := xMoeda(SE5->E5_VALOR,nMoeda,1,SE5->E5_DATA,,SE5->E5_TXMOEDA)
+		Else
+			SE5->E5_VLMOED2   := xMoeda(SE5->E5_VALOR,nMoeda,1,SE5->E5_DATA)
+		Endif
+   Endif
+	MsUnlock()
+
+	//ÚÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ¿
+	//³ Grava o Novo Cheque emitido											  ³
+	//ÀÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÙ
+	IF SE5->E5_MOEDA $ "C1şC2şC3şC4şC5/CH"
+		fA100Cheq("FINA100PAG")
+	Endif
+
+	//ÚÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ¿
+	//³ Se for cheque pre-datado, gera titulos de cheques 			  ³
+	//ÀÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÙ
+	IF ( SE5->E5_MOEDA $ "C1şC2şC3şC4şC5" .And. SE5->E5_VENCTO>SE5->E5_DATA .And.;
+		!Empty(SE5->E5_NUMCHEQ) .And. Substr(SE5->E5_NUMCHEQ,1,1) != "*")
+		Reclock("SE5")
+		SE5->E5_TIPODOC := "CD"
+		MsUnlock()
+		fA100TitPg()
+		Reclock("SE5")
+		SE5->E5_PREFIXO:=SE2->E2_PREFIXO
+		SE5->E5_NUMERO :=SE2->E2_NUM
+		SE5->E5_PARCELA:=SE2->E2_PARCELA
+		SE5->E5_TIPO	:=SE2->E2_TIPO
+		SE5->E5_FORNECE:=SE2->E2_FORNECE
+		SE5->E5_CLIFOR :=SE2->E2_FORNECE
+		SE5->E5_LOJA   :=SE2->E2_LOJA
+		MsUnlock()
+	Endif
+
+	If SE5->E5_MOEDA$"C1/C2/C3/C4/C5/CH".and.;
+		(Empty(SE5->E5_NUMCHEQ) .or. Substr(SE5->E5_NUMCHEQ,1,1)=="*")
+		lMovbco := .f.
+	Endif
+
+	IF SE5->E5_VENCTO <= SE5->E5_DATA .and. lMovBco
+		//ÚÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ¿
+		//³ Atualiza Saldo Bancario												  ³
+		//ÀÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÙ
+		AtuSalBco(SE5->E5_BANCO,SE5->E5_AGENCIA,SE5->E5_CONTA,SE5->E5_DATA,SE5->E5_VALOR,"-")
+	EndIf
+	MsUnLock()
+
+	//ÚÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ¿
+	//³ Atualizacao dos dados do Modulo SIGAPMS    ³
+	//ÀÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÙ
+	PmsWriteMB(1,"SE5")
+
+	cPadrao:=IIF(SE5->E5_RATEIO=="S","516","562")
+	lPadrao:=VerPadrao(cPadrao)
+
+	If mv_par04 == 1
+		*ÚÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ¿
+		*³Lan‡amento Contabil														  ³
+		*ÀÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÙ
+		IF lPadrao
+			IF cPadrao == "516"
+				If !CtbInUse()
+					cArqRat := fa050rate( cPadrao , "FINA100","I" )
+					Reclock("SE5")
+					SE5->E5_ARQRAT := cArqRat
+					MsUnlock()
+				Else
+					cSeq := Fa050GerLc( cPadrao,cLote, "FINA100", 3, @nHdlPrv, @nTotal )
+					If !Empty(cSeq)
+						RecLock("SE5")
+						Replace E5_ARQRAT		With cSeq
+					EndIf						
+				EndIf		
+			Else
+				nHdlPrv:=HeadProva(cLote,"FINA100",Substr(cUsuario,7,6),@cArquivo)
+				nTotal+=DetProva(nHdlPrv,cPadrao,"FINA100",cLote)
+				RodaProva(nHdlPrv,nTotal)
+				//ÚÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ¿
+				//³ Envia para Lancamento Contabil							  ³
+				//ÀÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÙ
+				lAglutina:=Iif(mv_par01==1,.t.,.f.)
+				lMostra	:=Iif(mv_par02==1,.t.,.f.)
+				cA100Incl(cArquivo,nHdlPrv,3,cLote,lMostra,lAglutina)
+			End
+			Reclock("SE5")
+			SE5->E5_LA := "S" + SubStr( E5_LA,2,1 )
+			MsUnLock()
+			IF SE5->E5_MOEDA $ "C1şC2şC3şC4şC5"
+				If !Empty(SEF->EF_NUM)
+					Reclock("SEF")
+					SEF->EF_LA := "S"
+					MsUnLock()
+				EndIf
+			EndIf
+		Endif
+	Else
+		IF lPadrao .And. cPadrao == "516" .And. CtbInUse()
+			cSeq := Fa050GerLc( cPadrao,cLote, "FINA100", 3 )
+			If !Empty(cSeq)
+				RecLock("SE5")
+				Replace E5_ARQRAT		With cSeq
+			EndIf						
+		EndIf	
+	Endif
+   
+	//ÚÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ-Ä¿
+   //³ Conforme situação do parâmetro abaixo, integra com o SIGAGSP ³
+   //³             MV_SIGAGSP - 0-Não / 1-Integra                   ³
+   //³ e-mail de Fernando Mazzarolo de 08/11/2004                   ³
+   //ÀÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ-ÄÄÙ
+   If SuperGetMV("MV_SIGAGSP",.F.,"0") == "1"
+      GSPF380(1) 
+   EndIf
+
+	//ÚÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ¿
+	//³ Executa ponto de entrada         						  ³
+	//ÀÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÙ
+	If lFa100Pag
+		Execblock("FA100PAG",.f.,.f.)
+	Endif
+	SE5->(MsUnlock())
+Endif
+If cPaisLoc <> "BRA" .And. Type("bFiltraBrw") == "B"
+	Eval( bFiltraBrw )
+Endif	
+
+// Verifica o arquivo de rateio, e apaga o arquivo temporario
+// para que no proximo rateio seja criado novamente
+If Select("TMP1") > 0
+	DbSelectArea( "TMP1" )
+	cArqRat := DbInfo(DBI_FULLPATH)
+	cArqRat := AllTrim(SubStr(cArqRat,Rat("\",cArqRat)+1))
+	DbCloseArea()
+	FErase(cArqRat)
+EndIf
+
+Return (.T.)
+
+/*
+±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±
+±±ÚÄÄÄÄÄÄÄÄÄÄÂÄÄÄÄÄÄÄÄÄÄÂÄÄÄÄÄÄÄÂÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÂÄÄÄÄÄÄÂÄÄÄÄÄÄÄÄÄÄ¿±±
+±±³Fun‡„o    ³FA100Rec  ³ Autor ³ Wagner Xavier         ³ Data ³ 03/06/92 ³±±
+±±ÃÄÄÄÄÄÄÄÄÄÄÅÄÄÄÄÄÄÄÄÄÄÁÄÄÄÄÄÄÄÁÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÁÄÄÄÄÄÄÁÄÄÄÄÄÄÄÄÄÄ´±±
+±±³Descri‡„o ³ Programa para inclusao de Movimento a Receber              ³±±
+±±ÃÄÄÄÄÄÄÄÄÄÄÅÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ´±±
+±±³Sintaxe   ³ FA100Rec(ExpC1,ExpN1,ExpN2)                                ³±±
+±±ÃÄÄÄÄÄÄÄÄÄÄÅÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ´±±
+±±³Parametros³ ExpC1 = Alias do arquivo                                   ³±±
+±±³          ³ ExpN1 = Numero do registro                                 ³±±
+±±³          ³ ExpN2 = Numero da opcao selecionada                        ³±±
+±±ÃÄÄÄÄÄÄÄÄÄÄÅÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ´±±
+±±³ Uso      ³ FINA100                                                    ³±±
+±±ÀÄÄÄÄÄÄÄÄÄÄÁÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÙ±±
+±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±
+ßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßß
+*/
+Function FA100Rec(cAlias,nReg,nOpc)
+Local lPadrao,cPadrao:="563",nHdlPrv:=0,nTotal:=0
+Local nOpca
+Local lMostra,lAglutina
+Local cArqRat
+Local aButtons
+Local lFa100Rec := Existblock("FA100REC")
+Local lCalTroco := Existblock("FINATROC")
+Local lMovBco   :=.T.
+
+pergunte("AFI100",.F.)
+
+PRIVATE bPMSDlgMB	:= {||PmsDlgMB(3,M->E5_PROJPMS,M->E5_HISTOR,"R")}
+PRIVATE aRatAJE		:= {}
+
+PRIVATE aHeader:={}
+Private nSaveSx8Len := GetSx8Len()
+Private cSeqCv4		:= ""
+
+cSeqCv4 := GetSx8Num("CV4", "CV4_SEQUEN")
+
+cRecPag:="R"
+
+//ÚÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ¿
+//³ Inclui o botao de Apontamento no SIGAPMS                   ³
+//ÀÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÙ
+If IntePms()
+	aButtons := {{'PROJETPMS',{|| Eval(bPmsDlgMB) },STR0045,STR0062}} //"Gerenciamento de Projetos" //"Projetos"
+EndIf
+
+dbSelectArea( cAlias )
+nOpca := AxInclui(cAlias,nReg,nOpc, , , ,"Fa100Bco()  .And. (M->E5_RATEIO=='N' .Or. FA050TudCT("+Str(nOpc,2)+",'517','FINA100'"+"))",,,aButtons)
+
+If nOpca == 1
+
+	//ÚÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ¿
+	//³ Posiciona arquivo Naturezas											³
+	//ÀÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÙ
+	dbSelectArea("SED")
+	dbSeek(xFilial("SED")+SE5->E5_NATUREZ)
+
+	//ÚÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ¿
+	//³ Grava o Identificador de <R>ecebimento							  ³
+	//ÀÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÙ
+	dbSelectArea("SE5")
+	RecLock("SE5",.F.)
+	SE5->E5_RECPAG  := cRecPag
+	SE5->E5_DTDIGIT := dDataBase
+	SE5->E5_DTDISPO := SE5->E5_DATA
+	SE5->E5_FILORIG := cFilAnt
+	
+   //Nas localizacoes, as movimentacoes sao feitas na moeda do BANCO, por isso
+   //tanto nas transferencias quanto no PAGAR/RECEBER, e' gravado o valor em moeda 1
+   //no campo E5_vlmoed2 para facilitar a contabilizacao. Bruno 22/08/00 22:01
+
+   If cPaisLoc # "BRA"
+      SA6->(DbSetOrder(1))
+      SA6->(dbSeek(xFilial()+SE5->E5_BANCO+SE5->E5_AGENCIA+SE5->E5_CONTA))
+      If SE5->(FieldPos('E5_TXMOEDA')) > 0 .And. SE5->E5_TXMOEDA > 0
+      	SE5->E5_VLMOED2   := xMoeda(SE5->E5_VALOR,Max(SA6->A6_MOEDA,1),1,SE5->E5_DATA,,SE5->E5_TXMOEDA)
+      Else
+      	SE5->E5_VLMOED2   := xMoeda(SE5->E5_VALOR,Max(SA6->A6_MOEDA,1),1,SE5->E5_DATA)
+      Endif	
+   Endif
+
+	//ÚÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ¿
+	//³ Se for cheque pre-datado, gera titulos de cheques 			  ³
+	//ÀÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÙ
+	IF SE5->E5_MOEDA $ "C1şC2şC3şC4şC5" .and. E5_VENCTO>E5_DATA  .And.;
+			(!Empty(SE5->E5_NUMCHEQ) .And. Substr(SE5->E5_NUMCHEQ,1,1) != "*")
+		lMovBco := .F.
+		fA100Tit()
+		SE5->E5_PREFIXO:=SE1->E1_PREFIXO
+		SE5->E5_NUMERO :=SE1->E1_NUM
+		SE5->E5_PARCELA:=SE1->E1_PARCELA
+		SE5->E5_TIPO	:=SE1->E1_TIPO
+		SE5->E5_CLIENTE:=SE1->E1_CLIENTE
+		SE5->E5_CLIFOR :=SE1->E1_CLIENTE
+		SE5->E5_LOJA   :=SE1->E1_LOJA
+	EndIF
+
+	IF SE5->E5_VENCTO <= SE5->E5_DATA .and. lMovBco
+		//ÚÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ¿
+		//³ Atualiza Saldo Bancario												  ³
+		//ÀÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÙ
+		AtuSalBco(SE5->E5_BANCO,SE5->E5_AGENCIA,SE5->E5_CONTA,SE5->E5_DATA,SE5->E5_VALOR,"+")
+	Endif
+	MsUnLock()
+	//ÚÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ¿
+	//³ Atualizacao dos dados do Modulo SIGAPMS    ³
+	//ÀÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÙ
+	PmsWriteMB(1,"SE5")
+
+	cPadrao:=IIF(SE5->E5_RATEIO=="S","517","563")
+	lPadrao:=VerPadrao(cPadrao)
+
+	If mv_par04 == 1
+		*ÚÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ¿
+		*³Lan‡amento Contabil                                                ³
+		*ÀÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÙ
+		If lPadrao
+			IF cPadrao == "517"
+				If !CtbInUse()
+					cArqRat := fa050rate( cPadrao , "FINA100","I" )
+					Reclock("SE5")
+					SE5->E5_ARQRAT := cArqRat
+					MsUnlock()
+				Else
+					cSeq := Fa050GerLc( cPadrao,cLote, "FINA100",3, @nHdlPrv, @nTotal )
+					If !Empty(cSeq)
+						RecLock("SE5")
+						Replace E5_ARQRAT		With cSeq
+					EndIf						
+				EndIf		
+			Else
+				nHdlPrv:=HeadProva(cLote,"FINA100",Substr(cUsuario,7,6),@cArquivo)
+				nTotal+=DetProva(nHdlPrv,cPadrao,"FINA100",cLote)
+				RodaProva(nHdlPrv,nTotal)
+				lAglutina:=Iif(mv_par01==1,.t.,.f.)
+				lMostra	:=Iif(mv_par02==1,.t.,.f.)
+				//ÚÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ¿
+				//³ Envia para Lancamento Contabil							  ³
+				//ÀÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÙ
+				cA100Incl(cArquivo,nHdlPrv,3,cLote,lMostra,lAglutina)
+			End
+			Reclock("SE5")
+			SE5->E5_LA := "S" + SubStr( E5_LA,2,1 )
+			MsUnLock()
+		End
+	Else
+		If lPadrao .And. cPadrao == "517" .And. CtbInUse()
+			cSeq := Fa050GerLc( cPadrao,cLote, "FINA100",3, @nHdlPrv, @nTotal )
+			If !Empty(cSeq)
+				RecLock("SE5")
+				Replace E5_ARQRAT		With cSeq
+			EndIf						
+		EndIf		
+	End
+	//ÚÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ-Ä¿
+   //³ Conforme situação do parâmetro abaixo, integra com o SIGAGSP ³
+   //³             MV_SIGAGSP - 0-Não / 1-Integra                   ³
+   //³ e-mail de Fernando Mazzarolo de 08/11/2004                   ³
+   //ÀÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ-ÄÄÙ
+   If SuperGetMV("MV_SIGAGSP",.F.,"0") == "1"
+      GSPF380(2) 
+   EndIf
+
+	//ÚÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ¿
+	//³ Executa ponto de entrada         						  ³
+	//ÀÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÙ
+	If lFa100Rec
+		Execblock("FA100REC",.f.,.f.)
+	Endif
+
+	If lCalTroco
+		ExecBlock("FINATROC",.F.,.F.)
+	Endif
+Endif
+If cPaisLoc <> "BRA" .And. Type("bFiltraBrw") == "B"
+	Eval( bFiltraBrw )
+Endif	
+// Verifica o arquivo de rateio, e apaga o arquivo temporario
+// para que no proximo rateio seja criado novamente
+If Select("TMP1") > 0
+	DbSelectArea( "TMP1" )
+	cArqRat := DbInfo(DBI_FULLPATH)
+	cArqRat := AllTrim(SubStr(cArqRat,Rat("\",cArqRat)+1))
+	DbCloseArea()
+	FErase(cArqRat)
+EndIf
+Return (.t.)
+
+/*
+±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±
+±±ÚÄÄÄÄÄÄÄÄÄÄÂÄÄÄÄÄÄÄÄÄÄÂÄÄÄÄÄÄÄÂÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÂÄÄÄÄÄÄÂÄÄÄÄÄÄÄÄÄÄ¿±±
+±±³Fun‡„o    ³FA100Cheq ³ Autor ³ Wagner Xavier         ³ Data ³ 03/06/92 ³±±
+±±ÃÄÄÄÄÄÄÄÄÄÄÅÄÄÄÄÄÄÄÄÄÄÁÄÄÄÄÄÄÄÁÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÁÄÄÄÄÄÄÁÄÄÄÄÄÄÄÄÄÄ´±±
+±±³Descri‡„o ³ Grava o Cheque Emitido                                     ³±±
+±±ÃÄÄÄÄÄÄÄÄÄÄÅÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ´±±
+±±³Sintaxe   ³ fa100Cheq()                                                ³±±
+±±ÃÄÄÄÄÄÄÄÄÄÄÅÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ´±±
+±±³Parametros³ Nao tem                                                    ³±±
+±±ÃÄÄÄÄÄÄÄÄÄÄÅÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ´±±
+±±³ Uso      ³ FINA100                                                    ³±±
+±±ÀÄÄÄÄÄÄÄÄÄÄÁÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÙ±±
+±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±
+ßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßß
+*/
+Function fA100Cheq(cOrigem)
+Local cAlias:=Alias()
+Local nRegistro:=0
+RecLock("SEF",.T.)
+SEF->EF_FILIAL := cFilial
+SEF->EF_NUM 	:= SE5->E5_NUMCHEQ
+SEF->EF_BANCO	:= SE5->E5_BANCO
+SEF->EF_AGENCIA:= SE5->E5_AGENCIA
+SEF->EF_BENEF	:= SE5->E5_BENEF
+SEF->EF_VALOR	:= SE5->E5_VALOR
+SEF->EF_DATA	:= SE5->E5_DATA
+SEF->EF_CONTA	:= SE5->E5_CONTA
+SEF->EF_HIST	:= SE5->E5_HISTOR
+SEF->EF_TIPO	:= SubStr( SE5->E5_TIPO,1,2 )
+SEF->EF_SEQUENC:="01"
+SEF->EF_LIBER:="S"
+SEF->EF_ORIGEM := cOrigem
+If "FINA100PAG" $ cOrigem
+	SEF->EF_FORNECE	:= SE5->E5_CLIFOR
+	SEF->EF_LOJA		:= SE5->E5_LOJA
+Endif
+nRegistro:=SEF->(Recno())
+MsUnLock()
+dbSelectArea(cAlias)
+
+Return nRegistro
+
+/*
+±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±
+±±ÚÄÄÄÄÄÄÄÄÄÄÂÄÄÄÄÄÄÄÄÄÄÂÄÄÄÄÄÄÄÂÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÂÄÄÄÄÄÄÂÄÄÄÄÄÄÄÄÄÄ¿±±
+±±³Fun‡„o    ³FA100Moeda³ Autor ³ Wagner Xavier         ³ Data ³ 30/04/92 ³±±
+±±ÃÄÄÄÄÄÄÄÄÄÄÅÄÄÄÄÄÄÄÄÄÄÁÄÄÄÄÄÄÄÁÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÁÄÄÄÄÄÄÁÄÄÄÄÄÄÄÄÄÄ´±±
+±±³Descri‡„o ³ Checa a Moeda informada ‚ valida                           ³±±
+±±ÃÄÄÄÄÄÄÄÄÄÄÅÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ´±±
+±±³Sintaxe   ³ FA100Moeda()                                               ³±±
+±±ÃÄÄÄÄÄÄÄÄÄÄÅÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ´±±
+±±³ Uso      ³ FINA100                                                    ³±±
+±±ÀÄÄÄÄÄÄÄÄÄÄÁÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÙ±±
+±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±
+ßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßß
+*/
+Function FA100Moeda()
+Local lRet := .T.
+
+dbSelectArea("SX5")
+IF !(dbSeek(cFilial+"06"+M->E5_MOEDA))
+	Help(" ",1,"E5_MOEDA")
+	lRet := .F.
+EndIf
+Return lRet
+
+/*
+±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±
+±±ÚÄÄÄÄÄÄÄÄÄÄÂÄÄÄÄÄÄÄÄÄÄÂÄÄÄÄÄÄÄÂÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÂÄÄÄÄÄÄÂÄÄÄÄÄÄÄÄÄÄ¿±±
+±±³Fun‡„o    ³FA100Canc ³ Autor ³ Wagner Xavier         ³ Data ³ 30/04/92 ³±±
+±±ÃÄÄÄÄÄÄÄÄÄÄÅÄÄÄÄÄÄÄÄÄÄÁÄÄÄÄÄÄÄÁÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÁÄÄÄÄÄÄÁÄÄÄÄÄÄÄÄÄÄ´±±
+±±³Descri‡„o ³Cancela Movimento de Caixa                                  ³±±
+±±ÃÄÄÄÄÄÄÄÄÄÄÅÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ´±±
+±±³Sintaxe   ³FA100Canc()                                                 ³±±
+±±ÃÄÄÄÄÄÄÄÄÄÄÅÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ´±±
+±±³ Uso      ³ FINA100                                                    ³±±
+±±ÀÄÄÄÄÄÄÄÄÄÄÁÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÙ±±
+±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±
+ßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßß
+*/
+Function Fa100Can(cAlias,nReg,nOpc)
+Local nOpcA
+Local lPadrao,cPadrao,nHdlPrv:=0,nTotal:=0
+Local lMostra,lAglutina
+Local cSinal := Iif(SE5->E5_RECPAG=="P","+","-")
+Local lMovBco := .T.
+Local lFa100CAN := ExistBlock("FA100CAN")
+Local lFa100CA2 := ExistBlock("FA100CA2")
+Local lRet := .T.
+Local oDlg,i,bCampo
+Local aButtons
+            
+LOCAL nValor   := SE5->E5_VALOR
+LOCAL nVlMoed2 := SE5->E5_VLMOED2
+LOCAL cBanco   := SE5->E5_BANCO                  
+LOCAL cAgencia := SE5->E5_AGENCIA
+LOCAL cConta   := SE5->E5_CONTA
+LOCAL cNaturez := SE5->E5_NATUREZ
+LOCAL cDebito  := SE5->E5_DEBITO
+LOCAL cCredito := SE5->E5_CREDITO
+LOCAL cDocumen := SE5->E5_DOCUMEN
+LOCAL cHistor  := SE5->E5_HISTOR
+LOCAL cNumCheq := SE5->E5_NUMCHEQ
+LOCAL cRecPag  := SE5->E5_RECPAG
+LOCAL cMoeda   := SE5->E5_MOEDA
+LOCAL cLa      := SE5->E5_LA
+LOCAL cTipoLan
+LOCAL cRateio  := SE5->E5_RATEIO
+LOCAL dVencto  := SE5->E5_VENCTO
+LOCAL cBenef   := SE5->E5_BENEF
+LOCAL cArqRat  := SE5->E5_ARQRAT
+Local cCCC		:= SE5->E5_CCC
+Local cCCD		:= SE5->E5_CCD
+Local cItemD	:= SE5->E5_ITEMD
+Local cItemC	:= SE5->E5_ITEMC
+Local cClVlDB	:= SE5->E5_CLVLDB
+Local cClVlCR	:= SE5->E5_CLVLCR
+
+PRIVATE bPMSDlgMB	:= {||PmsDlgMB(2,M->E5_PROJPMS,M->E5_HISTOR,M->E5_RECPAG)}
+PRIVATE aRatAJE		:= {}
+
+//ÚÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ¿
+//³ Inclui o botao de Apontamento no SIGAPMS                   ³
+//ÀÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÙ
+If IntePms()
+	aButtons := {{'PROJETPMS',{|| Eval(bPmsDlgMB) },STR0045,STR0062}} //"Gerenciamento de Projetos" //"Projetos"
+EndIf
+
+IF SE5->E5_TIPOLAN $ "DC"		// Inverte o tipo de lançamento
+	If cTipoLan == "D"
+	   cTipolan := "C"
+	Else
+		cTipoLan := "D"
+	Endif
+Endif
+
+*ÚÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ¿
+*³ Monta a entrada de dados do arquivo 								 ³
+*ÀÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÙ
+Private aTELA[0][0],aGETS[0]
+
+While .T.
+
+	dbSelectArea( "SE5" )
+	*ÚÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ¿
+	*³ Envia para processamento dos Gets			 ³
+	*ÀÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÙ
+	nOpcA:=0
+
+	//ÚÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ¿
+	//³ Verifica se data do movimento n„o ‚ menor que data limite de ³
+	//³ movimentacao no financeiro    										  ³
+	//ÀÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÙ
+	If !DtMovFin(SE5->E5_DATA)
+		Exit
+	Endif
+
+	// C = Antigo cancelamento
+	// X = Registro estornado
+	// E = Registro de estorno
+	IF SE5->E5_SITUACA $ "C/E/X"
+		Help(" ",1,"JA-CANCEL")
+		Exit
+	Endif
+
+	//Nao permito cancelamento de baixa se a mesma foi conciliada
+	If !Empty(SE5->E5_RECONC)
+		Help(" ",1,"MOVRECONC")
+		Exit
+	Endif
+
+	//Verifica bloqueio da conta
+	If CCBLOCKED(SE5->E5_BANCO,SE5->E5_AGENCIA,SE5->E5_CONTA)
+		Exit
+	Endif		
+
+	IF dDataBase < SE5->E5_DATA
+		Help(" ",1,"MOVPOST",,STR0059,1,0 )  //"Nao sao permitidos cancelamentos de movimento com data posterior a database do sistema"
+		Exit
+	Endif
+
+	If E5_MOVCX == "S"
+		Help ( " ", 1, "F100NODEL",,STR0060+CHR(10)+STR0061,1,0 )	//"Este movimento nao pode ser cancelado pois"###"foi gerado por outra rotina."
+		Exit
+	Endif
+		
+	If !Empty(SE5->E5_TIPODOC)
+		If SE5->E5_TIPODOC!="CD"
+			Help ( " ", 1, "FA100BAIXA" )
+			Exit
+		Else
+			//ÚÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ¿
+			//³ Checa se tem titulo CH ligado … mov. Bancaria ³
+			//³ e se o mesmo pode ser Apagado.                ³
+			//ÀÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÙ
+			If E5_RECPAG="P" .and. E5_MOEDA $ "C1şC2şC3şC4şC5"
+				DbSelectArea("SE2")
+				DbSetOrder(1)
+				If DbSeek(SE5->E5_FILIAL + SE5->E5_PREFIXO + SE5->E5_NUMERO + ;
+						SE5->E5_PARCELA + SE5->E5_TIPO) .and. ;
+						(SE2->E2_FORNECE + SE2->E2_LOJA == SE5->E5_CLIFOR + SE5->E5_LOJA)
+					If SE2->E2_SALDO != SE2->E2_VALOR
+						Help(" ",1,"FA100CANCH")
+						If cPaisLoc <> "BRA" .And. Type("bFiltraBrw") == "B"
+							Eval( bFiltraBrw )
+						Endif							
+						Return
+					Endif
+				Endif
+			Endif
+		EndIf
+	EndIf
+	IF !SoftLock( "SE5")
+		If cPaisLoc <> "BRA" .And. Type("bFiltraBrw") == "B"
+			Eval( bFiltraBrw )
+		Endif		
+		Return
+	EndIf
+	dbSelectArea( "SE5" )
+	nOpcA:=1
+	bCampo := {|nCPO| Field(nCPO) }
+	FOR i := 1 TO FCount()
+		M->&(EVAL(bCampo,i)) := FieldGet(i)
+	NEXT i
+	DEFINE MSDIALOG oDlg TITLE cCadastro FROM 9,0 TO 28,80 OF oMainWnd
+	EnChoice( cAlias, nReg, nOpc, ,"AC",OemToAnsi(STR0016))  // "Quanto ao cancelamento?"
+	ACTIVATE MSDIALOG oDlg ON INIT EnchoiceBar(oDlg,{|| nOpca := 2,oDlg:End()},{|| nOpca := 1,oDlg:End()},,aButtons)
+	IF nOpcA == 2
+
+		//ÚÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ¿
+		//³ Ponto Entrada para confirmacao da exclusao			  ³
+		//ÀÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÙ
+		If lFa100Ca2
+			lRet := Execblock("FA100CA2",.f.,.f.)
+		Endif
+
+		If !lREt
+			If cPaisLoc <> "BRA" .And. Type("bFiltraBrw") == "B"
+				Eval( bFiltraBrw )
+			Endif			
+			Return
+		EndIf
+
+		Begin Transaction
+			dbSelectArea( "SED" )
+			dbSeek( cFilial + SE5->E5_NATUREZ )
+			dbSelectArea("SA6")
+			dbSeek(cFilial+SE5->E5_BANCO+SE5->E5_AGENCIA+SE5->E5_CONTA)
+
+			IF SE5->E5_VENCTO > SE5->E5_DATA
+				lMovBco := .f.
+			ElseIf SE5->E5_MOEDA$"C1/C2/C3/C4/C5/CH".and.;
+					(Empty(SE5->E5_NUMCHEQ) .or. Substr(SE5->E5_NUMCHEQ,1,1)=="*")
+				lMovbco := .f.
+			Endif
+
+			If lMovbco
+				AtuSalBco(SE5->E5_BANCO,SE5->E5_AGENCIA,SE5->E5_CONTA,SE5->E5_DATA,SE5->E5_VALOR,cSinal)
+			EndIf
+
+			//Marca o registro para que nao se possa cancelar n vezes
+			RecLock("SE5",.F.)
+			Replace E5_SITUACA  With "X" 	//identificacao de um movimento estornado 
+			MsUnlock()	
+
+			If nOpc == 6  //Estorno (Cancelamento)	
+				Reclock("SE5",.T.)			//grava registro de estorno da mov bancaria manual
+				Replace E5_FILIAL   With xFilial()
+				Replace E5_VALOR    With nValor
+				Replace E5_BANCO    With cBanco
+				Replace E5_AGENCIA  With cAgencia
+				Replace E5_CONTA    With cConta
+				Replace E5_NATUREZ  With cNaturez
+				Replace E5_DEBITO   With cCredito		// inverter
+				Replace E5_CREDITO  With cDebito        // inverter
+				Replace E5_DATA     With dDataBase
+				Replace E5_DTDISPO  With dDatabase
+				Replace E5_DOCUMEN  With cDocumen
+				Replace E5_HISTOR   With STR0055+ cHistor //"ESTORNO "
+				Replace E5_NUMCHEQ  With cNumCheq
+				Replace E5_RECPAG   With Iif(cRecpag=="R","P","R")
+				Replace E5_MOEDA    With cMoeda
+				Replace E5_TIPOLANC With cTipoLan
+				Replace E5_VENCTO   With dVencto
+				Replace E5_DTDIGIT  With dDataBase
+				Replace E5_RATEIO   With "N"
+				Replace E5_FILORIG  With cFilAnt
+				Replace E5_BENEF    With cBenef
+				Replace E5_CCC		  With cCCD		// Inverter
+				Replace E5_CCD      With cCCC		// Inverter
+				Replace E5_ITEMC	  With cItemD	// Inverter
+				Replace E5_ITEMD    With cItemC	// Inverter
+				Replace E5_CLVLCR	  With cClVlDB	// Inverter
+				Replace E5_CLVLDB	  With cClVlCR	// Inverter
+				Replace E5_ARQRAT	With cArqRat  // Arquivo de rateio do titulo original
+				Replace E5_SITUACA  With "E" 	//identificacao de um estorno bancario manual, usado para diferenciar
+												//o registro na contabilizacao.
+				Replace E5_VLMOED2  With nVlMoed2
+				MsUnlock()
+			Else //Exclusao
+				RecLock("SE5",.F.)
+				Replace E5_SITUACA  With "C"		//identificacao de um movimento cancelado
+				//ÚÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ¿
+				//³ Somente na Exclusao                        ³
+				//³ ----------------------------------         ³
+				//³ Os valores de credito e debito sao  	   ³
+				//³ invertidos para o lancamento contabil 	   ³
+				//ÀÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÙ
+				Replace E5_DEBITO   With cCredito	// inverter
+				Replace E5_CREDITO  With cDebito	// inverter
+				Replace E5_CCC		With cCCD		// Inverter
+				Replace E5_CCD      With cCCC		// Inverter
+				Replace E5_ITEMC	With cItemD		// Inverter
+				Replace E5_ITEMD    With cItemC		// Inverter
+				Replace E5_CLVLCR	With cClVlDB	// Inverter
+				Replace E5_CLVLDB	With cClVlCR	// Inverter
+				MsUnlock()	
+			Endif			   
+
+			//ÚÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ¿
+			//³ Cancela o Novo Cheque emitido										  ³
+			//ÀÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÙ
+			IF cRecPag = "P" .and. E5_MOEDA $ "C1şC2şC3şC4şC5/CH"
+				fA100CanCh()
+			Endif
+
+			//ÚÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ-Ä¿
+			//³ Conforme situacao do parametro abaixo, integra com o SIGAGSP ³
+			//³             MV_SIGAGSP - 0-Nao / 1-Integra                   ³                
+			//ÀÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ-ÄÄÙ
+			If GetNewPar("MV_SIGAGSP","0") == "1" 
+			    GSPF100(cRecPag)
+			EndIf
+
+			//ÚÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ¿
+			//³ Executa ponto de entrada         						  ³
+			//ÀÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÙ
+			If lFa100Can
+				Execblock("FA100CAN",.f.,.f.)
+			Endif
+			If cRateio == "S"
+				If !CtbInUse()
+					cPadrao := Iif(cRecPag =="R","517","516")
+				Else
+					cPadrao := 	Iif(cRecPag =="R","558","557")
+				EndIf	
+			Else
+				cPadrao := IIF ( cRecPag ="P","564","565" )
+			Endif
+
+			IF cPadrao $ "516/517"
+				cArq := fa050rate( cPadrao , "FINA100" ,"E",@nHdlPrv,@cArquivo)
+				If !Empty(cArquivo)
+					cA100Incl(cArquivo,nHdlPrv,3,cLote,.T.,.F.)
+				End
+			ElseIf cPadrao $ "557/558"
+				CtbRatFin(cPadrao,"FINA100",cLote,3," ",5)
+			Else
+				*ÚÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ¿
+				*³Lan‡amento Contabil																 ³
+				*ÀÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÙ
+				lPadrao:=VerPadrao(cPadrao)
+				If lPadrao .and. SubStr(cLa,1,1) == "S"		// Contabiliza apenas se a origem foi contabilizada
+					nHdlPrv:=HeadProva(cLote,"FINA100",Substr(cUsuario,7,6),@cArquivo)
+					nTotal+=DetProva(nHdlPrv,cPadrao,"FINA100",cLote)
+					RodaProva(nHdlPrv,nTotal)
+					lAglutina:=Iif(mv_par01==1,.t.,.f.)
+					lMostra  :=Iif(mv_par02==1,.t.,.f.)
+					//ÚÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ¿
+					//³ Envia para Lancamento Contabil 							  ³
+					//ÀÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÙ
+					cA100Incl(cArquivo,nHdlPrv,3,cLote,lMostra,lAglutina)
+					Reclock("SE5")
+					SE5->E5_LA := "S" + SubStr( E5_LA,2,1 )
+					MsUnLock()
+				Endif
+			Endif
+
+			//ÚÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ¿
+			//³ Somente na Exclusao                        ³
+			//³ ----------------------------------         ³
+			//³ A inversao dos valores de credito e debito ³
+			//³ e' corrigida depois do lancamento contabil ³
+			//ÀÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÙ
+			If ( E5_SITUACA == "C" )
+				RecLock("SE5",.F.)
+				Replace E5_DEBITO   With cDebito	// Corrige Inversao
+				Replace E5_CREDITO  With cCredito	// Corrige Inversao
+				Replace E5_CCC		With cCCC		// Corrige Inversao	
+				Replace E5_CCD      With cCCD		// Corrige Inversao
+				Replace E5_ITEMC	With cItemC		// Corrige Inversao
+				Replace E5_ITEMD    With cItemD		// Corrige Inversao
+				Replace E5_CLVLCR	With cClVlCR	// Corrige Inversao
+				Replace E5_CLVLDB	With cClVlDB	// Corrige Inversao
+				MsUnlock()	
+			Endif
+		End Transaction
+	Else
+		MsUnlock()
+	Endif
+	Exit
+Enddo
+dbSelectArea( cAlias )
+If cPaisLoc <> "BRA" .And. Type("bFiltraBrw") == "B"
+	Eval( bFiltraBrw )
+Endif	
+// Verifica o arquivo de rateio, e apaga o arquivo temporario
+// para que no proximo rateio seja criado novamente
+If Select("TMP1") > 0
+	DbSelectArea( "TMP1" )
+	cArqRat := DbInfo(DBI_FULLPATH)
+	cArqRat := AllTrim(SubStr(cArqRat,Rat("\",cArqRat)+1))
+	DbCloseArea()
+	FErase(cArqRat)
+EndIf
+Return
+
+/*
+±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±
+±±ÚÄÄÄÄÄÄÄÄÄÄÂÄÄÄÄÄÄÄÄÄÄÂÄÄÄÄÄÄÄÂÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÂÄÄÄÄÄÄÂÄÄÄÄÄÄÄÄÄÄ¿±±
+±±³Fun‡„o    ³fa100conta³ Autor ³ Wagner Xavier         ³ Data ³ 30/04/92 ³±±
+±±ÃÄÄÄÄÄÄÄÄÄÄÅÄÄÄÄÄÄÄÄÄÄÁÄÄÄÄÄÄÄÁÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÁÄÄÄÄÄÄÁÄÄÄÄÄÄÄÄÄÄ´±±
+±±³Descri‡„o ³Verifica se a conta foi digitada de acordo com o Tipo       ³±±
+±±ÃÄÄÄÄÄÄÄÄÄÄÅÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ´±±
+±±³Sintaxe   ³fa100conta()                                                ³±±
+±±ÃÄÄÄÄÄÄÄÄÄÄÅÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ´±±
+±±³ Uso      ³ FINA100                                                    ³±±
+±±ÀÄÄÄÄÄÄÄÄÄÄÁÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÙ±±
+±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±
+ßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßß
+*/
+Function fa100conta()
+Local lRet:=.T.,cAlias:=Alias()
+
+IF lRet .and. cRecPag == "P" // So consiste banco no pagamento
+	IF !Empty(m->e5_banco) .or. !Empty(m->e5_agencia) .or. !Empty(m->e5_conta)
+		dbSelectArea("SA6")
+		dbSeek(cFilial+m->e5_banco+m->e5_agencia+m->e5_conta)
+		IF !Found()
+			Help(" ",1,"BCONOEXIST")
+			lRet:=.f.
+		Endif
+	Endif
+End
+dbSelectArea(cAlias)
+Return lRet
+
+/*
+±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±
+±±ÚÄÄÄÄÄÄÄÄÄÄÂÄÄÄÄÄÄÄÄÄÄÂÄÄÄÄÄÄÄÂÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÂÄÄÄÄÄÄÂÄÄÄÄÄÄÄÄÄÄ¿±±
+±±³Fun‡„o    ³fa100NumC ³ Autor ³ Wagner Xavier         ³ Data ³ 30/04/92 ³±±
+±±ÃÄÄÄÄÄÄÄÄÄÄÅÄÄÄÄÄÄÄÄÄÄÁÄÄÄÄÄÄÄÁÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÁÄÄÄÄÄÄÁÄÄÄÄÄÄÄÄÄÄ´±±
+±±³Descri‡„o ³Verifica se cheque foi digitado de acordo com moeda         ³±±
+±±ÃÄÄÄÄÄÄÄÄÄÄÅÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ´±±
+±±³Sintaxe   ³fa100NumC()                                                 ³±±
+±±ÃÄÄÄÄÄÄÄÄÄÄÅÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ´±±
+±±³ Uso      ³ FINA100                                                    ³±±
+±±ÀÄÄÄÄÄÄÄÄÄÄÁÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÙ±±
+±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±
+ßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßß
+*/
+Function fa100NumC()
+Local lRet:=.T.
+
+IF Empty(M->E5_NUMCHEQ) 
+	If (M->E5_MOEDA $ "C1.C2.C3.C4.C5")
+		Help(" ",1,"NumeroCheq")
+		lRet:=.F.
+	Endif	
+Else
+	lRet := ExistChav("SEF",M->E5_BANCO+M->E5_AGENCIA+M->E5_CONTA+M->E5_NUMCHEQ,1,"JaTemCheq" )
+EndIF
+Return lRet
+
+/*
+±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±
+±±ÚÄÄÄÄÄÄÄÄÄÄÂÄÄÄÄÄÄÄÄÄÄÂÄÄÄÄÄÄÄÂÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÂÄÄÄÄÄÄÂÄÄÄÄÄÄÄÄÄÄ¿±±
+±±³Fun‡„o    ³fa100venc ³ Autor ³ Wagner Xavier         ³ Data ³ 30/04/92 ³±±
+±±ÃÄÄÄÄÄÄÄÄÄÄÅÄÄÄÄÄÄÄÄÄÄÁÄÄÄÄÄÄÄÁÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÁÄÄÄÄÄÄÁÄÄÄÄÄÄÄÄÄÄ´±±
+±±³Descri‡„o ³Verifica se a data de vencimento foi digitada               ³±±
+±±ÃÄÄÄÄÄÄÄÄÄÄÅÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ´±±
+±±³Sintaxe   ³fa100Venc()                                                 ³±±
+±±ÃÄÄÄÄÄÄÄÄÄÄÅÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ´±±
+±±³ Uso      ³ FINA100                                                    ³±±
+±±ÀÄÄÄÄÄÄÄÄÄÄÁÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÙ±±
+±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±
+ßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßß
+*/
+Function fa100venc()
+Local lRet:=.T.
+IF Empty(M->E5_VENCTO) .And. !Empty(M->E5_NUMCHEQ)
+	Help(" ",1,"Vencimento")
+	lRet:=.F.
+End
+Return lRet
+
+/*
+±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±
+±±ÚÄÄÄÄÄÄÄÄÄÄÂÄÄÄÄÄÄÄÄÄÄÂÄÄÄÄÄÄÄÂÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÂÄÄÄÄÄÄÂÄÄÄÄÄÄÄÄÄÄ¿±±
+±±³Fun‡„o    ³fa100tit  ³ Autor ³ Wagner Xavier         ³ Data ³ 30/04/92 ³±±
+±±ÃÄÄÄÄÄÄÄÄÄÄÅÄÄÄÄÄÄÄÄÄÄÁÄÄÄÄÄÄÄÁÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÁÄÄÄÄÄÄÁÄÄÄÄÄÄÄÄÄÄ´±±
+±±³Descri‡„o ³Gera titulo de cheque, com data do vencimento               ³±±
+±±ÃÄÄÄÄÄÄÄÄÄÄÅÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ´±±
+±±³Sintaxe   ³fa100tit()                                                  ³±±
+±±ÃÄÄÄÄÄÄÄÄÄÄÅÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ´±±
+±±³ Uso      ³ FINA100                                                    ³±±
+±±ÀÄÄÄÄÄÄÄÄÄÄÁÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÙ±±
+±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±
+ßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßß
+*/
+Static Function fa100tit()
+Local cAlias:=Alias()
+Local cPrefixo := "CHQ"
+Local cParcela := TamParcela("E1_PARCELA","1","01","001")
+Local cCliente := GetMv("MV_CLIPAD")
+
+//Cria Fornecedor Padrao
+dbSelectArea("SA1")
+dbSetOrder(1)
+If !dbSeek(xfilial("SA1")+cCliente+"01")
+	Reclock("SA1",.T.)
+	SA1->A1_FILIAL := cFilial
+	SA1->A1_COD 	:= GetMV("MV_CLIPAD")
+	SA1->A1_LOJA	:= "01"
+	SA1->A1_NOME	:= "CLIENTE PADRAO"
+	SA1->A1_NREDUZ := "CLIENTE PADRAO"
+	SA1->A1_BAIRRO := "."
+	SA1->A1_MUN 	:= "."
+	SA1->A1_EST 	:= SuperGetMv("MV_ESTADO")
+	SA1->A1_End 	:= "."
+	SA1->A1_TIPO	:= "J"
+	MsUnlock()
+	FKCOMMIT()
+Endif
+
+dbSelectArea( "SE1" )
+dbSetOrder ( 1 )
+//ÚÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ¿
+//³ Verifica se o titulo ja existe. Em caso afirmativo, ser adi- ³
+//³ cionado 1 ao prefixo do titulo. 									  ³
+//ÀÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÙ
+While .T.
+
+	If dbSeek( xFilial("SE1")+cPrefixo+Substr(SE5->E5_NUMCHEQ,1,TamSX3("E1_NUM")[1]) + ;
+			cParcela+ Substr(MVCHEQUE,1,3) )
+		cPrefixo := Soma1( cPrefixo )
+		Loop
+	Endif
+	Reclock("SE1",.T.)
+	SE1->E1_FILIAL 	:= xFilial()
+	SE1->E1_PREFIXO	:= cPrefixo
+	SE1->E1_NUM 		:= Substr(SE5->E5_NUMCHEQ,1,TamSX3("E1_NUM")[1])
+	SE1->E1_TIPO		:= MVCHEQUE
+	SE1->E1_PARCELA	:= cParcela
+	SE1->E1_VENCTO 	:= SE5->E5_VENCTO
+	SE1->E1_VENCREA	:= DataValida(SE5->E5_VENCTO,.T.)
+	SE1->E1_VENCORI	:= DataValida(SE5->E5_VENCTO,.T.)
+	SE1->E1_VALOR		:= SE5->E5_VALOR
+	SE1->E1_SALDO		:= SE5->E5_VALOR
+	SE1->E1_NATUREZ	:= SE5->E5_NATUREZ
+	SE1->E1_EMISSAO	:= SE5->E5_DATA
+	SE1->E1_EMIS1		:= SE5->E5_DATA
+	SE1->E1_HIST		:= SE5->E5_HISTOR
+	SE1->E1_SITUACA	:= "0"
+	SE1->E1_CLIENTE	:= IIF(Empty(SE5->E5_CLIFOR),Getmv("MV_CLIPAD"),SE5->E5_CLIFOR)
+	SE1->E1_LOJA		:= "01"
+	SE1->E1_MOEDA		:= 1
+	dbSelectArea("SA1")
+	dbSeek(cFilial+SE1->E1_CLIENTE+SE1->E1_LOJA)
+	dbSelectArea("SE1")
+	SE1->E1_NOMCLI := SA1->A1_NREDUZ
+	SE1->E1_VLCRUZ := SE1->E1_VALOR
+	If cPaisLoc <> "BRA"
+		SA6->(DbSetOrder(1))
+		SA6->(DbSeek(xFilial()+SE5->E5_BANCO+SE5->E5_AGENCIA+SE5->E5_CONTA))
+		SE1->E1_MOEDA  := Max(SA6->A6_MOEDA,1)
+		SE1->E1_VLCRUZ := xMoeda(SE1->E1_VALOR,SE1->E1_MOEDA,1,dDataBase)
+	Endif
+	If SpbInUse()
+		SE1->E1_MODSPB := SE5->E5_MODSPB		
+	Endif
+	Exit
+End
+MsUnLock()
+dbSelectArea( cAlias )
+Return
+
+/*
+±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±
+±±ÚÄÄÄÄÄÄÄÄÄÄÂÄÄÄÄÄÄÄÄÄÄÂÄÄÄÄÄÄÄÂÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÂÄÄÄÄÄÄÂÄÄÄÄÄÄÄÄÄÄ¿±±
+±±³Fun‡„o    ³fa100TitPg³ Autor ³ Valter G. Nogueira Jr.³ Data ³ 17/04/94 ³±±
+±±ÃÄÄÄÄÄÄÄÄÄÄÅÄÄÄÄÄÄÄÄÄÄÁÄÄÄÄÄÄÄÁÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÁÄÄÄÄÄÄÁÄÄÄÄÄÄÄÄÄÄ´±±
+±±³Descri‡„o ³Gera titulo de cheque, com data do vencimento               ³±±
+±±ÃÄÄÄÄÄÄÄÄÄÄÅÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ´±±
+±±³Sintaxe   ³fa100TitPg()                                                ³±±
+±±ÃÄÄÄÄÄÄÄÄÄÄÅÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ´±±
+±±³ Uso      ³ FINA100                                                    ³±±
+±±ÀÄÄÄÄÄÄÄÄÄÄÁÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÙ±±
+±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±
+ßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßß
+*/
+Static Function fa100TitPg()
+Local cAlias	:= Alias()
+Local cPrefixo := "CHQ"
+Local cParcela := TamParcela("E2_PARCELA","1","01","001")
+Local cFornece := GetMv("MV_FORPAD")
+
+//Cria Fornecedor Padrao
+dbSelectArea("SA2")
+dbSetOrder(1)
+If !dbSeek(xfilial("SA2")+cFornece+"00")
+	Reclock("SA2",.T.)
+	SA2->A2_FILIAL := cFilial
+	SA2->A2_COD 	:= GetMV("MV_FORPAD")
+	SA2->A2_LOJA	:= "00"
+	SA2->A2_NOME	:= "FORNECEDOR PADRAO"
+	SA2->A2_NREDUZ := "FORNECEDOR PADRAO"
+	SA2->A2_BAIRRO := "."
+	SA2->A2_MUN 	:= "."
+	SA2->A2_EST 	:= SuperGetMv("MV_ESTADO")
+	SA2->A2_End 	:= "."
+	SA2->A2_TIPO	:= "J"
+	MsUnlock()
+	FKCOMMIT()
+Endif
+
+dbSelectArea( "SE2" )
+dbSetOrder ( 1 )
+//ÚÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ¿
+//³ Verifica se o titulo j  existe. Em caso afirmativo, ser adi- ³
+//³ cionado 1 ao prefixo do titulo. 									  ³
+//ÀÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÙ
+While .T.
+
+	If dbSeek( xFilial("SE2")+cPrefixo+Substr(SE5->E5_NUMCHEQ,1,TamSX3("E1_NUM")[1]) + ;
+			cParcela+ Substr(MVCHEQUE,1,3))
+		cPrefixo := Soma1( cPrefixo )
+		LOOP
+	End
+
+	Reclock("SE2",.T.)
+	SE2->E2_FILIAL  := cFilial
+	SE2->E2_PREFIXO := cPrefixo
+	SE2->E2_NUM 	 := Substr(SE5->E5_NUMCHEQ,1,TamSX3("E1_NUM")[1])
+	SE2->E2_TIPO	 := MVCHEQUE
+	SE2->E2_PARCELA := cParcela
+	SE2->E2_VENCTO  := SE5->E5_VENCTO
+	SE2->E2_VENCREA := DataValida(SE5->E5_VENCTO,.T.)
+	SE2->E2_VENCORI := DataValida(SE5->E5_VENCTO,.T.)
+	SE2->E2_VALOR	 := SE5->E5_VALOR
+	SE2->E2_SALDO	 := SE5->E5_VALOR
+	SE2->E2_NATUREZ := SE5->E5_NATUREZ
+	SE2->E2_EMISSAO := SE5->E5_DATA
+	SE2->E2_EMIS1	 := SE5->E5_DATA
+	SE2->E2_HIST	 := SE5->E5_HISTOR
+	SE2->E2_FORNECE := IIF(Empty(SE5->E5_CLIFOR),Getmv("MV_FORPAD"),SE5->E5_CLIFOR)
+	SE2->E2_LOJA	 := "00"
+	SE2->E2_MOEDA	 := 1
+	SE2->E2_VLCRUZ  := SE2->E2_VALOR
+	SE2->E2_ORIGEM  := "FINA100"		// Identifica Rotina Geradora
+	dbSelectArea("SA2")
+	dbSeek(cFilial+SE2->E2_FORNECE+SE2->E2_LOJA)
+	dbSelectArea("SE2")
+	Replace E2_NOMFOR With SA2->A2_NREDUZ
+	If cPaisLoc <> "BRA"
+		SA6->(DbSetOrder(1))
+		SA6->(DbSeek(xFilial()+SE5->E5_BANCO+SE5->E5_AGENCIA+SE5->E5_CONTA))
+		SE2->E2_MOEDA  := Max(SA6->A6_MOEDA,1)
+		SE2->E2_VLCRUZ := xMoeda(SE2->E2_VALOR,SE2->E2_MOEDA,1,dDataBase)
+	Endif
+	If SpbInUse()
+		SE2->E2_MODSPB := SE5->E5_MODSPB		
+	Endif
+	Exit
+Enddo
+MsUnLock()
+dbSelectArea( cAlias )
+Return
+
+/*
+ÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜ
+±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±
+±±ÚÄÄÄÄÄÄÄÄÄÄÂÄÄÄÄÄÄÄÄÄÄÂÄÄÄÄÄÄÄÂÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÂÄÄÄÄÄÄÂÄÄÄÄÄÄÄÄÄÄ¿±±
+±±³Fun‡„o    ³ fa100data³ Autor ³ Wagner Xavier         ³ Data ³ 03/06/92 ³±±
+±±ÃÄÄÄÄÄÄÄÄÄÄÅÄÄÄÄÄÄÄÄÄÄÁÄÄÄÄÄÄÄÁÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÁÄÄÄÄÄÄÁÄÄÄÄÄÄÄÄÄÄ´±±
+±±³Descri‡„o ³ Consiste data da movimentacao.                             ³±±
+±±ÃÄÄÄÄÄÄÄÄÄÄÅÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ´±±
+±±³Sintaxe   ³ fa100data()                                                ³±±
+±±ÃÄÄÄÄÄÄÄÄÄÄÅÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ´±±
+±±³ Uso      ³ FINA100                                                    ³±±
+±±ÀÄÄÄÄÄÄÄÄÄÄÁÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÙ±±
+±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±
+ßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßß
+*/
+Function fa100data()
+Local lRet:=.T.
+
+If !Dtmovfin(M->E5_DATA)
+	Return .F.
+Endif
+
+IF m->e5_data < dDataBase
+	Help(" ",1,"DATAANTER")
+	lRet:=.F.
+EndIF
+Return lRet
+
+/*
+ÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜ
+±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±
+±±ÚÄÄÄÄÄÄÄÄÄÄÂÄÄÄÄÄÄÄÄÄÄÂÄÄÄÄÄÄÄÂÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÂÄÄÄÄÄÄÂÄÄÄÄÄÄÄÄÄÄ¿±±
+±±³Fun‡„o    ³ fa100tran³Autor  ³ Wagner Xavier         ³ Data ³ 03/06/92 ³±±
+±±ÃÄÄÄÄÄÄÄÄÄÄÅÄÄÄÄÄÄÄÄÄÄÁÄÄÄÄÄÄÄÁÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÁÄÄÄÄÄÄÁÄÄÄÄÄÄÄÄÄÄ´±±
+±±³Descri‡„o ³ Transferencia entre bancos/agencias.                       ³±±
+±±ÃÄÄÄÄÄÄÄÄÄÄÅÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ´±±
+±±³Sintaxe   ³ fa100tran()                                                ³±±
+±±ÃÄÄÄÄÄÄÄÄÄÄÅÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ´±±
+±±³ Uso      ³ FINA100                                                    ³±±
+±±ÀÄÄÄÄÄÄÄÄÄÄÁÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÙ±±
+±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±
+ßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßß
+*/
+Function fa100tran(cAlias,nReg,nOpc)
+//ÚÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ¿
+//³ Define Vari veis 														  ³
+//ÀÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÙ
+Local cBcoOrig	:= CriaVar("E5_BANCO")
+Local cBcoDest	:= CriaVar("E5_BANCO")
+Local cAgenOrig:= CriaVar("E5_AGENCIA")
+Local cAgenDest:= CriaVar("E5_AGENCIA")
+Local cCtaOrig	:= CriaVar("E5_CONTA")
+Local cCtaDest	:= CriaVar("E5_CONTA")
+Local cNaturOri:= CriaVar("E5_NATUREZ")
+Local cNaturDes:= CriaVar("E5_NATUREZ")
+Local cDocTran := CriaVar("E5_NUMCHEQ")
+Local cHist100 := CriaVar("E5_HISTOR")
+Local nValorTran:=0
+Local nOpcA:=0
+Local cBenef100:= Space(30)
+Local oDlg
+LOCAL lA100BL01:= ExistBlock("A100BL01")
+Local aValores := {}
+LOCAL lGrava
+Local nA,cMoedaTx
+Local lSpbInUse := SpbInUse()
+LOCAL aModalSPB	:=  {"1=TED","2=CIP","3=COMP"}
+LOCAL oModSpb
+Local cModSpb 
+Local aTrfPms  := {}
+Local lEstorno := .F.
+Local oBcoOrig
+Local oBcoDest
+
+// rotina externa nao contabiliza (o SIGALOJA usa esta rotina
+// direto da rotina de venda rapida e neste caso
+// o parametro ‚ sempre .T.
+If Substr(Upper(FunName()),1,7) == "LOJA220"
+	//ÚÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ¿
+	//³ Verifica Permissao "Sangria/Entrada de Troco" - #5 ³
+	//ÀÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÙ
+	If !LjProfile(5,,,,,.T.)
+		Return(NIL)
+	EndIf
+	lExterno := .T.
+Endif
+
+If cPaisLoc <> "BRA"
+   Private aTxMoedas := {}
+   /*
+   //ÚÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ
+   //³A moeda 1 e tambem inclusa como um dummy, nao vai ter uso,    ³
+   //³mas simplifica todas as chamadas a funcao xMoeda, ja que posso³
+   //³passara a taxa usando a moeda como elemento do Array atxMoedas³
+   //³Exemplo xMoeda(E1_VALOR,E1_MOEDA,1,dDataBase,,aTxMoedas[E1_MOEDA][2])
+   //³Bruno - Paraguay 22/08/2000                                   ³
+   //ÀÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÙ
+   */
+
+   aAdd  (aTxMoedas,{"",1,PesqPict("SM2","M2_MOEDA1")})
+   For nA   := 2  To MoedFin()
+      cMoedaTx := Str(nA,IIf(nA <= 9,1,2))
+      If !Empty(GetMv("MV_MOEDA"+cMoedaTx))
+         Aadd(aTxMoedas,{GetMv("MV_MOEDA"+cMoedaTx),RecMoeda(dDataBase,nA),PesqPict("SM2","M2_MOEDA"+cMoedaTx) })
+      Else
+         Exit
+      Endif
+   Next
+
+Endif
+
+//ÚÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ¿
+//³ Deleta a Ocorrencia "EST" no SX5 para for‡ar o usuario a uti-³
+//³ lizar a OPCAO Estorno para que o saldo bancario seja tratado ³
+//³ corretamente.                                                ³
+//ÀÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÙ
+dbSelectArea("SX5")
+If dbSeek(xFilial()+"14"+"EST")
+	Reclock("SX5")
+	dbDelete()
+	MsUnlock()
+Endif
+
+Private nTotal := 0
+Private cTipoTran := Space(3)
+
+//ÚÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ¿
+//³ Verifica se data do movimento n„o ‚ menor que data limite de ³
+//³ movimentacao no financeiro    										  ³
+//ÀÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÙ
+If !DtMovFin()
+	If cPaisLoc <> "BRA" .And. Type("bFiltraBrw") == "B"
+		Eval( bFiltraBrw )
+	Endif	
+	Return
+Endif
+
+While .T.
+
+	dbSelectArea("SE5")
+
+	cBcoOrig	:= CriaVar("E5_BANCO")
+	cBcoDest	:= CriaVar("E5_BANCO")
+	cAgenOrig:= CriaVar("E5_AGENCIA")
+	cAgenDest:= CriaVar("E5_AGENCIA")
+	cCtaOrig	:= CriaVar("E5_CONTA")
+	cCtaDest	:= CriaVar("E5_CONTA")
+	cNaturOri:= CriaVar("E5_NATUREZ")
+	cNaturDes:= CriaVar("E5_NATUREZ")
+	cDocTran := CriaVar("E5_NUMCHEQ")
+	cHist100 := CriaVar("E5_HISTOR")
+	nValorTran:=0
+	cBenef100:= Space(30)
+	cTipoTran := CriaVar("E5_MOEDA")
+	If lSpbInUse
+		cModSpb := "1"
+	Endif
+	nOpcA := 0
+
+	//ÚÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ¿
+	//³ Recebe dados a serem digitados 										  ³
+	//ÀÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÙ
+
+	If lSpbInUse
+		DEFINE MSDIALOG oDlg FROM  32, 113 TO 416,517 TITLE OemToAnsi(STR0009) PIXEL	// "Movimenta‡„o Banc ria"
+	Else
+		DEFINE MSDIALOG oDlg FROM  32, 113 TO 356,517 TITLE OemToAnsi(STR0009) PIXEL	// "Movimenta‡„o Banc ria"
+	Endif
+	@ 06, 4 TO 036, 165 OF oDlg	PIXEL
+	@ 44, 4 TO 074, 165 OF oDlg	PIXEL
+	@ 85, 4 TO 159, 165 OF oDlg	PIXEL
+
+	@ 01, 04 SAY OemToAnsi(STR0020) 		 SIZE 25, 7 OF oDlg PIXEL	// "Origem"
+	@ 13, 08 SAY OemToAnsi(STR0021) 		 SIZE 19, 7 OF oDlg PIXEL	// "Banco"
+	@ 13, 36 SAY OemToAnsi(STR0022) 		 SIZE 25, 7 OF oDlg PIXEL	// "Agˆncia"
+	@ 13,115 SAY OemToAnsi(STR0034)		 SIZE 28, 7 OF oDlg PIXEL	// "Natureza"
+	@ 13, 65 SAY OemToAnsi(STR0023) 		 SIZE 20, 7 OF oDlg PIXEL	// "Conta"
+	@ 40, 04 SAY OemToAnsi(STR0024) 		 SIZE 25, 7 OF oDlg PIXEL	// "Destino"
+	@ 52, 08 SAY OemToAnsi(STR0021) 		 SIZE 23, 7 OF oDlg PIXEL	// "Banco"
+	@ 52, 36 SAY OemToAnsi(STR0022) 		 SIZE 27, 7 OF oDlg PIXEL	// "Agˆncia"
+	@ 52, 65 SAY OemToAnsi(STR0023) 		 SIZE 18, 7 OF oDlg PIXEL	// "Conta"
+	@ 52,115 SAY OemToAnsi(STR0034)		 SIZE 28, 7 OF oDlg PIXEL	// "Natureza"
+	@ 79, 04 SAY OemToAnsi(STR0025) 		 SIZE 41, 7 OF oDlg PIXEL	// "Identifica‡„o"
+	@ 93, 08 SAY OemToAnsi(STR0026) 		 SIZE 31, 7 OF oDlg PIXEL	// "Tipo Mov."
+	@ 93, 42 SAY OemToAnsi(STR0027) 		 SIZE 43, 7 OF oDlg PIXEL	// "N£mero Doc."
+	@ 93, 99 SAY OemToAnsi(STR0028) 		 SIZE 17, 7 OF oDlg PIXEL	// "Valor"
+	@ 115,09 SAY OemToAnsi(STR0029) 		 SIZE 28, 7 OF oDlg PIXEL	// "Hist¢rico"
+	@ 136,09 SAY OemToAnsi(STR0030) 		 SIZE 40, 7 OF oDlg PIXEL	// "Benefici rio"
+
+
+	@ 22, 09 MSGET oBcoOrig VAR cBcoOrig	F3 "SA6" Picture "@S3"    Valid CarregaSa6(@cBcoOrig,@cAgenOrig,@cCtaOrig,.F.) SIZE 10, 10 OF oDlg PIXEL
+	@ 22, 36 MSGET cAgenOrig	Picture "@S5"             Valid CarregaSa6(@cBcoOrig,@cAgenOrig,@cCtaOrig,.F.) SIZE 20, 10 OF oDlg PIXEL
+	@ 22, 65 MSGET cCtaOrig	Picture "@S10"            Valid If(CarregaSa6(@cBcoOrig,@cAgenOrig,@cCtaOrig,.F.,,.T.),.T.,oBcoOrig:SetFocus()) SIZE 45, 10 OF oDlg PIXEL
+	@ 22,115 MSGET cNaturOri	F3 "SED"             	  Valid ExistCpo("SED",@cNaturOri) SIZE 30, 10 OF oDlg PIXEL
+	@ 60, 09 MSGET oBcoDest VAR cBcoDest	F3 "SA6" Picture "@S3"    Valid CarregaSa6(@cBcoDest,@cAgenDest,@cCtaDest,.F.) SIZE 10, 10 OF oDlg PIXEL
+	@ 60, 36 MSGET cAgenDest	Picture "@S5"             Valid CarregaSa6(@cBcoDest,@cAgenDest,@cCtaDest,.F.) SIZE 20, 10 OF oDlg PIXEL
+	@ 60, 65 MSGET cCtaDest	Picture "@S10"            Valid IF(CarregaSa6(@cBcoDest,@cAgenDest,@cCtaDest,.F.,@cBenef100,.T.) .and. ;
+		( cBcoDest != cBcoOrig .or. cAgenDest != cAgenOrig .or.	cCtaDest != cCtaOrig),.T.,oBcoDest:SetFocus());
+		SIZE 45, 10 OF oDlg PIXEL
+	@ 60,115 MSGET cNaturDes	F3 "SED"            		  Valid ExistCpo("SED",@cNaturDes) SIZE 30, 10 OF oDlg PIXEL
+	@ 102,09 MSGET cTipoTran	F3 "14"  Picture "!!!"            Valid (!Empty(cTipoTran) .And. ExistCpo("SX5","14"+cTipoTran)) .and. ;
+		Iif(cTipoTran="CH",fa050Cheque(cBcoOrig,cAgenOrig,cCtaOrig,cDocTran),.T.) SIZE  15, 10 OF oDlg PIXEL
+	@ 102,42 MSGET cDocTran PICTURE PesqPict("SE5", "E5_NUMCHEQ")	Valid !Empty(cDocTran).and.fa100doc(cBcoOrig,cAgenOrig,cCtaOrig,cDocTran)	SIZE	47, 10 OF oDlg PIXEL
+	@ 102,99 MSGET nValorTran PicTure PesqPict("SE5","E5_VALOR",15) Valid nValorTran > 0     SIZE  54, 10 OF oDlg PIXEL
+	@ 123, 9 MSGET cHist100	Picture "@S22"       Valid !Empty(cHist100)        SIZE 144, 10 OF oDlg PIXEL
+	@ 144, 9 MSGET cBenef100	Picture "@S21"       Valid !Empty(cBenef100)       SIZE 144, 10 OF oDlg PIXEL
+
+	If lSpbInUse
+		@ 162, 4 TO 188, 165 OF oDlg	PIXEL
+		@ 165,09 SAY STR0048 SIZE 60, 07 OF oDlg PIXEL  //"Modalidade SPB"
+		@ 173,09 MSCOMBOBOX oModSPB VAR cModSpb ITEMS aModalSpb SIZE 56, 47 OF oDlg PIXEL ;
+						VALID SpbTipo("SE5",cModSpb,cTipoTran,"TR")
+	Endif
+
+	DEFINE SBUTTON FROM 10, 168 TYPE 1 ENABLE ACTION (nOpca:=1,oDLg:End()) OF oDlg
+	DEFINE SBUTTON FROM 23, 168 TYPE 2 ENABLE ACTION (nOpca:=0,oDlg:End()) OF oDlg
+	If IntePms()
+		aTrfPms := {CriaVar("E5_PROJPMS"),CriaVar("E5_TASKPMS"),CriaVar("E5_PROJPMS"),CriaVar("E5_PROJPMS"),CriaVar("E5_EDTPMS"),CriaVar("E5_TASKPMS")}
+		@ 36,168 BUTTON "Projetos..." SIZE 29 ,14   ACTION {||F100PmsTrf(aTrfPms)	} OF oDlg PIXEL 
+	EndIf
+
+
+   If cPaisLoc <> "BRA"
+	   @ 140, 168 BUTTON OemToAnsi(STR0035) SIZE 30,15 ACTION (Fa100SetMo()) OF oDlg PIXEL   //  "&Tasas"
+	Endif
+	ACTIVATE MSDIALOG oDlg CENTERED VALID  (iif(nOpca==1 , ;
+		CarregaSa6(cBcoOrig,cAgenOrig,cCtaOrig,.T.,,.T.) .and. ;
+		ValidTran(cTipoTran,cBcoDest,cAgenDest,cCtaDest,cBenef100,cDocTran,nValorTran,cNaturOri,cNaturDes,cBcoOrig,cAgenOrig,cCtaOrig).and.;
+		IIF(lSpbInUse,SpbTipo("SE5",cModSpb,cTipoTran,"TR"),.T.),.T.) )
+
+	IF nOpcA == 1
+		Begin Transaction
+		   lGrava := .T.
+			If ExistBlock("FA100TRF")
+				lGrava := ExecBlock("FA100TRF", .F., .F., { cBcoOrig, cAgenOrig, cCtaOrig,;
+															   cBcoDest, cAgenDest, cCtaDest,;
+															   cTipoTran, cDocTran, nValorTran,;
+															   cHist100, cBenef100,cNaturOri,;
+															   cNaturDes , cModSpb, lEstorno})
+
+			Endif
+			IF lGrava
+			   fa100grava( cBcoOrig,cAgenOrig,cCtaOrig,cNaturOri,;
+				   cBcoDest,cAgenDest,cCtaDest,cNaturDes,;
+  				   cTipoTran,cDocTran,nValorTran,cHist100,cBenef100,,cModSpb,aTrfPms)
+			ENDIF		
+		End Transaction
+		If lA100BL01
+			aValores := {cBcoOrig,cAgenOrig,cCtaOrig,cNaturOri,cBcoDest,cAgenDest,;
+				cCtaDest,cNaturDes,cTipoTran,nValorTran,cDocTran,cBenef100,cHist100,cModSpb}
+			ExecBlock("A100BL01",.F.,.F.,aValores)
+		EndIf
+	Else
+		Exit
+	Endif
+Enddo
+If cPaisLoc <> "BRA" .And. Type("bFiltraBrw") == "B"
+	Eval( bFiltraBrw )
+Endif	
+Return
+
+/*
+ÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜ
+±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±
+±±ÚÄÄÄÄÄÄÄÄÄÄÂÄÄÄÄÄÄÄÄÄÄÂÄÄÄÄÄÄÄÂÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÂÄÄÄÄÄÄÂÄÄÄÄÄÄÄÄÄÄ¿±±
+±±³Fun‡„o    ³fa100grava³ Autor ³ Wagner Xavier         ³ Data ³ 08/09/93 ³±±
+±±ÃÄÄÄÄÄÄÄÄÄÄÅÄÄÄÄÄÄÄÄÄÄÁÄÄÄÄÄÄÄÁÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÁÄÄÄÄÄÄÁÄÄÄÄÄÄÄÄÄÄ´±±
+±±³Descri‡„o ³Faz as atualizacoes para transferencia.                     ³±±
+±±ÃÄÄÄÄÄÄÄÄÄÄÅÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ´±±
+±±³Sintaxe   ³fa100grava()                                                ³±±
+±±ÃÄÄÄÄÄÄÄÄÄÄÅÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ´±±
+±±³ Uso      ³ FINA100                                                    ³±±
+±±ÀÄÄÄÄÄÄÄÄÄÄÁÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÙ±±
+±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±
+ßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßß
+*/
+STATIC Function fa100grava(cBcoOrig,cAgenOrig,cCtaOrig,cNaturOri,;
+	cBcoDest,cAgenDest,cCtaDest,cNaturDes,;
+	cTipoTran,cDocTran,nValorTran,cHist100,;
+	cBenef100,lEstorno,cModSpb,aTrfPms)
+
+Local lPadrao1:=.F.
+Local lPadrao2:=.F.
+Local cPadrao:="560"
+Local lMostra,lAglutina
+Local lA100TR01	:= ExistBlock("A100TR01")
+Local lA100TR02	:= ExistBlock("A100TR02")
+Local lA100TR03	:= ExistBlock("A100TR03")
+Local nRegSEF := 0
+Local nMoedOrig   := 1
+Local nMoedTran	:=	1
+Local lSpbInUse	:= SpbInUse()
+lEstorno := IIF (lEstorno == NIL , .F., lEstorno)
+
+DEFAULT aTrfPms	:= {}
+DEFAULT lExterno  := .F.
+
+STRLCTPAD := " "
+
+If !(Empty(cBcoOrig+cAgenOrig+cCtaOrig))
+	//ÚÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ¿
+	//³Atencao!, neste programa sera' utilizado 2 lan‡amentos padroni³
+	//³ zados, pois o mesmo gera 2 registros na movimentacao bancaria³
+	//³ O 1. registro para a saida  (Banco Origem ) ->Padrao "560"   ³
+	//³ O 2. registro para a entrada(Banco Destino) ->Padrao "561"   ³
+	//ÀÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÙ
+	If cPaisLoc	# "BRA"
+		dbSelectArea( "SA6" )
+		dbSeek( cFilial + cBcoDest + cAgenDest + cCtaDest )
+		nMoedTran	:=	MAX(SA6->A6_MOEDA,1)
+	Endif
+	dbSelectArea( "SA6" )
+	dbSeek( cFilial + cBcoOrig + cAgenOrig + cCtaOrig )
+
+	//ÚÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ¿
+	//³ Atualiza movimentacao bancaria c/referencia a saida			  ³
+	//ÀÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÙ
+	Reclock("SE5",.T.)
+	SE5->E5_FILIAL  := xFilial()
+	SE5->E5_DATA	 := dDataBase
+	SE5->E5_BANCO	 := cBcoOrig
+	SE5->E5_AGENCIA := cAgenOrig
+	SE5->E5_CONTA	 := cCtaOrig
+	SE5->E5_RECPAG  := "P"
+	SE5->E5_NUMCHEQ := cDocTran
+	SE5->E5_HISTOR  := cHist100
+	SE5->E5_TIPODOC := "TR"
+	SE5->E5_MOEDA	 := cTipoTran
+	If cPaisLoc == "BRA"
+		SE5->E5_VALOR  := nValorTran
+	Else
+		nMoedOrig   	:= MAX(SA6->A6_MOEDA,1)
+      SE5->E5_VALOR  := IIf(lEstorno,Round(xMoeda(nValorTran,nMoedTran,nMoedOrig,dDataBase,MsDecimais(nMoedOrig)+1,nTxEstR,nTxEstP),MsDecimais(nMoedOrig)),nValorTran)
+		//Gravo o valor na moeda 1 para nao ter problemas na hora da conversao por casas
+		//decimais perdidas na contabilidade... Bruno.
+      SE5->E5_VLMOED2:= IIf(lEstorno,xMoeda(nValorTran,nMoedTran,1,,,nTxEstR),xMoeda(nValorTran,nMoedOrig,1,,,aTxMoedas[nMoedOrig][2]))
+	Endif
+	SE5->E5_DTDIGIT := dDataBase
+	SE5->E5_BENEF	 := cBenef100
+	SE5->E5_DTDISPO := SE5->E5_DATA
+	SE5->E5_NATUREZ := cNaturOri
+	SE5->E5_FILORIG := cFilAnt
+	If (SE5->(FieldPos('E5_TXMOEDA')) > 0) .And. (cPaisLoc <> "BRA")
+		E5_TXMOEDA := If( lEstorno, nTxEstR, aTxMoedas[nMoedOrig][2] )
+	Endif
+	If lSpbInUse
+		SE5->E5_MODSPB := cModSpb
+	Endif
+	MsUnLock()	
+	If !Empty(aTrfPms) .And. !Empty(aTrfPms[1])
+		nRecNo	:= SE5->(RecNo())
+		cID		:= STRZERO(SE5->(RecNo()),10)
+		cStart	:= "AA"
+ 		dbSelectArea("SE5")
+		dbSetOrder(9)
+		While dbSeek(xFilial()+cID)
+			cID := STRZERO(nRecNo,8)+cStart
+ 			cStart := SomaIt(cStart)
+ 		End
+		SE5->(dbGoto(nRecNo))
+		RecLock('SE5',.F.)
+		SE5->E5_PROJPMS	:= cId
+		MsUnlock()
+		RecLock("AJE",.T.)
+		AJE->AJE_FILIAL := xFilial("AJE")
+		AJE->AJE_VALOR 	:= SE5->E5_VALOR
+		AJE->AJE_DATA	:= SE5->E5_DATA
+		AJE->AJE_HISTOR	:= SE5->E5_HISTOR
+		AJE->AJE_PROJET	:= aTrfPms[1]
+		AJE->AJE_REVISA	:= PmsAF8Ver(aTrfPms[1])
+		AJE->AJE_TAREFA	:= aTrfPms[2]
+		AJE->AJE_ID		:= cID
+		MsUnlock()
+	EndIf
+	If (Alltrim(cTipoTran) == "TB" .or. ;
+			(Alltrim(cTipoTran) == "CH" .and. !IsCaixaLoja(cBcoOrig))) .and. !lEstorno
+		nRegSEF := Fa100Cheq("FINA100TRF")
+	Endif
+
+	If lA100TR01
+		ExecBlock("A100TR01",.F.,.F.,lEstorno)
+	EndIf
+
+	//ÚÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ¿
+	//³ So atualiza do saldo se for R$,DO,TB,TC ou se for CH e o ban-³
+	//³ co origem n„o for um caixa do loja, pois este foi gerado no  ³
+	//³ SE1 e somente sera atualizado na baixa do titulo.            ³
+   //³ Aclaracao : Foi incluido o tipo $ para os movimentos en di-- ³
+   //³ nheiro em QUALQUER moeda, pois o R$ nao e representativo     ³
+   //³ fora do BRASIL. Bruno 07/12/2000 Paraguai                    ³
+   //ÀÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÙ
+   If ((Alltrim(SE5->E5_MOEDA) $ "R$/DO/TB/TC"+IIf(cPaisLoc=="BRA","","/$ ")) .or. ;
+			(SE5->E5_MOEDA == "CH" .and. !IsCaixaLoja(cBcoOrig))) .and. ;
+			!(SUBSTR(SE5->E5_NUMCHEQ,1,1) == "*")
+		//ÚÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ¿
+		//³ Atualiza saldo bancario.												  ³
+		//³ Paso o E5_VALOR pois fora do Brasil a conta pode ser em moeda³
+		//³ diferente da moea Oficial.                                   ³
+		//ÀÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÙ
+		AtuSalBco(cBcoOrig,cAgenOrig,cCtaOrig,dDataBase,SE5->E5_VALOR,"-")
+	Endif
+
+	If !lExterno
+		*ÚÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ¿
+		*³Lan‡amento Contabil - 1. registro do SE5									³
+		*ÀÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÙ
+		lPadrao1:=VerPadrao(cPadrao)
+		STRLCTPAD := cBcoDest+"/"+cAgenDest+"/"+cCtaDest
+		IF lPadrao1 .and. mv_par04 == 1
+			nHdlPrv:=HeadProva(cLote,"FINA100",Substr(cUsuario,7,6),@cArquivo)
+		Endif
+
+		IF lPadrao1 .and. mv_par04 == 1
+			nTotal+=DetProva(nHdlPrv,cPadrao,"FINA100",cLote)
+		Endif
+
+		IF lPadrao1 .and. mv_par04 == 1  // On Line
+			Reclock("SE5")
+			Replace E5_LA With "S"
+		EndIf
+		//ÚÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ-Ä¿
+      //³ Conforme situação do parâmetro abaixo, integra com o SIGAGSP ³
+      //³             MV_SIGAGSP - 0-Não / 1-Integra                   ³
+      //³ e-mail de Fernando Mazzarolo de 08/11/2004                   ³
+      //ÀÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ-ÄÄÙ
+      If SuperGetMV("MV_SIGAGSP",.F.,"0") == "1"
+         GSPF380(3) 
+      EndIf
+	Endif
+Endif
+
+If !(Empty(cBcoDest+cAgenDest+cCtaDest))
+	//ÚÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ¿
+	//³ Atualiza movimentacao bancaria c/referencia a entrada		  ³
+	//ÀÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÙ
+	dbSelectArea( "SA6" )
+	dbSeek( cFilial + cBcoDest + cAgenDest + cCtaDest )
+	Reclock("SE5",.T.)
+	SE5->E5_FILIAL  := xFilial()
+	SE5->E5_DATA	 := dDataBase
+	SE5->E5_BANCO	 := cBcoDest
+	SE5->E5_AGENCIA := cAgenDest
+	SE5->E5_CONTA	 := cCtaDest
+	SE5->E5_RECPAG  := "R"
+	SE5->E5_DOCUMEN := cDocTran
+	SE5->E5_HISTOR  := cHist100
+	SE5->E5_TIPODOC := "TR"
+	SE5->E5_MOEDA	 := cTipoTran
+	If cPaisLoc == "BRA"
+	   SE5->E5_VALOR   := nValorTran
+	Else
+       SE5->E5_VALOR   := IIf(lEstorno,nValorTran,Round(xMoeda(nValorTran,nMoedOrig,Max(SA6->A6_MOEDA,1),dDataBase,MsDecimais(Max(SA6->A6_MOEDA,1))+1,aTxMoedas[nMoedOrig][2],aTxMoedas[Max(SA6->A6_MOEDA,1)][2]),MsDecimais(Max(SA6->A6_MOEDA,1))))
+		//Gravo o valor na moeda 1 para nao ter problemas na hora da conversao por casas
+		//decimais perdidas na contabilidade... Bruno.
+       SE5->E5_VLMOED2 := IIf(lEstorno,xMoeda(nValorTran,Max(SA6->A6_MOEDA,1),1,,,nTxEstR),xMoeda(nValorTran,nMoedOrig,1,,,aTxMoedas[nMoedOrig][2]))
+	Endif
+	SE5->E5_DTDIGIT := dDataBase
+	SE5->E5_BENEF	 := cBenef100
+	SE5->E5_DTDISPO := SE5->E5_DATA
+	SE5->E5_NATUREZ := cNaturDes
+	SE5->E5_FILORIG := cFilAnt
+	If (SE5->(FieldPos('E5_TXMOEDA')) > 0) .And. (cPaisLoc <> "BRA")
+		E5_TXMOEDA := If( lEstorno, nTxEstR, aTxMoedas[nMoedTran][2] )
+	Endif
+	If lSpbInUse
+		SE5->E5_MODSPB := cModSpb
+	Endif
+	If !Empty(aTrfPms) .And. !Empty(aTrfPms[3])
+		nRecNo	:= SE5->(RecNo())
+ 		cID		:= STRZERO(SE5->(RecNo()),10)
+ 		cStart	:= "AA"
+		dbSelectArea("SE5")
+ 		dbSetOrder(9)
+ 		While dbSeek(xFilial()+cID)
+			cID := STRZERO(nRecNo,8)+cStart
+ 			cStart := SomaIt(cStart)
+ 		End
+		SE5->(dbGoto(nRecNo))
+		RecLock('SE5',.F.)
+		SE5->E5_PROJPMS	:= cId
+		MsUnlock()
+		RecLock("AJE",.T.)
+		AJE->AJE_FILIAL := xFilial("AJE")
+		AJE->AJE_VALOR 	:= SE5->E5_VALOR
+		AJE->AJE_DATA	:= SE5->E5_DATA
+		AJE->AJE_HISTOR	:= SE5->E5_HISTOR
+		AJE->AJE_PROJET	:= aTrfPms[3]
+		AJE->AJE_REVISA	:= PmsAF8Ver(aTrfPms[3])
+		AJE->AJE_EDT	:= aTrfPms[4]
+		AJE->AJE_TAREFA	:= aTrfPms[5]
+		AJE->AJE_ID		:= cID
+		MsUnlock()
+	EndIf
+	MsUnLock()
+
+	If lA100TR02
+		ExecBlock("A100TR02",.F.,.F.,lEstorno)
+	EndIf
+
+	//ÚÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ¿
+	//³ So atualiza do saldo se for R$,DO,TB,TC ou se for CH e o ban-³
+	//³ co origem n„o for um caixa do loja, pois este foi gerado no  ³
+	//³ SE1 e somente sera atualizado na baixa do titulo.            ³
+	//³ O teste do caixa ‚ exatamente para o banco origem Mesmo.     ³
+   //³ Aclaracao : Foi incluido o tipo $ para os movimentos en di-- ³
+   //³ nheiro em QUALQUER moeda, pois o R$ nao e representativo     ³
+   //³ fora do BRASIL. Bruno 07/12/2000 Paraguai                    ³
+   //ÀÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÙ
+   If ((Alltrim(SE5->E5_MOEDA) $ "R$/DO/TB/TC"+IIf(cPaisLoc=="BRA","","/$ ") ) .or. ;
+			(SE5->E5_MOEDA == "CH" .and. !IsCaixaLoja(cBcoOrig))) .and. ;
+			!(SUBSTR(SE5->E5_NUMCHEQ,1,1) == "*")
+		//ÚÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ¿
+		//³ Atualiza saldo bancario.												  ³
+		//³ Paso o E5_VALOR pois fora do Brasil a conta pode ser em moeda³
+		//³ diferente da moea Oficial.                                   ³
+		//ÀÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÙ
+		
+		AtuSalBco(cBcoDest,cAgenDest,cCtaDest,dDataBase,SE5->E5_VALOR,"+")
+	Endif
+
+	If !lExterno
+		*ÚÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ¿
+		*³Lan‡amento Contabil - 2. registro do SE5									³
+		*ÀÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÙ
+		cPadrao :="561"
+		lPadrao2:=VerPadrao(cPadrao)
+		STRLCTPAD := cBcoOrig+"/"+cAgenOrig+"/"+cCtaOrig
+		IF lPadrao2 .and. !lPadrao1 .and. mv_par04 == 1
+			nHdlPrv:=HeadProva(cLote,"FINA100",Substr(cUsuario,7,6),@cArquivo)
+		Endif
+
+		IF lPadrao2 .and. mv_par04 == 1
+			nTotal+=DetProva(nHdlPrv,cPadrao,"FINA100",cLote)
+		Endif
+
+		IF ( lPadrao1 .or. lPadrao2) .and. mv_par04 == 1
+			RodaProva(nHdlPrv,nTotal)
+			lAglutina:=Iif(mv_par01==1,.T.,.F.)
+			lMostra	:=Iif(mv_par02==1,.T.,.F.)
+			//ÚÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ¿
+			//³ Envia para Lancamento Contabil							  ³
+			//ÀÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÙ
+			cA100Incl(cArquivo,nHdlPrv,3,cLote,lMostra,lAglutina)
+			If lPadrao1 .and. nRegSEF > 0
+				//ÚÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ¿
+				//³ Se contabilizou a Saida, e Foi uma TB  / CH, ent„o  ³
+				//³ marca no cheque que j  foi contabilizado.           ³
+				//ÀÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÙ
+				DbSelectArea("SEF")
+				DbGoto(nRegSEF)
+				Reclock("SEF")
+				SEF->EF_LA := "S"
+				MsUnlock()
+			Endif
+		Endif
+		//ÚÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ-Ä¿
+      //³ Conforme situação do parâmetro abaixo, integra com o SIGAGSP ³
+      //³             MV_SIGAGSP - 0-Não / 1-Integra                   ³
+      //³ e-mail de Fernando Mazzarolo de 08/11/2004                   ³
+      //ÀÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ-ÄÄÙ
+      If SuperGetMV("MV_SIGAGSP",.F.,"0") == "1"
+         GSPF380(4)
+      EndIf
+	Endif
+Endif
+
+If lA100TR03
+	ExecBlock("A100TR03",.F.,.F.,lEstorno)
+EndIf
+
+IF !lExterno .and. lPadrao2 .and. mv_par04 == 1  // On Line
+	Reclock("SE5")
+	Replace E5_LA With "S"
+EndIf
+
+Return
+
+
+/*
+ÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜ
+±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±
+±±ÚÄÄÄÄÄÄÄÄÄÄÂÄÄÄÄÄÄÄÄÄÄÂÄÄÄÄÄÄÄÂÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÂÄÄÄÄÄÄÂÄÄÄÄÄÄÄÄÄÄ¿±±
+±±³Fun‡„o    ³fa100Clas ³ Autor ³ Wagner Xavier         ³ Data ³ 03/06/92 ³±±
+±±ÃÄÄÄÄÄÄÄÄÄÄÅÄÄÄÄÄÄÄÄÄÄÁÄÄÄÄÄÄÄÁÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÁÄÄÄÄÄÄÁÄÄÄÄÄÄÄÄÄÄ´±±
+±±³Descri‡„o ³Classifica‡„o cont bil para lan‡amentos cont beis pendentes ³±±
+±±ÃÄÄÄÄÄÄÄÄÄÄÅÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ´±±
+±±³Sintaxe   ³fa100Clas()                                                 ³±±
+±±ÃÄÄÄÄÄÄÄÄÄÄÅÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ´±±
+±±³ Uso      ³ FINA100                                                    ³±±
+±±ÀÄÄÄÄÄÄÄÄÄÄÁÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÙ±±
+±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±
+ßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßß
+*/
+Function FA100Clas(cAlias,nReg,nOpc)
+Local lAglut, lDigita
+
+Pergunte ("AFI100",.F.)
+lAglut := Iif(mv_par01==1,.T.,.F.)
+lDigita:= Iif(mv_par02==1,.T.,.F.)
+
+If pergunte("FIN100",.T.)
+	If MsgYesNo(OemToAnsi(STR0031),OemToAnsi(STR0032))  // "Confirma Processamento"###"Aten‡„o"
+		Processa({|lEnd| FA100Processa(lAglut,lDigita)})
+	Endif
+Endif
+If cPaisLoc <> "BRA" .And. Type("bFiltraBrw") == "B"
+	Eval( bFiltraBrw )
+Endif	
+Return              
+
+/*
+±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±
+±±ÚÄÄÄÄÄÄÄÄÄÄÂÄÄÄÄÄÄÄÄÄÄÄÄÂÄÄÄÄÄÄÄÂÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÂÄÄÄÄÄÄÂÄÄÄÄÄÄÄÄÄÄ¿±±
+±±³Fun‡…o    ³fa100Process³ Autor ³ Wagner Xavier         ³ Data ³ 07.04.94 ³±±
+±±ÃÄÄÄÄÄÄÄÄÄÄÅÄÄÄÄÄÄÄÄÄÄÄÄÁÄÄÄÄÄÄÄÁÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÁÄÄÄÄÄÄÁÄÄÄÄÄÄÄÄÄÄ´±±
+±±³Descri‡…o ³Classifica a movimentacao bancaria.                           ³±±
+±±ÃÄÄÄÄÄÄÄÄÄÄÅÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ´±±
+±±³Sintaxe   ³fa100Processa()                                               ³±±
+±±ÃÄÄÄÄÄÄÄÄÄÄÅÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ´±±
+±±³Parametros³Nao ha'                                                       ³±±
+±±ÃÄÄÄÄÄÄÄÄÄÄÅÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ´±±
+±±³ Uso      ³ SIGAFIN                                                      ³±±
+±±ÀÄÄÄÄÄÄÄÄÄÄÁÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÙ±±
+±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±
+ßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßß
+*/
+Function fa100Processa(lAglut,lDigita)
+LOCAL nTotal:=0,aContas[12],nHdlPrv:=0
+LOCAL lFirst	:=.t.
+Local nValor	:= 0
+Local lPadrao 	:= .F.
+Local cPadrao  := "562"
+dbSelectArea("SE5")
+dbSetOrder(1)
+ProcRegua(SE5->(RecCount()),24,04)
+
+Begin Transaction
+
+	dbSeek(xFilial("SE5")+DtoS(mv_par01),.T.)
+
+	While !Eof().and.xFilial()==SE5->E5_FILIAL.and.E5_DATA<=mv_par02
+
+		IncProc(24,04)
+		IF Substr(E5_LA,1,1) = "S" .Or. E5_SITUACA == "C" .or. !Empty(E5_TIPODOC) .or. E5_TIPODOC == "CX"
+			dbSkip()
+			Loop
+		End
+
+		cPadrao := IIf(E5_RECPAG == "P", "562", "563")
+		lPadrao := VerPadrao(cPadrao)
+		If !CtbInUse()
+			// Esta verificacao só é válida para Sigacon. No Sigactb é utilizado o LP 562
+			If Empty( E5_TIPOLAN ) .and. Empty(E5_DEBITO) .and. Empty(E5_CREDITO)
+				dbSkip( )
+				Loop
+			End
+			If lFirst
+				nHdlPrv:=HeadProva(cLote,"FINA100",Substr(cUsuario,7,6),@cArquivo,.T.)
+				lFirst:=.F.
+			End
+			//Nas localizacoes, as movimentacoes sao feitas na moeda do BANCO, por isso
+			//tanto nas transferencias quanto no PAGAR/RECEBER, e' gravado o valor em moeda 1
+			//no campo E5_vlmoed2 para facilitar a contabilizacao. Bruno 22/08/00 22:01
+			If cPaisLoc # "BRA"
+				nValor   := E5_VLMOED2
+			Else
+				nValor   := E5_VALOR
+			Endif
+			aContas[1]:=E5_TIPOLAN
+			aContas[2]:=TranslCta(E5_DEBITO,20) 	//Interpreta debito
+			aContas[3]:=TranslCta(E5_CREDITO,20)	 //Interpreta credito
+			Store 0 To aContas[7],aContas[8],aContas[9],aContas[10]
+			aContas[4]:=nValor
+			aContas[5]:="SSSSS"
+			aContas[6]:=Substr(E5_HISTOR,1,40)
+			aContas[7]:=0
+			aContas[8]:=0
+			aContas[9]:=0
+			aContas[10]:=0
+			aContas[11]:=TranslCta(E5_CCD,9) 	 // 07/12/95
+			aContas[12]:=TranslCta(E5_CCC,9) 	 // 07/12/95
+			IF aContas[4] > 0
+				fWrite(nHdlPrv,aContas[1]+aContas[2]+aContas[3]+;
+					Str(aContas[4],16,2)+aContas[5]+aContas[6]+;
+					Str(aContas[7],16,2)+Str(aContas[8],16,2)+;
+					Str(aContas[9],16,2)+Str(aContas[10],16,2)+;
+					aContas[11]+aContas[12]+Space(126)+CHR(13)+CHR(10),312)
+				nTotal+=aContas[4]
+			Endif
+		Else				// Esta utilizando o Sigactb
+			If lPadrao
+				If lFirst
+					nHdlPrv:=HeadProva(cLote,"FINA100",Substr(cUsuario,7,6),@cArquivo)
+					lFirst := .F.
+				EndIf	
+				nTotal+=DetProva(nHdlPrv,cPadrao,"FINA100",cLote)                   
+			EndIf	
+		EndIf
+		dbSelectArea("SE5")
+		Reclock("SE5")
+		SE5->E5_LA := "S"+Substr(E5_LA,2,1)
+		MsUnLock()
+		dbSkip()
+	End
+
+	IF  nTotal>0
+		RodaProva(nHdlPrv,nTotal)
+		cA100Incl(cArquivo,nHdlPrv,3,cLote,lDigita,lAglut)
+	EndIf
+
+End Transaction
+
+// Restaura pergunta principal
+pergunte("AFI100",.F.)
+dbSelectArea( "SE5" )
+dbSeek(cFilial)
+
+/*
+±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±
+±±ÚÄÄÄÄÄÄÄÄÄÄÂÄÄÄÄÄÄÄÄÄÄÂÄÄÄÄÄÄÄÂÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÂÄÄÄÄÄÄÂÄÄÄÄÄÄÄÄÄÄ¿±±
+±±³Fun‡„o    ³fa100Perg ³ Autor ³ Wagner Xavier         ³ Data ³ 29/05/92 ³±±
+±±ÃÄÄÄÄÄÄÄÄÄÄÅÄÄÄÄÄÄÄÄÄÄÁÄÄÄÄÄÄÄÁÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÁÄÄÄÄÄÄÁÄÄÄÄÄÄÄÄÄÄ´±±
+±±³Descri‡„o ³Carrega funcao pergunte                                     ³±±
+±±ÃÄÄÄÄÄÄÄÄÄÄÅÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ´±±
+±±³Sintaxe   ³fa100perg()                                                 ³±±
+±±ÃÄÄÄÄÄÄÄÄÄÄÅÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ´±±
+±±³ Uso      ³Generico                                                    ³±±
+±±ÀÄÄÄÄÄÄÄÄÄÄÁÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÙ±±
+±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±
+ßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßß
+*/
+Function Fa100Perg()
+
+pergunte("AFI100",.T.)
+
+Return
+
+/*
+±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±
+±±ÚÄÄÄÄÄÄÄÄÄÄÂÄÄÄÄÄÄÄÄÄÄÂÄÄÄÄÄÄÄÂÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÂÄÄÄÄÄÄÂÄÄÄÄÄÄÄÄÄÄ¿±±
+±±³Fun‡„o    ³FA100CanCh³ Autor ³ Valter G. Nogueira Jr.³ Data ³ 23/02/94 ³±±
+±±ÃÄÄÄÄÄÄÄÄÄÄÅÄÄÄÄÄÄÄÄÄÄÁÄÄÄÄÄÄÄÁÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÁÄÄÄÄÄÄÁÄÄÄÄÄÄÄÄÄÄ´±±
+±±³Descri‡„o ³ Cancelo o cheque referente ao pagamento                    ³±±
+±±ÃÄÄÄÄÄÄÄÄÄÄÅÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ´±±
+±±³Sintaxe   ³ fa100CanCh()                                               ³±±
+±±ÃÄÄÄÄÄÄÄÄÄÄÅÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ´±±
+±±³Parametros³ Nao tem                                                    ³±±
+±±ÃÄÄÄÄÄÄÄÄÄÄÅÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ´±±
+±±³ Uso      ³ FINA100                                                    ³±±
+±±ÀÄÄÄÄÄÄÄÄÄÄÁÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÙ±±
+±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±
+ßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßß
+*/
+STATIC Function fA100CanCh()
+Local cAlias:=Alias()
+Local nRegSE2, nOrdSE2
+dbSelectArea( "SEF" )
+dbSetOrder(1)
+dbSeek(cFilial+SE5->E5_BANCO+SE5->E5_AGENCIA+SE5->E5_CONTA+SE5->E5_NUMCHEQ)
+// Os movimentos de cheques a serem aglutinados são gerados com a chave em branco,
+// entao procura o registro no SEF referente ao movimento bancario
+While xFilial("SEF")+SEF->(EF_BANCO+EF_AGENCIA+EF_CONTA+EF_NUM)==;
+		xFilial("SEF")+SE5->(E5_BANCO+E5_AGENCIA+E5_CONTA+E5_NUMCHEQ)
+	If ( 	EF_VALOR = SE5->E5_VALOR .and. ;
+			EF_DATA	= SE5->E5_DATA )
+		RecLock("SEF",.F.,.T.)
+		If ( !(EF_IMPRESS $ "CAS") )
+			dbDelete()
+		Else
+			If ( SEF->EF_IMPRESS == "S" )
+				SEF->EF_IMPRESS := "C"
+			EndIf
+		EndIf
+		MsUnLock()
+	EndIf
+	DbSkip()
+End
+//ÚÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ¿
+//³ Se existir, apaga Titulo CH gerado pelo cheque...            ³
+//ÀÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÙ
+DbSelectArea("SE2")
+nRegSE2:= recno()
+nOrdSE2:= IndexOrd()
+DbSetOrder(1)
+IF DbSeek(SE5->E5_FILIAL + SE5->E5_PREFIXO + SE5->E5_NUMERO + ;
+		SE5->E5_PARCELA + SE5->E5_TIPO)
+	RecLock("SE2",.F.,.T.)
+	DbDelete()
+	MsUnlock()
+Endif
+DbSelectArea("SE2")
+DbSetOrder(nOrdSe2)
+DbGoto(nRegSe2)
+
+dbSelectArea(cAlias)
+Return(.T.)
+
+/*
+±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±
+±±ÚÄÄÄÄÄÄÄÄÄÄÂÄÄÄÄÄÄÄÄÄÄÄÄÄÂÄÄÄÄÄÄÄÂÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÂÄÄÄÄÄÄÂÄÄÄÄÄÄÄÄÄÄ¿±±
+±±³Fun‡„o    ³fa100CtaIgual³ Autor ³ Wagner Xavier      ³      ³ 18/03/96 ³±±
+±±ÃÄÄÄÄÄÄÄÄÄÄÅÄÄÄÄÄÄÄÄÄÄÄÄÄÁÄÄÄÄÄÄÄÁÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÁÄÄÄÄÄÄÁÄÄÄÄÄÄÄÄÄÄ´±±
+±±³Descri‡„o ³Verifique se as contas s„o iguais                           ³±±
+±±ÃÄÄÄÄÄÄÄÄÄÄÅÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ´±±
+±±³Sintaxe   ³fa100Conta()                                                ³±±
+±±ÃÄÄÄÄÄÄÄÄÄÄÅÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ´±±
+±±³ Uso      ³ FINA100                                                    ³±±
+±±ÀÄÄÄÄÄÄÄÄÄÄÁÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÙ±±
+±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±
+ßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßß
+*/
+Function fa100CtaIgual()
+LOCAL lRet := .T.
+If !Empty( m->e5_debito ) .and. !Empty( m->e5_credito )
+	If Trim(m->e5_debito) == Trim(m->e5_credito )
+		Help(" ",1,"a100CtaIgual")
+		lRet := .F.
+	End
+End
+Return lRet
+
+/*
+±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±
+±±ÚÄÄÄÄÄÄÄÄÄÄÂÄÄÄÄÄÄÄÄÄÄÂÄÄÄÄÄÄÄÂÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÂÄÄÄÄÄÄÂÄÄÄÄÄÄÄÄÄÄ¿±±
+±±³Fun‡„o	 ³FA100Bco	³ Autor ³ Pilar S. Albaladejo   ³		³ 18/03/96 ³±±
+±±ÃÄÄÄÄÄÄÄÄÄÄÅÄÄÄÄÄÄÄÄÄÄÁÄÄÄÄÄÄÄÁÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÁÄÄÄÄÄÄÁÄÄÄÄÄÄÄÄÄÄ´±±
+±±³Descri‡„o ³Consiste se banco, agencia e conta existem 					  ³±±
+±±ÃÄÄÄÄÄÄÄÄÄÄÅÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ´±±
+±±³Sintaxe	 ³fa100Bco()																  ³±±
+±±ÃÄÄÄÄÄÄÄÄÄÄÅÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ´±±
+±±³ Uso		 ³ FINA100																	  ³±±
+±±ÀÄÄÄÄÄÄÄÄÄÄÁÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÙ±±
+±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±
+ßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßß
+*/
+Function Fa100Bco()
+LOCAL lFin100Ok := ExistBlock("F100TOK")
+LOCAL lRet := .T.
+Local lSpbInUse := SpbInUse()
+
+If !Dtmovfin()
+	lRet := .F.
+Endif
+
+
+If lFin100Ok .and. lRet
+	If !(Execblock("F100TOK",.F.,.F.))
+		lRet := .F.
+	Endif
+Endif
+
+If lRet
+	dbSelectArea("SA6")
+	If !(dbSeek(cFilial+m->e5_banco+m->e5_agencia+m->e5_conta))
+		Help(" ",1,"BCONOEXIST")
+		lRet := .F.
+	ElseIf SA6->A6_BLOCKED == "1"  //Conta corrente bloqueada
+		Help(" ",1,"CCBLOCKED")	
+		lRet := .F.	
+	Endif
+Endif
+
+//ÚÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ¿
+//³ Quando a moeda for cheque o sistema irah obrigar a informacao³
+//³ do numero do cheque, pois a rotina de geracao/cancelamento e ³
+//³ contabilizacao de cheques estah baseado no SEF/SE2 (Contas a ³
+//³ Pagar). O ideal para cheques nao numerados eh a utilizacao   ³
+//³ da rotina de Contas a Pagar e posterior Baixa. Esta rotina   ³
+//³ nao substitui a funcionalide do Contas a Pagar.              ³
+//ÀÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÙ
+If m->e5_moeda $ "C1/C2/C3/C4/C5" .and. Empty(m->e5_numcheq) .and. lRet
+	Help(" ",1,"NumeroCheq")
+	lRet := .F.
+Endif
+
+If lRet .and.lSpbInUse
+	If !SpbTipo("SE5",M->E5_MODSPB,M->E5_MOEDA)
+		lRet := .F.
+	Endif
+Endif
+
+//ÚÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ¿
+//³ Verifica se os campos de integracao com o SIGAPMS.           ³
+//ÀÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÙ
+If lRet .And. !Empty(M->E5_PROJPMS) .And. Empty(M->E5_EDTPMS+M->E5_TASKPMS)
+	HELP(1,"  ","A240PMS")
+	lRet := .F.
+EndIf
+
+//ÚÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ-Ä¿
+//³ Conforme situacao do parametro abaixo, integra com o SIGAGSP ³
+//³             MV_SIGAGSP - 0-Nao / 1-Integra                   ³                
+//ÀÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ-ÄÄÙ
+If lRet
+	If GetNewPar("MV_SIGAGSP","0") == "1" 
+		lRet := GSPF090(cRecPag)
+	EndIf
+Endif
+Return lRet
+
+/*
+±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±
+±±ÚÄÄÄÄÄÄÄÄÄÄÂÄÄÄÄÄÄÄÄÄÄÂÄÄÄÄÄÄÄÂÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÂÄÄÄÄÄÄÂÄÄÄÄÄÄÄÄÄÄ¿±±
+±±³Fun‡„o	 ³FA100Pre	³ Autor ³ Pilar S. Albaladejo   ³		³ 18/03/96 ³±±
+±±ÃÄÄÄÄÄÄÄÄÄÄÅÄÄÄÄÄÄÄÄÄÄÁÄÄÄÄÄÄÄÁÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÁÄÄÄÄÄÄÁÄÄÄÄÄÄÄÄÄÄ´±±
+±±³Descri‡„o ³Consiste se movimento podera ser pre'datado                 ³±±
+±±ÃÄÄÄÄÄÄÄÄÄÄÅÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ´±±
+±±³Sintaxe	 ³fa100Pre()																  ³±±
+±±ÃÄÄÄÄÄÄÄÄÄÄÅÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ´±±
+±±³ Uso		 ³ FINA100																	  ³±±
+±±ÀÄÄÄÄÄÄÄÄÄÄÁÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÙ±±
+±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±
+ßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßß
+*/
+Function fa100Pre()
+LOCAL lRet := .t.
+
+If (!(m->e5_moeda $ "C1/C2/C3/C4/C5") .Or. Substr(m->e5_numcheq,1,1) == "*");
+		.and. m->e5_vencto > m->e5_data
+	Help(" ",1,"FA100PRE")
+	lRet := .f.
+End
+Return lRet
+
+/*
+±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±
+±±ÚÄÄÄÄÄÄÄÄÄÄÂÄÄÄÄÄÄÄÄÄÄÂÄÄÄÄÄÄÄÂÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÂÄÄÄÄÄÄÂÄÄÄÄÄÄÄÄÄÄ¿±±
+±±³Fun‡„o	 ³FA100Est	³ Autor ³ Alessandro B. Freire  ³		³ 02/07/97 ³±±
+±±ÃÄÄÄÄÄÄÄÄÄÄÅÄÄÄÄÄÄÄÄÄÄÁÄÄÄÄÄÄÄÁÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÁÄÄÄÄÄÄÁÄÄÄÄÄÄÄÄÄÄ´±±
+±±³Descri‡„o ³Estorna movimentos bancarios										  ³±±
+±±ÃÄÄÄÄÄÄÄÄÄÄÅÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ´±±
+±±³Sintaxe	 ³fa100Est()																  ³±±
+±±ÃÄÄÄÄÄÄÄÄÄÄÅÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ´±±
+±±³ FINA100  ³ 																			  ³±±
+±±ÀÄÄÄÄÄÄÄÄÄÄÁÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÙ±±
+±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±
+ßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßß
+*/
+FUNCTION Fa100Est()
+LOCAL nOldOrdSE5	:= SE5->(IndexOrd())  // Ordem original do SE5 no inicio da operacao.
+LOCAL nOldRecSE5	:= SE5->(Recno()) 	 // Registro original
+LOCAL lEstornante := .F.					 // Verifica se encontrou o estornante.
+LOCAL lEstornado	:= .F.					 // Verifica se encontrou o estornado.
+LOCAL aEstornante := {} 					 // Array contendo dados do banco estornante.
+LOCAL aEstornado	:= {} 					 // Array contendo dados do banco estornado.
+LOCAL nVlrEstorno := 0						 // Valor a ser estornado.
+
+LOCAL cBcoOrig 	:= ""                 // Banco a ser estornado
+LOCAL cAgenOrig	:= ""                 // Ag.   "  "     "
+LOCAL cCtaOrig 	:= ""                 // Cta.  "  "     "
+LOCAL cNatOrig    := ""
+LOCAL cMoedaTran  := ""						 // Numerario da Transferencia original
+
+LOCAL cBcoDest 	:= ""                 // Banco estornante
+LOCAL cAgenDest	:= ""                 // Ag.      "
+LOCAL cCtaDest 	:= ""                 // Cta.     "
+LOCAL cNatDest    := ""
+LOCAL cHist100 	:= OemToAnsi(STR0033)				 // "Estorno de transferencia."
+LOCAL cBenef100	:= ""
+LOCAL cSeek 		:= ""                 // String de pesquisa
+LOCAL cDoc
+LOCAL nRegOrigem	:= 0
+LOCAL nRegDestino := 0
+LOCAL lEstorno		:= .T.
+Local nTamTit	:= 0
+Local aTam := {}
+LOCAL lGrava 
+Local cModSpb := "1"
+Local lSpbInUse := SpbInUse()
+Local lBlocked := .F.
+
+PRIVATE nTotal 	:= 0
+Private  nTxEstR  := 0
+Private  nTxEstP  := 0
+//ÚÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ¿
+//³Verifica o tamanho dos campos que compoem parte da chave ³
+//³de busca atendendo a Localiza‡äes								³
+//ÀÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÙ
+aTam := TamSx3("E5_PREFIXO")
+nTamTit := aTam[1]
+aTam := TamSx3("E5_NUMERO")
+nTamTit += aTam[1]
+aTam := TamSx3("E5_PARCELA")
+nTamTit += aTam[1]
+aTam := TamSx3("E5_TIPO")
+nTamTit += aTam[1]
+
+//ÚÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ¿
+//³  Parametros da funcao: 											³
+//³  mv_par01 = N£mero do documento a estornar					³
+//³  mv_par02 = Data da Movimentacao								³
+//³  mv_par03 = Banco													³
+//³  mv_par04 = Agencia 												³
+//³  mv_par05 = Conta													³
+//ÀÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÙ
+//ÚÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ¿
+//³  Carrega a os parametros do estorno.							³
+//³  Utilizando desta forma, nao ser  preciso digitar nada, ³
+//³  basta posicionar no registro estornante.					³
+//ÀÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÙ
+If !Pergunte( "FA100E", .T. )
+	// Restaura pergunta principal
+	pergunte("AFI100",.F.)
+	If cPaisLoc <> "BRA" .And. Type("bFiltraBrw") == "B"
+		Eval( bFiltraBrw )
+	Endif	
+	Return(.F.)
+EndIf
+
+//ÚÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ¿
+//³ Verifica se data do movimento n„o ‚ menor que data limite de ³
+//³ movimentacao no financeiro    										  ³
+//ÀÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÙ
+If !DtMovFin(mv_par02)
+	// Restaura pergunta principal
+	pergunte("AFI100",.F.)
+	If cPaisLoc <> "BRA" .And. Type("bFiltraBrw") == "B"
+		Eval( bFiltraBrw )
+	Endif	
+	Return
+Endif
+If dDataBase < mv_par02
+	// Restaura pergunta principal
+	Help(" ",1,"DTESTINV",, STR0042 +; // "Data do estorno inválida!"
+                Chr(13)  + STR0043 + DTOC(mv_par02) +; // "Data da movimentação: "
+                Chr(13)  + STR0044 + DTOC(dDataBase), 4, 0) // "Data do estorno: "
+	pergunte("AFI100",.F.)
+	If cPaisLoc <> "BRA" .And. Type("bFiltraBrw") == "B"
+		Eval( bFiltraBrw )
+	Endif	
+	Return
+Endif
+//ÚÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ¿
+//³Procura se j  n„o houve estorno desta transferencia     ³
+//ÀÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÙ
+dbSelectArea("SE5")
+dbSetOrder(2)
+cSeek := xFilial("SE5")+"TE"+Space(nTamTit)+DTOS(mv_par02)
+dbSeek( cSeek,.T. )
+
+While ! Eof()									.And. ;
+		( SE5->E5_FILIAL == xFilial("SE5")) .And. ;
+		( SE5->E5_DATA == mv_par02 )			.And. ;
+		( SE5->E5_TIPODOC == "TE" )
+
+	If SE5->(E5_BANCO+E5_AGENCIA+E5_CONTA) == mv_par03+mv_par04+mv_par05 .and. ;
+			Alltrim(SE5->E5_NUMCHEQ)	== Alltrim(mv_par01) .And. ;
+			SE5->E5_RECPAG 	== "P"      .And. ;
+			SE5->E5_DATA		== mv_par02
+		HELP( " ",1,"A240ESTORN" )
+		dbSetOrder( nOldOrdSE5 )
+		dbGoTo( nOldRecSE5 )
+		// Restaura pergunta principal
+		pergunte("AFI100",.F.)
+		If cPaisLoc <> "BRA" .And. Type("bFiltraBrw") == "B"
+			Eval( bFiltraBrw )
+		Endif	
+		Return( .F. )
+	EndIf
+	dbSkip()
+EndDo
+
+//ÚÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ¿
+//³Procura pela primeira transferencia no dia informado.   ³
+//ÀÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÙ
+dbSelectArea("SE5")
+dbSetOrder(2)
+
+cSeek := xFilial("SE5")+"TR"+Space(nTamTit)+DTOS(mv_par02)
+dbSeek( cSeek,.T. )
+
+While ! Eof()								.And. ;
+		( SE5->E5_FILIAL == xFilial("SE5")) .And. ;
+		( SE5->E5_DATA == mv_par02 )			.And. ;
+		( SE5->E5_TIPODOC == "TR" )
+
+	//ÚÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ¿
+	//³  Verifica se o registro corresponde aos parametros informados. ³
+	//³  Caso afirmativo, encontrou o banco estornante.					 ³
+	//ÀÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÙ
+	If Alltrim(SE5->E5_NUMCHEQ)		== 	Alltrim(mv_par01)   .And.	 ;
+			SE5->E5_BANCO		== 	mv_par03   .And.	 ;
+			SE5->E5_AGENCIA	== 	mv_par04   .And.	 ;
+			SE5->E5_CONTA		== 	mv_par05   .And.	 ;
+			SE5->E5_RECPAG 	== 	"P"
+
+		If lSpbInuse
+			AAdd( aEstornante, {SE5->E5_BANCO,SE5->E5_AGENCIA,SE5->E5_CONTA,SE5->E5_NATUREZ,SE5->E5_MOEDA,SE5->E5_MODSPB} )
+		Else
+			AAdd( aEstornante, {SE5->E5_BANCO,SE5->E5_AGENCIA,SE5->E5_CONTA,SE5->E5_NATUREZ,SE5->E5_MOEDA} )
+		Endif
+		nVlrEstorno 	:=  SE5->E5_VALOR
+		//Localizacoes : Precisso da taxa do primeiro lancamento para estornar os mesmos
+		//						valores . Bruno 22/08/2000
+      nTxEstR       := SE5->E5_VLMOED2/SE5->E5_VALOR
+		lEstornante 	:=  .T.
+		nRegOrigem		:= RecNo()
+
+		//ÚÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ¿
+		//³ Se foi criado um cheque para esta transferencia, o mesmo    ³
+		//³ deve ser cancelado, uma vez que o valor ser  estornado.	  	 ³
+		//ÀÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÙ
+		If SE5->E5_MOEDA == "CH" .or. SE5->E5_MOEDA == "TB"
+			dbSelectArea("SEF")
+			dbSetOrder(1)
+			If dbSeek( xFilial("SEF")+SE5->E5_BANCO+SE5->E5_AGENCIA+SE5->E5_CONTA+SE5->E5_NUMCHEQ )
+				RecLock("SEF",.F.)
+				If EF_IMPRESS == "S"
+					Replace EF_IMPRESS With "C"
+				Else
+					dbDelete()
+				Endif
+				MsUnlock()
+			EndIf
+		EndIf
+		dbSelectArea("SE5")
+	EndIf
+	//ÚÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ¿
+	//³  O documento ser  o estornado caso for um movimento a receber  ³
+	//³  com o numero informado e no mesmo dia.								 ³
+	//³  Procura pelo N§ do Doc em E5_DOCUMEN   								 ³
+	//ÀÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÙ
+	If AllTrim(SE5->E5_DOCUMEN)      == AllTrim(mv_par01) .And. ;
+			SE5->E5_RECPAG 	== "R"      .And. ;
+			SE5->E5_DATA		== mv_par02 .And. ;
+			lEstornante
+		AAdd( aEstornado, {SE5->E5_BANCO,SE5->E5_AGENCIA,SE5->E5_CONTA,SE5->E5_NATUREZ})
+		//Localizacoes : Precisso da taxa do primeiro lancamento para estornar os mesmos 
+		//						valores . Bruno 22/08/2000	
+      nTxEstP       := SE5->E5_VLMOED2/SE5->E5_VALOR
+		lEstornado := .T.
+		nRegDestino := RecNo()
+	EndIf
+	If lEstornante .and. lEstornado
+		Exit
+	Endif
+	dbSkip()
+EndDo
+dbSelectArea("SE5")
+dbSetOrder(2)
+//ÚÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ¿
+//³ Verifica um possivel erro no SE5.						  ³
+//ÀÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÙ
+If !lEstornante
+	HELP( " ",1,"RECNO" )
+	dbSetOrder( nOldOrdSE5 )
+	dbGoTo( nOldRecSE5 )
+	// Restaura pergunta principal
+	pergunte("AFI100",.F.)
+	If cPaisLoc <> "BRA" .And. Type("bFiltraBrw") == "B"
+		Eval( bFiltraBrw )
+	Endif	
+	Return( .F. )
+EndIf
+//ÚÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ¿
+//³ O beneficiario sera o banco estornante.				  ³
+//ÀÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÙ
+dbSelectArea("SA6")
+dbSetOrder(1)
+dbSeek( xFilial("SA6")+aEstornante[1][1]+aEstornante[1][2]+aEstornante[1][3] )
+cBenef100	:= SA6->A6_NOME
+
+dbSelectArea("SE5")
+
+If Len(aEstornado) > 0
+	//ÚÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ¿
+	//³ Grava o estorno. 															 ³
+	//ÀÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÙ
+	cBcoOrig 	:= aEstornado[1][1]
+	cAgenOrig	:= aEstornado[1][2]
+	cCtaOrig 	:= aEstornado[1][3]
+	cNatOrig 	:= aEstornado[1][4]
+Endif
+
+cBcoDest 	:= aEstornante[1][1]
+cAgenDest	:= aEstornante[1][2]
+cCtaDest 	:= aEstornante[1][3]
+cNatDest 	:= aEstornante[1][4]
+cMoedaTran  := aEstornante[1][5]
+cModSpb		:= IIF(lSpbInUse, aEstornante[1][6], cModSpb)
+cDoc			:= mv_par01
+lEstorno		:= .T.
+
+// Valida estorno da transferencia
+If ExistBlock("FA100VET")
+	If ! ExecBlock("FA100VET", .F., .F., { nRegOrigem, nRegDestino } )
+		pergunte("AFI100",.F.)
+		dbSelectArea("SE5")
+		dbSetOrder( nOldOrdSE5 )
+		dbGoTo( nOldRecSE5 )
+		If cPaisLoc <> "BRA" .And. Type("bFiltraBrw") == "B"
+			Eval( bFiltraBrw )
+		Endif	
+		Return .F.
+	Endif
+Endif
+
+// Restaura pergunta principal
+pergunte("AFI100",.F.)
+lGrava := .T.
+If ExistBlock("FA100TRF")
+	lGrava := ExecBlock("FA100TRF", .F., .F., { cBcoOrig, cAgenOrig, cCtaOrig,;
+															   cBcoDest, cAgenDest, cCtaDest,;
+															   cMoedaTran, cDoc, nVlrEstorno,;
+															   cHist100, cBenef100, cNatOrig,;
+															   cNatDest,cModSpb,lEstorno })
+Endif
+
+//Verifica se alguma das contas está bloqueada
+If CCBLOCKED(cBcoOrig,cAgenOrig,cCtaOrig) .or. CCBLOCKED(cBcoDest,cAgenDest,cCtaDest)
+	lBlocked := .T.
+Endif	                                                                                      
+
+If !lBlocked
+	IF lGrava
+	   fa100grava(cBcoOrig,cAgenOrig,cCtaOrig,cNatOrig,;
+		   cBcoDest,cAgenDest,cCtaDest,cNatDest,;
+		   cMoedaTran,cDoc,nVlrEstorno, cHist100,cBenef100,lEstorno, cModSpb)
+
+		//ÚÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ¿
+		//³ Grava tipodoc com TE indicando o estorno da transfe-³
+		//³ rencia. 														  ³
+		//ÀÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÙ
+		dbSelectArea("SE5")
+		
+		If nRegOrigem > 0
+			dbGoto(nRegOrigem)
+			Reclock("SE5")
+			Replace E5_TIPODOC With "TE"     // Transf estornada
+			MsUnlock()
+		Endif
+		
+		If nRegDestino > 0
+			dbGoto(nRegDestino)
+			Reclock("SE5")
+			Replace E5_TIPODOC With "TE"     // Transf estornada
+			MsUnlock()
+		Endif
+	Endif
+Endif
+	
+dbSetOrder( nOldOrdSE5 )
+dbGoTo( nOldRecSE5 )
+If cPaisLoc <> "BRA" .And. Type("bFiltraBrw") == "B"
+	Eval( bFiltraBrw )
+Endif	
+Return( .T. )
+
+/*
+±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±
+±±ÚÄÄÄÄÄÄÄÄÄÄÂÄÄÄÄÄÄÄÄÄÄÂÄÄÄÄÄÄÄÂÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÂÄÄÄÄÄÄÂÄÄÄÄÄÄÄÄÄÄ¿±±
+±±³Fun‡„o	 ³FA100Doc	³ Autor ³ Alessandro B. Freire  ³		³ 02/07/97 ³±±
+±±ÃÄÄÄÄÄÄÄÄÄÄÅÄÄÄÄÄÄÄÄÄÄÁÄÄÄÄÄÄÄÁÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÁÄÄÄÄÄÄÁÄÄÄÄÄÄÄÄÄÄ´±±
+±±³Descri‡„o ³Valida o documento digitado 										  ³±±
+±±ÃÄÄÄÄÄÄÄÄÄÄÅÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ´±±
+±±³Sintaxe	 ³fa100Doc()																  ³±±
+±±ÃÄÄÄÄÄÄÄÄÄÄÅÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ´±±
+±±³ FINA100  ³ 																			  ³±±
+±±ÀÄÄÄÄÄÄÄÄÄÄÁÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÙ±±
+±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±
+ßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßß
+*/
+Function fa100Doc(cBanco,cAgencia,cConta,cDocumento)
+
+Local lRet:=.T.
+Local aAmb,cSeek
+Local nTamTit	:= 0
+Local aTam := {}
+
+//ÚÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ¿
+//³Verifica o tamanho dos campos que compoem parte da chave ³
+//³de busca atendendo a Localiza‡äes								³
+//ÀÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÙ
+aTam := TamSx3("E5_PREFIXO")
+nTamTit := aTam[1]
+aTam := TamSx3("E5_NUMERO")
+nTamTit += aTam[1]
+aTam := TamSx3("E5_PARCELA")
+nTamTit += aTam[1]
+aTam := TamSx3("E5_TIPO")
+nTamTit += aTam[1]
+
+If (Alltrim(cTipoTran) != "TB" .And. Alltrim(cTipoTran) != "CH") .And.;
+		Substr(cDocumento,1,1) == "*"
+	Return .F.
+EndIf
+
+dbSelectArea("SEF")
+If dbSeek(xFilial()+cBanco+cAgencia+cConta+Substr(cDocumento,1,15))
+	Help(" ",1,"100DOCEXIS")
+	Return .F.
+Endif
+
+//ÚÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ¿
+//³Procura se j  n„o houve movimentacao com este numero    ³
+//ÀÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÙ
+aAmb:={Recno(),Alias(),SE5->(IndexOrd()),SE5->(recno())}
+dbSelectArea("SE5")
+dbSetOrder(2)
+cSeek := xFilial("SE5")+"TR"+Space(nTamTit)+DTOS(dDataBase)
+dbSeek( cSeek,.T. )
+
+While ! Eof() .and. cSeek == xFilial("SE5")+"TR"+Space(nTamTit)+DTOS(SE5->E5_DATA)
+	If SE5->(E5_BANCO+E5_AGENCIA+E5_CONTA) == cBanco+cAgencia+cConta .and. ;
+			Alltrim(SE5->E5_NUMCHEQ)	== Alltrim(cDocumento) .And. ;
+			SE5->E5_RECPAG 	== "P" 	     .And. ;
+			SE5->E5_DATA		== dDataBase
+		HELP( " ",1,"100DOCEXIS" )
+		lRet := .F.
+		Exit
+	EndIf
+	DbSkip(1)
+EndDo
+
+DbSelectArea("SE5")
+DbGoto(aAmb[4])
+DbSetORder(aAmb[3])
+DbSelectArea(aAmb[2])
+DbGoto(aAmb[1])
+
+Return lRet
+
+/*
+±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±
+±±ÚÄÄÄÄÄÄÄÄÄÄÂÄÄÄÄÄÄÄÄÄÄÂÄÄÄÄÄÄÄÂÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÂÄÄÄÄÄÄÂÄÄÄÄÄÄÄÄÄÄ¿±±
+±±³Fun‡…o	 ³F100PesInd³ Autor ³ Bruno Sobieski Chavez ³ Data ³ 21.06.99 ³±±
+±±ÃÄÄÄÄÄÄÄÄÄÄÅÄÄÄÄÄÄÄÄÄÄÁÄÄÄÄÄÄÄÁÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÁÄÄÄÄÄÄÁÄÄÄÄÄÄÄÄÄÄ´±±
+±±³Descri‡…o ³ Pesquisa para IndRegua (quando na funçao que chama aRotina |±
+±±³       	 ³ nao e possivel enviar parametros).								  ³±±
+±±ÃÄÄÄÄÄÄÄÄÄÄÅÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ´±±
+±±³Sintaxe	 ³ FA100PesInd  															  ³±±
+±±ÃÄÄÄÄÄÄÄÄÄÄÅÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ´±±
+±±³ Uso		 ³ FINA100																	  ³±±
+±±ÀÄÄÄÄÄÄÄÄÄÄÁÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÙ±±
+±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±
+ßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßß
+*/
+Function FA100PesInd
+AxPesqInd(cIndice,cIndexArg)
+Return
+
+/*
+±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±
+±±ÚÄÄÄÄÄÄÄÄÄÄÂÄÄÄÄÄÄÄÄÄÄÂÄÄÄÄÄÄÄÂÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÂÄÄÄÄÄÄÂÄÄÄÄÄÄÄÄÄÄ¿±±
+±±³Fun‡„o	 ³ ValidTran³ Autor ³ J£lio Wittwer         ³ Data ³08.02.2000³±±
+±±ÃÄÄÄÄÄÄÄÄÄÄÅÄÄÄÄÄÄÄÄÄÄÁÄÄÄÄÄÄÄÁÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÁÄÄÄÄÄÄÁÄÄÄÄÄÄÄÄÄÄ´±±
+±±³Descri‡„o ³ Valida‡„o do banco / agencia / conta de destino na transf. ³±±
+±±ÃÄÄÄÄÄÄÄÄÄÄÅÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ´±±
+±±³Sintaxe	 ³ ValidTran(cTipo, @Banco, @agencia, @conta , @benef)        ³±±
+±±ÃÄÄÄÄÄÄÄÄÄÄÅÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ´±±
+±±³ Uso		 ³ FINA100																	  ³±±
+±±ÀÄÄÄÄÄÄÄÄÄÄÁÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÙ±±
+±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±
+ßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßß
+*/
+Function ValidTran(cTip,cBco,cAge,cCta,cBen,cDoc,nValTran,cNaturOri,cNaturDes,cBcoOrig,cAgenOrig,cCtaOrig)
+
+Local lRet := .T.
+Local nMoedaDes := 0
+Local nMoedaOri := 0
+
+If Empty(cTip) .or. nValTran <= 0
+	lRet := .F.
+Endif
+
+//Verifica se Conta Origem = Conta Destino
+If cBcoOrig+cAgenOrig+cCtaOrig == cBco+cAge+cCta
+	Help(" ",1,"BCO_TRF")
+	lRet := .F.
+Endif
+
+If Empty(cNaturOri) .or. Empty(cNaturDes)
+	Help(" ",1,"NATUREZA")
+	lRet := .F.
+Endif	
+	
+//ÚÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ¿
+//³ Apenas deve obrigar a digita‡„o do destino da opera‡„o ³
+//³ quando for movimenta‡„o em dinheiro                    ³
+//ÀÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÙ
+If lRet
+	If alltrim(cTip) $ "R$/DOC/TB"
+		lRet := CarregaSa6(@cBco,@cAge,@cCta,.T.,@cBen,.T.,,.T.)
+	Else
+		IF !Empty(cBco + cAge + cCta)
+			lRet := CarregaSa6(@cBco,@cAge,@cCta,.T.,@cBen,.T.,,.T.)
+		Else 
+			lRet := .F.
+		Endif
+	Endif
+Endif
+//ÚÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ¿
+//³ Obrigar a digita‡Æo do nro do documento de transferenc.³
+//³ quando for movimenta‡„o via Doc, Cheque ou Cheque TB   ³
+//ÀÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÙ
+If alltrim(cTip) $ "DOC/TB/CH" .And. lRet
+	lRet := !Empty(cDoc)
+	If !lRet
+		Help(" ",1,"NRODOC",,STR0037,1,0)	//"Numero de documento invalido"
+	Endif
+Endif
+
+//ÚÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ¿
+//³ Verifica se data do movimento n„o ‚ menor que data limite de ³
+//³ movimentacao no financeiro    										  ³
+//ÀÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÙ
+If lRet .and. !DtMovFin()
+	lRet := .f.
+Endif
+
+//ÚÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ¿
+//³Verifica se as taxas das moedas usadas estao cadastradas ³
+//ÀÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÙ
+If lRet .and. cPaisLoc <> "BRA"
+	nMoedaOri := MoedaBco(cBcoOrig,cAgenOrig,cCtaOrig)
+	nMoedaDes := MoedaBco(cBco,cAge,cCta)
+	If (Len(aTxMoedas) < nMoedaOri .Or. (nMoedaOri > 1 .And. aTxMoedas[nMoedaOri,2] == 0)) .Or.;
+		(Len(aTxMoedas) < nMoedaDes .Or. (nMoedaDes > 1 .And. aTxMoedas[nMoedaDes,2] == 0)) 
+		lRet := .F. 			
+		Help(" ",1,'NoMoneda')
+	Endif
+Endif	
+Return lRet
+
+/*
+ÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜ
+±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±
+±±ÚÄÄÄÄÄÄÄÄÄÄÂÄÄÄÄÄÄÄÄÄÄÂÄÄÄÄÄÄÄÂÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÂÄÄÄÄÄÄÂÄÄÄÄÄÄÄÄÄÄ¿±±
+±±³Fun‡„o	 ³IsCaixaLoj³ Autor ³ Wagner Xavier 		  ³ Data ³ 16/02/00 ³±±
+±±ÃÄÄÄÄÄÄÄÄÄÄÅÄÄÄÄÄÄÄÄÄÄÁÄÄÄÄÄÄÄÁÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÁÄÄÄÄÄÄÁÄÄÄÄÄÄÄÄÄÄ´±±
+±±³Descri‡„o ³Verifica se o codigo do banco ‚ um caixa do SIGALOJA.       ³±±
+±±ÃÄÄÄÄÄÄÄÄÄÄÅÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ´±±
+±±³ Uso		 ³V rios     																  ³±±
+±±ÀÄÄÄÄÄÄÄÄÄÄÁÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÙ±±
+±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±
+ßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßß
+*/
+Function IsCaixaLoja( cCaixa )
+LOCAL lCaixa := .F.
+LOCAL cAlias := Alias()
+
+dbSelectArea("SX5")
+dbSeek(xFilial("SX5") + "23")
+
+While !Eof() .and. X5_TABELA == "23"
+
+	If Substr(X5_CHAVE,1,3) == Substr(cCaixa,1,3)
+		lCaixa := .T.
+		Exit
+	Endif
+	dbSkip()
+Enddo
+
+dbSelectArea(cAlias)
+Return lCaixa
+/*
+ÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜ
+±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±
+±±ÉÍÍÍÍÍÍÍÍÍÍÑÍÍÍÍÍÍÍÍÍÍËÍÍÍÍÍÍÍÑÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍËÍÍÍÍÍÍÑÍÍÍÍÍÍÍÍÍÍÍÍÍ»±±
+±±ºPrograma  ³Fa100SetMoºAutor  ³Bruno Sobieski      º Data ³  22/08/00   º±±
+±±ÌÍÍÍÍÍÍÍÍÍÍØÍÍÍÍÍÍÍÍÍÍÊÍÍÍÍÍÍÍÏÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÊÍÍÍÍÍÍÏÍÍÍÍÍÍÍÍÍÍÍÍÍ¹±±
+±±ºDesc.     ³Permite corrigir as taxas das moedas para a taxa da hora.   º±±
+±±º          ³                                                            º±±
+±±ÌÍÍÍÍÍÍÍÍÍÍØÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍ¹±±
+±±ºUso       ³ AP5                                                        º±±
+±±ÈÍÍÍÍÍÍÍÍÍÍÏÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍ¼±±
+±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±
+ßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßß
+*/
+
+Static Function Fa100SetMo()
+Local oDlg, nLenMoedas	:= Len(aTxMoedas)
+Local lConfirmo	:=	.F.
+Local aTxTmp   := aClone(aTxMoedas)
+
+If nLenMoedas > 1
+	Define MSDIALOG oDlg From 200,0 TO 362,230 TITLE OemToAnsi(STR0036) PIXEL   //   "Tasas"
+   @ 005,005  To 062,110 OF oDlg PIXEL
+   @ 012,010 SAY  aTxMoedas[2][1]  Of oDlg PIXEL
+   @ 010,060 MSGET aTxMoedas[2][2] PICTURE aTxMoedas[1][3] Of oDlg PIXEL
+   If nLenMoedas > 2
+      @ 024,010 SAY  aTxMoedas[3][1]  Of oDlg PIXEL
+      @ 022,060 MSGET aTxMoedas[3][2] PICTURE aTxMoedas[2][3] Of oDlg PIXEL
+      If nLenMoedas > 3
+         @ 036,010 SAY  aTxMoedas[4][1]  Of oDlg PIXEL
+         @ 034,060 MSGET aTxMoedas[4][2] PICTURE aTxMoedas[3][3] Of oDlg PIXEL
+         If nLenMoedas > 4
+            @ 048,010 SAY  aTxMoedas[5][1]  Of oDlg PIXEL
+            @ 046,060 MSGET aTxMoedas[5][2] PICTURE aTxMoedas[4][3] Of oDlg PIXEL
+         Endif
+      Endif
+   Endif
+   DEFINE  SButton FROM 064,80 TYPE 1 Action (lConfirmo := .T. , oDlg:End() ) ENABLE OF oDlg  PIXEL
+   Activate MSDialog oDlg CENTERED
+   If !lConfirmo
+      aTxMoedas   := aClone(aTxTmp)
+   Endif
+
+Else
+	Help("",1,"NoMoneda")
+Endif
+
+Return
+
+
+/*/
+±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±
+±±ÚÄÄÄÄÄÄÄÄÄÄÂÄÄÄÄÄÄÄÄÄÄÄÄÂÄÄÄÄÄÄÄÂÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÂÄÄÄÄÄÄÂÄÄÄÄÄÄÄÄÄÄ¿±±
+±±³Fun‡…o    ³F100Legenda ³ Autor ³ Mauricio Pequim Jr. ³ Data ³ 13.11.01 ³±±
+±±ÃÄÄÄÄÄÄÄÄÄÄÅÄÄÄÄÄÄÄÄÄÄÄÄÁÄÄÄÄÄÄÄÁÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÁÄÄÄÄÄÄÁÄÄÄÄÄÄÄÄÄÄ´±±
+±±³Descri‡…o ³ Cria uma janela contendo a legenda da mBrowse ou retorna a ³±±
+±±³          ³ para o BROWSE                                              ³±±
+±±ÃÄÄÄÄÄÄÄÄÄÄÅÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ´±±
+±±³ Uso      ³ Fina100                                                    ³±±
+±±ÀÄÄÄÄÄÄÄÄÄÄÁÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÙ±±
+±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±
+ßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßß
+/*/
+Function F100Legenda(nReg)
+
+Local aLegenda := { 	{"BR_VERDE", STR0039 },;		//"Movimento Bancario - Receber"
+							{"BR_AZUL", STR0040 },;		//"Movimento Bancario - Pagar"
+							{"BR_AMARELO", STR0057 },;		//"Movimento Bancario - Estornado"
+							{"BR_VERMELHO", STR0041 } }	//"Movimento Cancelado"
+Local uRetorno := .T.
+
+If nReg = Nil	// Chamada direta da funcao onde nao passa, via menu Recno eh passado
+	uRetorno := {}
+	Aadd(uRetorno, { 'E5_RECPAG = "R" .and. Empty(E5_SITUACA)', aLegenda[1][1] } )
+	Aadd(uRetorno, { 'E5_RECPAG = "P" .and. Empty(E5_SITUACA)', aLegenda[2][1] } )
+	Aadd(uRetorno, { 'E5_SITUACA $ "X/E"', aLegenda[3][1] } )
+	Aadd(uRetorno, { 'E5_SITUACA = "C"', aLegenda[4][1] } )
+Else
+	BrwLegenda(cCadastro, STR0038, aLegenda) // "Legenda"
+Endif
+
+Return uRetorno
+
+/*
+±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±
+±±ÚÄÄÄÄÄÄÄÄÄÄÂÄÄÄÄÄÄÄÄÄÄÂÄÄÄÄÄÄÄÂÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÂÄÄÄÄÄÄÂÄÄÄÄÄÄÄÄÄÄ¿±±
+±±³Fun‡„o    ³F100VldPrj³ Autor ³Fabio Rogerio Pereira  ³ Data ³ 31/01/02 ³±±
+±±ÃÄÄÄÄÄÄÄÄÄÄÅÄÄÄÄÄÄÄÄÄÄÁÄÄÄÄÄÄÄÁÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÁÄÄÄÄÄÄÁÄÄÄÄÄÄÄÄÄÄ´±±
+±±³Descri‡„o ³Validacao do codigo da tarefa digitada.                     ³±±
+±±ÃÄÄÄÄÄÄÄÄÄÄÅÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ´±±
+±±³ Uso      ³ FINA100                                                    ³±±
+±±ÀÄÄÄÄÄÄÄÄÄÄÁÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÙ±±
+±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±
+ßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßß
+*/
+Function F100VldPrj(cAlias)
+Local lRet	:= .F.
+Local aArea		:= GetArea()
+Local aAreaAF8	:= AF8->(GetArea())
+Local aAreaAF9	:= AF9->(GetArea())
+Local aAreaAFC	:= AFC->(GetArea())
+
+If AF8->(dbSeek(xFilial()+M->E5_PROJPMS))
+	Do Case
+		Case (cAlias == "AF9")
+			If AF9->(dbSeek(xFilial()+AF8->AF8_PROJET+AF8->AF8_REVISA+M->E5_TASKPMS))
+				lRet := .T.
+			EndIf
+
+		Case (cAlias == "AFC")
+			If AFC->(dbSeek(xFilial()+AF8->AF8_PROJET+AF8->AF8_REVISA+M->E5_EDTPMS))
+				lRet := .T.
+			EndIf
+	EndCase
+	
+	If !lRet
+		HELP("   ",1,"REGNOIS")
+	EndIf
+Else
+	HELP("   ",1,"REGNOIS")
+EndIf	
+
+RestArea(aAreaAF8)
+RestArea(aAreaAF9)
+RestArea(aAreaAFC)
+RestArea(aArea)
+
+Return lRet
+
+/*
+ÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜ
+±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±
+±±ÚÄÄÄÄÄÄÄÄÄÄÂÄÄÄÄÄÄÄÄÄÄÂÄÄÄÄÄÄÄÂÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÂÄÄÄÄÄÄÂÄÄÄÄÄÄÄÄÄÄÄÄ¿±±
+±±³Fun‡…o    ³F100DlgPms³ Autor ³ Edson Maricate        ³ Data ³ 15-02-2002 ³±±
+±±ÃÄÄÄÄÄÄÄÄÄÄÅÄÄÄÄÄÄÄÄÄÄÁÄÄÄÄÄÄÄÁÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÁÄÄÄÄÄÄÁÄÄÄÄÄÄÄÄÄÄÄÄ´±±
+±±³Descri‡…o ³Cria uma janela de consula das tarefas do Projeto.            ³±±
+±±ÃÄÄÄÄÄÄÄÄÄÄÅÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ´±±
+±±³ Uso      ³SIGAPMS                                                       ³±±
+±±ÀÄÄÄÄÄÄÄÄÄÄÁÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÙ±±
+±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±
+ßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßß
+*/
+Function F100DlgPms(cValid)
+
+Local aRet
+
+DEFAULT cValid 	:= "AF9"
+
+aRet := PmsSelTsk(STR0046,"AF8/AFC/AF9",cValid,STR0047)  //"Selecione a Tarefa"###"Selecao Invalida. Esta consulta permite apenas a selecao das Tarefas do projeto. Varifique o elemento selecionado."
+
+If !Empty(aRet)
+	If aRet[1]=="AF9"
+		AF9->(dbGoto(aRet[2]))
+		M->E5_PROJPMS		:= AF9->AF9_PROJET
+		M->E5_TASKPMS		:= AF9->AF9_TAREFA
+		M->E5_EDTPMS		:= SPACE(LEN(M->E5_EDTPMS))
+	ElseIf aRet[1]=="AFC"
+		AFC->(dbGoto(aRet[2]))
+		M->E5_PROJPMS		:= AFC->AFC_PROJET
+		M->E5_TASKPMS		:= SPACE(LEN(M->E5_TASKPMS))
+		M->E5_EDTPMS		:= AFC->AFC_EDT
+	EndIf
+	If ExistBlock("PMSDLGMOV")
+		ExecBlock("PMSDLGMOV",.F.,.F.)
+	EndIf
+EndIf
+
+Return 
+
+/*
+ÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜ
+±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±
+±±ÚÄÄÄÄÄÄÄÄÄÄÂÄÄÄÄÄÄÄÄÄÄÂÄÄÄÄÄÄÄÂÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÂÄÄÄÄÄÄÂÄÄÄÄÄÄÄÄÄÄÄÄ¿±±
+±±³Fun‡…o    ³F100PmsTrf³ Autor ³ Edson Maricate        ³ Data ³ 15-02-2002 ³±±
+±±ÃÄÄÄÄÄÄÄÄÄÄÅÄÄÄÄÄÄÄÄÄÄÁÄÄÄÄÄÄÄÁÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÁÄÄÄÄÄÄÁÄÄÄÄÄÄÄÄÄÄÄÄ´±±
+±±³Descri‡…o ³Cria uma janela de selecao do projeto Origem/Destino para     ³±±
+±±³          ³alocacao no projeto.                                          ³±±
+±±ÃÄÄÄÄÄÄÄÄÄÄÅÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ´±±
+±±³ Uso      ³SIGAPMS                                                       ³±±
+±±ÀÄÄÄÄÄÄÄÄÄÄÁÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÙ±±
+±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±
+ßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßß
+*/
+Function F100PmsTrf(aTrfPms)
+
+
+DEFINE MSDIALOG oDlg FROM  32, 113 TO 200,517 TITLE STR0049 PIXEL	 //"Gerenciamento de Projetos : Transferencia"
+
+	@ 06, 4 TO 036, 165 Label STR0050 OF oDlg	PIXEL  //"Origem"
+	@ 44, 4 TO 074, 165 Label STR0051 OF oDlg	PIXEL  //"Destino"
+
+	@ 12, 09 SAY STR0052 Of oDlg PIXEL  //"Projeto"
+	@ 12, 60 SAY STR0053 Of oDlg PIXEL	  //"Tarefa"
+	@ 21, 09 MSGET aTrfPms[1] F3 "AF8" Picture PesqPict("SE5","E5_PROJPMS") Valid Vazio(aTrfPms[1]).Or.(ExistCpo("AF8",aTrfPms[1],1) .And. PmsSetF3("AF9",2,aTrfPms[1]).And.aTrfPms[3]!=aTrfPms[1]) SIZE 30, 10 OF oDlg PIXEL
+	@ 21, 60 MSGET aTrfPms[2] F3 "AF9" Picture PesqPict("SE5","E5_TASKPMS") Valid Vazio(aTrfPms[2]).Or.(ExistCpo("AF9",aTrfPms[1]+PmsAF8Ver(aTrfPms[1])+aTrfPms[2],1)) When !Empty(aTrfPms[1]) SIZE 50, 10 OF oDlg PIXEL
+
+	@ 50, 09 SAY STR0052 Of oDlg PIXEL  //"Projeto"
+	@ 50, 60 SAY "EDT" Of oDlg PIXEL	 
+	@ 50,111 SAY STR0053 Of oDlg PIXEL  //"Tarefa"
+	@ 59, 09 MSGET aTrfPms[3] F3 "AF8" Picture PesqPict("SE5","E5_PROJPMS") Valid Vazio(aTrfPms[3]).Or.(ExistCpo("AF8",aTrfPms[3],1) .And.aTrfPms[3]!=aTrfPms[1] .And. PmsSetF3("AF9",2,aTrfPms[3]) .And. PmsSetF3("AFC",2,aTrfPms[3]).And.If(.T.,(aTrfPms[4]:=Space(Len(aTrfPms[4])),aTrfPms[5]:=Space(Len(aTrfPms[5]))),Nil) ) SIZE 30, 10 OF oDlg PIXEL
+	@ 59, 60 MSGET aTrfPms[4] F3 "AFC" Picture PesqPict("SE5","E5_EDTPMS") Valid Vazio(aTrfPms[4]).Or.(ExistCpo("AFC",aTrfPms[3]+PmsAF8Ver(aTrfPms[3])+aTrfPms[4],1).And.(aTrfPms[5]:=Space(Len(aTrfPms[5])))) When !Empty(aTrfPms[3]) .And. Empty(aTrfPms[5])  SIZE 50, 10 OF oDlg PIXEL
+	@ 59,111 MSGET aTrfPms[5] F3 "AF9" Picture PesqPict("SE5","E5_TASKPMS") Valid Vazio(aTrfPms[5]).Or.(ExistCpo("AF9",aTrfPms[3]+PmsAF8Ver(aTrfPms[3])+aTrfPms[5],1).And.(aTrfPms[4]:=Space(Len(aTrfPms[4])))) When !Empty(aTrfPms[3]) .And. Empty(aTrfPms[4]) SIZE 50, 10 OF oDlg PIXEL
+
+	DEFINE SBUTTON FROM 10, 168 TYPE 1 ENABLE ACTION If(f100OkTrf(aTrfPms),(nOpca:=1,oDLg:End()),Nil) OF oDlg
+	DEFINE SBUTTON FROM 23, 168 TYPE 2 ENABLE ACTION (nOpca:=0,oDlg:End()) OF oDlg
+
+ACTIVATE MSDIALOG oDlg 
+
+Return
+
+/*
+ÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜ
+±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±
+±±ÚÄÄÄÄÄÄÄÄÄÄÂÄÄÄÄÄÄÄÄÄÄÂÄÄÄÄÄÄÄÂÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÂÄÄÄÄÄÄÂÄÄÄÄÄÄÄÄÄÄÄÄ¿±±
+±±³Fun‡…o    ³F100OkTrf ³ Autor ³ Edson Maricate        ³ Data ³ 15-02-2002 ³±±
+±±ÃÄÄÄÄÄÄÄÄÄÄÅÄÄÄÄÄÄÄÄÄÄÁÄÄÄÄÄÄÄÁÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÁÄÄÄÄÄÄÁÄÄÄÄÄÄÄÄÄÄÄÄ´±±
+±±³Descri‡…o ³Valida se os todos os campos foram informados corretamente    ³±±
+±±ÃÄÄÄÄÄÄÄÄÄÄÅÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ´±±
+±±³ Uso      ³SIGAFIN                                                       ³±±
+±±ÀÄÄÄÄÄÄÄÄÄÄÁÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÙ±±
+±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±
+ßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßß
+*/
+Function f100OkTrf(aTrfPms)
+Local lRet := .T.
+
+If !Empty(aTrfPms[1]) .And. Empty(aTrfPms[2])
+	HELP("  ",1,"OBRIGAT")
+	lRet := .F.
+EndIf
+
+If lRet .And. !Empty(aTrfPms[3]) .And. Empty(aTrfPms[4]+aTrfPms[5])
+	HELP("  ",1,"OBRIGAT")
+	lRet := .F.
+EndIf
+
+Return lRet
+
+/*/
+±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±
+±±ÚÄÄÄÄÄÄÄÄÄÄÂÄÄÄÄÄÄÄÄÄÄÄÂÄÄÄÄÄÄÄÂÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÂÄÄÄÄÄÄÂÄÄÄÄÄÄÄÄÄÄ¿±±
+±±³Fun‡…o	 ³Fa100Rateio³ Autor ³ Wagner Mobile Costa  ³ Data ³ 06/08/02 ³±±
+±±ÃÄÄÄÄÄÄÄÄÄÄÅÄÄÄÄÄÄÄÄÄÄÄÁÄÄÄÄÄÄÄÁÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÁÄÄÄÄÄÄÁÄÄÄÄÄÄÄÄÄÄ´±±
+±±³Descri‡…o ³Visualizacao do Rateio de Movimento Bancario - > SIGACTB    ³±±
+±±ÃÄÄÄÄÄÄÄÄÄÄÅÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ´±±
+±±³Sintaxe	 ³Fa050Rateio(cAlias,nReg,nOpc) 							  ³±±
+±±ÃÄÄÄÄÄÄÄÄÄÄÅÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ´±±
+±±³ Uso		 ³ FINA050            							 			  ³±±
+±±ÀÄÄÄÄÄÄÄÄÄÄÁÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÙ±±
+±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±
+ßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßß
+/*/
+Function Fa100Rateio(cAlias,nReg,nOpc)
+Local cArq
+
+RegToMemory("SE5",.F.,.F.)
+
+If ! Empty(SE5->E5_ARQRAT)
+	CtbRatFin(If(SE5->E5_RECPAG = "R", "517", "516"),"FINA100","",5,SE5->E5_ARQRAT,4)
+Else
+	Help("",1,	"NoRateio")
+Endif
+
+// Verifica o arquivo de rateio, e apaga o arquivo temporario
+// para que no proximo rateio seja criado novamente
+If Select("TMP1") > 0
+	DbSelectArea( "TMP1" )
+	cArq := DbInfo(DBI_FULLPATH)
+	cArq := AllTrim(SubStr(cArq,Rat("\",cArq)+1))
+	DbCloseArea()
+	FErase(cArq)
+EndIf
+
+Return .T.
+
+/*/
+±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±
+±±ÚÄÄÄÄÄÄÄÄÄÄÂÄÄÄÄÄÄÄÄÄÄÄÂÄÄÄÄÄÄÄÂÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÂÄÄÄÄÄÄÂÄÄÄÄÄÄÄÄÄÄ¿±±
+±±³Fun‡…o	 ³Fa100ValRat³ Autor ³ Claudio D. de Souza  ³ Data ³ 06/11/03 ³±±
+±±ÃÄÄÄÄÄÄÄÄÄÄÅÄÄÄÄÄÄÄÄÄÄÄÁÄÄÄÄÄÄÄÁÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÁÄÄÄÄÄÄÁÄÄÄÄÄÄÄÄÄÄ´±±
+±±³Descri‡…o ³Validacao do campo E5_RATEIO                                ³±±
+±±ÃÄÄÄÄÄÄÄÄÄÄÅÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ´±±
+±±³Sintaxe	 ³Fa100ValRat									 							  ³±±
+±±ÃÄÄÄÄÄÄÄÄÄÄÅÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ´±±
+±±³ Uso		 ³ FINA100            										 			  ³±±
+±±ÀÄÄÄÄÄÄÄÄÄÄÁÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÙ±±
+±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±
+ßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßß
+/*/
+Function Fa100ValRat
+Local lRet
+	lRet := pertence("SN").And.If(M->E5_RATEIO="S".And.GetMv("MV_MCONTAB")="CTB",(F050EscRat(If(cRecPag="P","516","517"),"FINA100",cLote),.T.),.T.)
+Return lRet

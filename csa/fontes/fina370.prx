@@ -1,0 +1,3756 @@
+#INCLUDE "FileIO.CH"
+#INCLUDE "FINA370.CH"
+#INCLUDE "PROTHEUS.CH"
+#INCLUDE "DBINFO.CH"
+Static __cFileLck 	:= ""
+Static __nHandleLck 
+
+
+/*
+ÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜ
+±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±
+±±ÚÄÄÄÄÄÄÄÄÄÄÂÄÄÄÄÄÄÄÄÄÄÂÄÄÄÄÄÄÄÂÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÂÄÄÄÄÄÄÂÄÄÄÄÄÄÄÄÄÄ¿±±
+±±³Fun‡„o	 ³ FINA370	³ Autor ³ Wagner Xavier 		  ³ Data ³ 24/08/94 ³±±
+±±ÃÄÄÄÄÄÄÄÄÄÄÅÄÄÄÄÄÄÄÄÄÄÁÄÄÄÄÄÄÄÁÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÁÄÄÄÄÄÄÁÄÄÄÄÄÄÄÄÄÄ´±±
+±±³Descri‡„o ³ Programa de Lan‡amentos Cont beis Off-Line					  ³±±
+±±ÃÄÄÄÄÄÄÄÄÄÄÅÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ´±±
+±±³Sintaxe	 ³ FINA370()																  ³±±
+±±ÃÄÄÄÄÄÄÄÄÄÄÅÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ´±±
+±±³Uso		 ³ SIGAFIN																	  ³±±
+±±ÀÄÄÄÄÄÄÄÄÄÄÁÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÙ±±
+±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±
+ßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßß
+*/
+Function FinA370(lDireto)
+
+//ÚÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ¿
+//³ Define Vari veis 														  ³
+//ÀÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÙ
+LOCAL nOpca := 0
+Local aSays:={}, aButtons:={}
+
+DEFAULT lDireto		:= .F.
+PRIVATE cCadastro 	:= STR0009  //"Contabiliza‡„o Off Line"
+PRIVATE LanceiCtb 	:= .F.
+
+//ÚÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ¿
+//³ Variaveis utilizadas para parametros								  ³
+//³ mv_par01 // Mostra Lan‡amentos Cont beis 						  ³
+//³ mv_par02 // Aglutina Lan‡amentos Cont beis						  ³
+//³ mv_par03 // Emissao / Data Base 									  ³
+//³ mv_par04 // Data Inicio												  ³
+//³ mv_par05 // Data Fim													  ³
+//³ mv_par06 // Carteira : Receber / Pagar /Cheque / Ambas 		  ³
+//³ mv_par07 // Baixas por Data de Emiss„o ou Digita‡„o			  ³
+//³ mv_par08 // Considera filiais abaixo                         ³
+//³ mv_par09 // Da Filial                                        ³
+//³ mv_par10 // Ate a Filial                                     ³
+//³ mv_par11 // Atualiza Sinteticas                              ³
+//³ mv_par12 // Separa por ? (Periodo,Documento,Processo)        ³
+//³ mv_par13 // Ctb Bordero - Total/Por Bordero                  ³
+//ÀÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÙ
+
+
+// Obs: este array aRotina foi inserido apenas para permitir o
+// funcionamento das rotinas internas do advanced.
+Private aRotina:={ 	{ STR0012,"AxPesqui" , 0 , 1},;  //"Localizar"
+					{ STR0013,"fA100Pag" , 0 , 3},;  //"Pagar"
+					{ STR0014,"fA100Rec" , 0 , 3},;  //"Receber"
+					{ STR0015,"fA100Can" , 0 , 5},;  //"Excluir"
+					{ STR0016,"fA100Tran", 0 , 3},;  //"Transferir"
+					{ STR0017,"fA100Clas", 0 , 5} }  //"Classificar"
+
+PRIVATE lCabecalho
+PRIVATE VALOR     := 0
+PRIVATE VALOR6		:= 0
+PRIVATE VALOR7		:= 0
+
+// Variaveis utilizadas na contabilizacao do modulo SigaFin
+// declarada neste ponto, caso o acesso seja feito via SigaAdv
+
+Debito  	:= ""
+Credito 	:= ""
+CustoD		:= ""
+CustoC		:= ""
+ItemD 		:= ""
+ItemC 		:= ""
+CLVLD		:= ""
+CLVLC		:= ""
+
+Conta		:= ""
+Custo 		:= ""
+Historico 	:= ""
+ITEM		:= ""
+CLVL		:= ""
+
+Abatimento  := 0
+REGVALOR    := 0
+STRLCTPAD 	:= ""		//para contabilizar o historico do cheque
+NUMCHEQUE 	:= ""		//para contabilizar o numero do cheque
+ORIGCHEQ  	:= ""		//para contabilizar o Origem do cheque
+cHist190La 	:= ""
+Variacao	:= 0
+dDataUser	:= MsDate()
+CODFORCP  	:= ""	//para contabilizar o Codigo do Fornecedor da Compensacao
+LOJFORCP 	:= ""	//para contabilizar a Loja do Fornecedor da Compensacao
+
+If IsBlind() .Or. lDireto
+	BatchProcess( 	cCadastro, 	STR0010 + Chr(13) + Chr(10) +;
+	STR0011, "FIN370",;
+	{ || FA370Processa(.T.) }, { || .F. })
+	Return .T.
+Endif
+AjustaSX1()
+pergunte("FIN370",.F.)
+
+AADD(aSays,STR0010) //"  Este programa tem como objetivo gerar Lan‡amentos Cont beis Off para t¡tulos"
+AADD(aSays,STR0011) //"emitidos e/ou baixas efetuadas."
+AADD(aButtons, { 5,.T.,{|| Pergunte("FIN370",.T. ) } } )
+AADD(aButtons, { 1,.T.,{|o| nOpca:= 1,o:oWnd:End()}} )
+AADD(aButtons, { 2,.T.,{|o| o:oWnd:End() }} )
+FormBatch( cCadastro, aSays, aButtons )
+	
+If nOpcA == 1
+	If	A370CanProc(mv_par06, mv_par04, mv_par05)
+		Processa({|lEnd| FA370Processa()})  // Chamada da funcao de Contabilizacao Off-Line
+	EndIf
+	A370FreeProc()
+Endif
+	
+Return
+	
+/*
+ÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜ
+±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±
+±±ÚÄÄÄÄÄÄÄÄÄÄÂÄÄÄÄÄÄÄÄÄÄÂÄÄÄÄÄÄÄÂÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÂÄÄÄÄÄÄÂÄÄÄÄÄÄÄÄÄÄ¿±±
+±±³Fun‡„o	 ³FA370Proc ³ Autor ³ Wagner Xavier 		  ³ Data ³ 24/08/94 ³±±
+±±ÃÄÄÄÄÄÄÄÄÄÄÅÄÄÄÄÄÄÄÄÄÄÁÄÄÄÄÄÄÄÁÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÁÄÄÄÄÄÄÁÄÄÄÄÄÄÄÄÄÄ´±±
+±±³Descri‡„o ³ Programa de Lan‡amentos Cont beis Off-Line					  ³±±
+±±ÃÄÄÄÄÄÄÄÄÄÄÅÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ´±±
+±±³Sintaxe	 ³ FINA370()																  ³±±
+±±ÃÄÄÄÄÄÄÄÄÄÄÅÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ´±±
+±±³Uso		 ³ SIGAFIN																	  ³±±
+±±ÀÄÄÄÄÄÄÄÄÄÄÁÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÙ±±
+±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±
+ßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßß
+*/
+Function FA370Processa(lBat)
+
+//ÚÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ¿
+//³ Define Vari veis 														  ³
+//ÀÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÙ
+LOCAL lPadrao,lAglut
+LOCAL nTotal  :=0
+LOCAL nHdlPrv :=0
+LOCAL cArquivo:= ""
+LOCAL cPadrao
+LOCAL nValLiq	:=0
+LOCAL nDescont	:=0
+LOCAL nJuros	:=0
+LOCAL nMulta	:=0
+LOCAL nCorrec	:=0
+LOCAL nVl
+LOCAL nDc
+LOCAL nJr
+LOCAL nMt
+LOCAL nCm
+LOCAL lTitulo := .F.
+LOCAL dDataAnt:= dDataBase
+LOCAL dDataini:= dDataBase
+LOCAL nPeriodo:= 0
+LOCAL nLaco   := 0
+LOCAL cIndex, cIndSE2
+LOCAL cChave
+LOCAL cFor
+LOCAL nIndex, nIndSE2
+LOCAL nReg
+LOCAL nRegSE5 := 0
+LOCAL nRegOrigSE5 := 0
+LOCAL lX := .f.
+LOCAL lAdiant := .F.
+LOCAL nProxReg := 0
+LOCAL nRegEmp  := SM0->(Recno())
+LOCAL lLerSE1  := .T.
+LOCAL lLerSE2  := .T.
+LOCAL lLerSE5  := .T.
+LOCAL lLerSEF  := .T.
+LOCAL lLerSEU  := .T.
+LOCAL lEstorno := .F.
+LOCAL lEstRaNcc := .F.
+LOCAL lEstPaNdf := .F.
+LOCAL lEstCart2 := .F.
+LOCAL cCtBaixa := Getmv("MV_CTBAIXA")
+LOCAL nLacoTrf := 0
+LOCAL aTrf	:= {}
+LOCAL nValorTotal := 0
+LOCAL l370E5R := Existblock("F370E5R")
+LOCAL l370E5P := Existblock("F370E5P")
+LOCAL l370E5T := Existblock("F370E5T")
+LOCAL l370E1FIL := Existblock("F370E1F")   // Criado Ponto de Entrada
+LOCAL l370E2FIL := Existblock("F370E2F")   // Criado Ponto de Entrada
+LOCAL l370E5FIL := Existblock("F370E5F")   // Criado Ponto de Entrada
+LOCAL l370EFFIL := Existblock("F370EFF")   // Criado Ponto de Entrada
+LOCAL l370EUFIL := Existblock("F370EUF")   // Criado Ponto de Entrada
+LOCAL lF370NATP := Existblock("F370NATP")   // Criado Ponto de Entrada
+LOCAL lF370E1WH := Existblock("F370E1W")   // Criado Ponto de Entrada para o While do SE1
+Local cCondWhile:= " "
+LOCAL nRegAnt
+Local bCampo, nOrderSEU
+Local cChaveSev
+Local cChaveSeZ
+Local nRecSe1
+Local nRecSe2
+Local cNumBor, cProxBor, nBordero, nTotBord, nBordDc, nBordJr, nBordMt, nBordCm
+Local nTotDoc 	:= 0
+Local nTotProc 	:= 0
+LOCAL lPadraoCC
+LOCAL lSkipLct := .F.
+LOCAL cSitOri := " "
+lOCAL cSitCob := " "
+Local lCtbPls := .F.
+Local cSeqSE5 := ""
+Local lPadraoCCE
+Local cPadraoCC
+Local lMultNat := .F.
+Local nTamTot
+Local nRecSev
+Local nRecSez
+Local cCarteira := GetMV("MV_CARTEIR")
+Local aFlagCTB := {}
+Local lUsaFlag := GetNewPar("MV_CTBFLAG",.T.)
+Local lPCCBaixa := SuperGetMv("MV_BX10925",.T.,"2") == "1"  .and. (!Empty( SE5->( FieldPos( "E5_VRETPIS" ) ) ) .And. !Empty( SE5->( FieldPos( "E5_VRETCOF" ) ) ) .And. ;
+				 !Empty( SE5->( FieldPos( "E5_VRETCSL" ) ) ) .And. !Empty( SE5->( FieldPos( "E5_PRETPIS" ) ) ) .And. ;
+				 !Empty( SE5->( FieldPos( "E5_PRETCOF" ) ) ) .And. !Empty( SE5->( FieldPos( "E5_PRETCSL" ) ) ) .And. ;
+				 !Empty( SE2->( FieldPos( "E2_SEQBX"   ) ) ) .And. !Empty( SFQ->( FieldPos( "FQ_SEQDES"  ) ) ) )
+
+
+Local nPis		:= 0
+Local	nCofins	:= 0
+Local nCsll		:= 0
+Local nVretPis := 0
+Local nVretCof := 0
+Local nVretCsl := 0
+Local aRecsSE5 := {}
+Local nX := 0
+
+Local lMulNatSE2 := .F.
+
+DEFAULT lBat	:= .F.
+
+Private cCampo
+Private Inclui := .T.
+Private cLote	:= Space( 4)
+Private nSaveSx8Len := GetSx8Len()
+Private cSeqCv4		:= ""
+
+cSeqCv4 := GetSx8Num("CV4", "CV4_SEQUEN")
+
+If ! CtbInUse() .And.;
+	(!(mv_par04 >= GetMv("MV_DATADE") .And. mv_par04 <= GetMv("MV_DATAATE")) .Or.;
+	!(mv_par05 >= GetMv("MV_DATADE") .And. mv_par05 <= GetMv("MV_DATAATE")))
+	HELP(" ",1,"DATACOMPET")
+	Return .F.
+Endif
+
+
+cFilDe := cFilAnt
+cFilAte:= cFilAnt
+//Para usuarios do SigaCon
+If !CtbInUse()
+	lUsaFlag := .F.
+Endif
+
+If mv_par08 == 1
+	cFilDe := mv_par09
+	cFilAte:= mv_par10
+Endif
+
+//ÚÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ¿
+//³ Variaveis utilizadas para parametros								  ³
+//³ mv_par01 // Mostra Lan‡amentos Cont beis 						  ³
+//³ mv_par02 // Aglutina Lan‡amentos Cont beis						  ³
+//³ mv_par03 // Emissao / Data Base 									  ³
+//³ mv_par04 // Data Inicio												  ³
+//³ mv_par05 // Data Fim													  ³
+//³ mv_par06 // Carteira : Receber / Pagar /Cheque / Ambas 		  ³
+//³ mv_par07 // Baixas por Data de Emiss„o ou Digita‡„o			  ³
+//ÀÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÙ
+dbSelectArea("SM0")
+dbSeek(cEmpAnt+cFilDe,.T.)
+
+While !Eof() .and. M0_CODIGO == cEmpAnt .and. M0_CODFIL <= cFilAte
+	cFilAnt := M0_CODFIL		// Mudar filial atual temporariamente
+
+	//ÚÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ¿
+	//³ Chama a SumAbatRec para abrir alias auxiliar __SE1 ³
+	//ÀÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÙ
+	If Select("__SE1") == 0
+		SumAbatRec("","","",1,"")
+	Endif	
+	
+	If lLerSe5
+		dbSelectArea("SE5")
+		cIndex := CriaTrab(,.f.)
+		aRecsSE5 := {}
+		IF  mv_par07 == 1
+			cChave := "E5_FILIAL+E5_RECPAG+Dtos(E5_DATA )+E5_NUMCHEQ+E5_DOCUMEN+E5_PREFIXO+E5_NUMERO+E5_PARCELA+E5_TIPO+E5_CLIFOR+E5_LOJA+E5_SEQ"
+			#IFNDEF TOP
+				cFor := 'dtos(E5_DATA) >= "'+dtos(mv_par04)+'" .and. dtos(E5_DATA) <= "'+dtos(mv_par05)+'" .and. '
+				cFor += 'E5_LA < "S " .and. E5_SITUACA <> "C" .and. E5_TIPODOC $ "PA/RA/BA/VL/V2/DC/D2/JR/J2/MT/M2/CM/C2/AP/EP/PE/RF/IF/CP/TL/ES/TR/DB/OD/LJ/E2/TE/PE  "'
+				cFor += ' .and. E5_FILIAL == "'+xFilial("SE5")+'"'
+			#ELSE
+				cFor := 'DTOS(E5_DATA) >= "'+dtos(mv_par04)+'" .and. DTOS(E5_DATA) <= "'+dtos(mv_par05)+'" .and. '
+				cFor += 'E5_LA < "S " .and. E5_SITUACA <> "C" .and. E5_TIPODOC $ "PA/RA/BA/VL/V2/DC/D2/JR/J2/MT/M2/CM/C2/AP/EP/PE/RF/IF/CP/TL/ES/TR/DB/OD/LJ/E2/TE/PE  "'
+				cFor += ' .and. E5_FILIAL == "'+xFilial("SE5")+'"'
+			#ENDIF
+		ElseIf mv_par07 == 2
+			cChave := "E5_FILIAL+E5_RECPAG+Dtos(E5_DTDIGIT )+E5_NUMCHEQ+E5_DOCUMEN+E5_PREFIXO+E5_NUMERO+E5_PARCELA+E5_TIPO+E5_CLIFOR+E5_LOJA+E5_SEQ"
+			#IFNDEF TOP
+				cFor := 'dtos(E5_DTDIGIT) >= "'+dtos(mv_par04)+'" .and. dtos(E5_DTDIGIT) <= "'+dtos(mv_par05)+'" .and. '
+				cFor += 'E5_LA < "S " .and. E5_SITUACA <> "C" .and. E5_TIPODOC $ "PA/RA/BA/VL/V2/DC/D2/JR/J2/MT/M2/CM/C2/AP/EP/PE/RF/IF/CP/TL/ES/TR/DB/OD/LJ/E2/TE/PE  "'
+				cFor += ' .and. E5_FILIAL == "'+xFilial("SE5")+'"'
+			#ELSE
+				cFor := 'DTOS(E5_DTDIGIT) >= "'+dtos(mv_par04)+'" .and. DTOS(E5_DTDIGIT) <= "'+dtos(mv_par05)+'" .and. '
+				cFor += 'E5_LA < "S " .and. E5_SITUACA <> "C" .and. E5_TIPODOC $ "PA/RA/BA/VL/V2/DC/D2/JR/J2/MT/M2/CM/C2/AP/EP/PE/RF/IF/CP/TL/ES/TR/DB/OD/LJ/E2/TE/PE  "'
+				cFor += ' .and. E5_FILIAL == "'+xFilial("SE5")+'"'
+			#ENDIF
+		Else
+			cChave := "E5_FILIAL+E5_RECPAG+Dtos(E5_DTDIGIT )+E5_NUMCHEQ+E5_DOCUMEN+E5_PREFIXO+E5_NUMERO+E5_PARCELA+E5_TIPO+E5_CLIFOR+E5_LOJA+E5_SEQ"
+			#IFNDEF TOP
+				cFor := 'dtos(E5_DTDISPO) >= "'+dtos(mv_par04)+'" .and. dtos(E5_DTDISPO) <= "'+dtos(mv_par05)+'" .and. '
+				cFor += 'E5_LA < "S " .and. E5_SITUACA <> "C" .and. E5_TIPODOC $ "PA/RA/BA/VL/V2/DC/D2/JR/J2/MT/M2/CM/C2/AP/EP/PE/RF/IF/CP/TL/ES/TR/DB/OD/LJ/E2/TE/PE  "'
+				cFor += ' .and. E5_FILIAL == "'+xFilial("SE5")+'"'
+			#ELSE
+				cFor := 'DTOS(E5_DTDISPO) >= "'+dtos(mv_par04)+'" .and. DTOS(E5_DTDISPO) <= "'+dtos(mv_par05)+'" .and. '
+				cFor += 'E5_LA < "S " .and. E5_SITUACA <> "C" .and. E5_TIPODOC $ "PA/RA/BA/VL/V2/DC/D2/JR/J2/MT/M2/CM/C2/AP/EP/PE/RF/IF/CP/TL/ES/TR/DB/OD/LJ/E2/TE/PE  "'
+				cFor += ' .and. E5_FILIAL == "'+xFilial("SE5")+'"'
+			#ENDIF
+		Endif
+		
+		//ÚÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ¿
+		//³ Ponto de Entrada para filtrar registros do SE5. ³
+		//ÀÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÙ
+		If l370E5FIL
+			cFor := Execblock("F370E5F",.F.,.F.,cFor)
+		EndIf
+		
+		dbSelectArea("SE5")
+		IndRegua("SE5",cIndex,cChave,,cFor,STR0018)  //"Selecionando Registros..."
+		nIndex := RetIndex("SE5")
+		#IFNDEF TOP
+			dbSetIndex(cIndex+OrdBagExt())
+		#ENDIF
+		dbSetOrder(nIndex+1)
+		dbGoTop()
+	Endif
+		
+	//ÚÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ¿
+	//³ Contabiliza pelo E2_EMIS1 - CONTAS PAGAR   			  ³
+	//ÀÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÙ
+	If (mv_par06 = 2 .Or. mv_par06 = 4) .and. lLerSe2
+		cIndSE2 := CriaTrab(,.f.)
+		dbSelectArea("SE2")
+		cChave := "E2_FILIAL+DTOS(E2_EMIS1)+E2_NUMBOR+E2_PREFIXO+E2_NUM+E2_PARCELA+E2_TIPO+E2_FORNECE+E2_LOJA"
+		#IFNDEF TOP
+			cFor := 'dtos(E2_EMIS1) >= "'+dtos(mv_par04)+'" .and. dtos(E2_EMIS1) <= "'+dtos(mv_par05)+'" .and. '
+			cFor += 'E2_LA <> "S" .and. E2_FILIAL == "'+xFilial("SE2")+'"'
+		#ELSE
+			cFor := 'DTOS(E2_EMIS1) >= "'+dtos(mv_par04)+'" .and. DTOS(E2_EMIS1) <= "'+dtos(mv_par05)+'" .and. '
+			cFor += 'E2_LA <> "S" .and. E2_FILIAL == "'+xFilial("SE2")+'"'
+		#ENDIF
+		
+		//ÚÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ¿
+		//³ Ponto de Entrada para filtrar registros do SE2. ³
+		//ÀÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÙ
+		If l370E2FIL
+			cFor := Execblock("F370E2F",.F.,.F.,cFor)
+		EndIf
+		
+		dbSelectArea("SE2")
+		#IFDEF TOP
+			ChkFile("SE2",.f.,"TRBSE2")
+			IndRegua("TRBSE2",cIndSE2,cChave,,cFor,"Selecionando Registros...")
+			nIndSE2 := -1
+			dbSelectArea("TRBSE2")
+		#ELSE
+			IndRegua("SE2",cIndSE2,cChave,,cFor,"Selecionando Registros...")
+			nIndSE2 := RetIndex("SE2")
+			dbSelectArea("SE2")
+			dbSetIndex(cIndSE2+OrdBagExt())
+		#ENDIF
+		dbSetOrder(nIndSE2+1)
+		dbSeek(xFilial("SE2"))
+	Endif
+	
+	If (mv_par06 = 3 .Or. mv_par06 = 4 ) .and. lLerSef
+		//--Arquivo de Cheque SEF
+		cIndSEF := CriaTrab(,.f.)
+		cChave := "EF_FILIAL+EF_BANCO+EF_AGENCIA+DTOS(EF_DATA)"
+		#IFNDEF TOP
+			cFor := 'dtos(EF_DATA) >= "'+dtos(mv_par04)+'" .and. dtos(EF_DATA) <= "'+dtos(mv_par05)+'" .and. '
+			cFor += 'EF_LA <> "S" .and. EF_FILIAL == "'+xFilial("SEF")+'"'
+		#ELSE
+			cFor := 'DTOS(EF_DATA) >= "'+dtos(mv_par04)+'" .and. DTOS(EF_DATA) <= "'+dtos(mv_par05)+'" .and. '
+			cFor += 'EF_LA <> "S" .and. EF_FILIAL == "'+xFilial("SEF")+'"'
+		#ENDIF
+		
+		//ÚÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ¿
+		//³ Ponto de Entrada para filtrar registros do SEF. ³
+		//ÀÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÙ
+		If l370EFFIL
+			cFor := Execblock("F370EFF",.F.,.F.,cFor)
+		EndIf
+		
+		dbSelectArea("SEF")
+		IndRegua("SEF",cIndSEF,cChave,,cFor,STR0018)  //"Selecionando Registros..."
+		nIndSEF := RetIndex("SEF")
+		#IFNDEF TOP
+			dbSetIndex(cIndSEF+OrdBagExt())
+		#ENDIF
+		dbSetOrder(nIndSEF+1)
+		dbGoTop()
+	EndIf
+	
+	//ÚÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ¿
+	//³ La‡o da contabiliza‡„o dia a dia, pela emiss„o (mv_par03 = 1)³
+	//³ ou pela database.														  ³
+	//ÀÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÙ
+	If mv_par03 == 1
+		nPeriodo := mv_par05 - mv_par04 + 1 // Data Final - Data inicial
+		nPeriodo := Iif( nPeriodo == 0, 1, nPeriodo )
+	Else
+		nPeriodo := 1
+	Endif
+	
+	dDataIni := mv_par04
+	
+	BEGIN SEQUENCE
+	
+	If ! lBat
+		ProcRegua(nPeriodo)
+	Endif
+	For nLaco := 1 to nPeriodo
+		
+		If ! lBat
+			IncProc()
+		Endif
+		dbSelectArea( "SE1" )
+		
+		nTotal:=0
+		nHdlPrv:=0
+		lCabecalho:=.F.
+		
+		//ÚÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ¿
+		//³ Se a contabiliza‡„o for pela data de emiss„o, altera o valor ³
+		//³ da data-base e dos parƒmetros, para efetuar a contabiliza‡„o ³
+		//³ e a sele‡„o dos registros respectivamente.						  ³
+		//ÀÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÙ
+		If mv_par03 == 1
+			dDataBase := dDataIni + nLaco - 1
+			mv_par04 := dDataBase
+			mv_par05 := dDataBase
+		Endif
+		
+		//ÚÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ¿
+		//³ Verifica o N£mero do Lote 											  ³
+		//ÀÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÙ
+		LoteCont("FIN")
+		
+		//ÚÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ¿
+		//³ Verifica se ‚ um EXECBLOCK e caso sendo, executa-o							³
+		//ÀÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÙ
+		If At(UPPER("EXEC"),X5Descri()) > 0
+			cLote := &(X5Descri())
+		Endif
+		
+		If (mv_par06 == 1 .or. mv_par06 == 4) .and. lLerSe1
+			//ÚÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ¿
+			//³ Contas a Receber - SE1990 										     ³
+			//ÀÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÙ
+			dbSelectArea( "SE1" )
+			dbSetOrder( 6 )
+			dbSeek( cFilial+Dtos(mv_par04),.T. )
+			
+			If lF370E1WH
+				cCondWhile:= Execblock("F370E1W",.F.,.F.)
+			Else
+				cCondWhile:= "'"+cFilial+"' == SE1->E1_FILIAL .And. ( SE1->E1_EMISSAO >= mv_par04	.And. SE1->E1_EMISSAO <= mv_par05 )"
+			EndIf
+			
+			
+			While !Eof() .And. &cCondWhile
+				
+				//ÚÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ¿
+				//³ Ponto de Entrada para filtrar registros do SE1. ³
+				//ÀÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÙ
+				If l370E1FIL
+					If !Execblock("F370E1F",.F.,.F.)
+						dbSkip()
+						Loop
+					EndIf
+				EndIf
+				
+				cPadrao := "500"
+				
+				//ÚÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ¿
+				//³ Verifica se ser  gerado Lan‡amento Cont bil			  ³
+				//ÀÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÙ
+				If SE1->E1_LA == "S" .Or. SE1->E1_TIPO $ MVPROVIS
+					SE1->( dbSkip())
+					Loop
+				Endif
+				
+				//ÚÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ¿
+				//³ Posiciona no cliente.										  ³
+				//ÀÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÙ
+				dbSelectArea( "SA1" )
+				dbSeek( xFilial("SA1")+SE1->E1_CLIENTE+SE1->E1_LOJA )
+				
+				//ÚÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ¿
+				//³ Posiciona na natureza.										  ³
+				//ÀÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÙ
+				dbSelectArea( "SED" )
+				dbSeek( cFilial+SE1->E1_NATUREZ )
+				
+				//ÚÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ¿
+				//³ Posiciona na SE5,se RA										  ³
+				//ÀÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÙ
+				If SE1->E1_TIPO $ MVRECANT
+					dbSelectArea("SE5")
+					dbSetOrder(2)
+					dbSeek( xFilial()+"RA"+SE1->E1_PREFIXO+SE1->E1_NUM+SE1->E1_PARCELA+SE1->E1_TIPO+DtoS(SE1->E1_EMISSAO)+SE1->E1_CLIENTE+SE1->E1_LOJA)
+					dbSetOrder(1)
+				Endif
+				
+				//ÚÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ¿
+				//³ Posiciona no banco.											  ³
+				//ÀÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÙ
+				dbSelectArea( "SA6" )
+				dbSetOrder(1)
+				dbSeek( cFilial+SE1->E1_PORTADO+SE1->E1_AGEDEP+SE1->E1_CONTA )
+				// Se for um recebimento antecipado e nao encontrou o banco
+				// pelo SE1, pesquisa pelo SE5.
+				IF SE1->E1_TIPO $ MVRECANT
+					If SA6->(Eof())
+						dbSeek( cFilial+SE5->E5_BANCO+SE5->E5_AGENCIA+SE5->E5_CONTA )
+					Endif
+					cPadrao:="501"
+				Endif
+				
+				dbSelectArea("SE1")
+				
+				lPadrao:=VerPadrao(cPadrao)
+				lPadraoCc := VerPadrao("506") //Rateio por C.Custo de MultiNat C.Receber
+				lCtbPls := (SE1->(FieldPos("E1_PLNUCOB")) > 0 .And.;
+				! Empty(SE1->E1_PLNUCOB)) .Or.;
+				(SE1->(FieldPos("E1_MATRIC")) > 0 .And.;
+				! Empty(SE1->E1_MATRIC)) .And. FindFunction("PLSCTBSE1")
+				If lCtbPls .And. FindFunction("PLSLPSE1")
+					lPadrao := PlsLpSe1()
+				Endif
+				
+				IF lPadrao
+					If !lCabecalho
+						a370Cabecalho(@nHdlPrv,@cArquivo)
+					Endif
+					cChaveSev := RetChaveSev("SE1")
+					cChaveSez := RetChaveSev("SE1",,"SEZ")
+					dbSelectArea("SE1")
+					nRecSe1 := Recno()
+					DbSelectArea("SEV")
+					// Se utiliza multiplas naturezas, contabiliza pelo SEV
+					If ! lCtbPls .And. SE1->E1_MULTNAT=="1" .And. MsSeek(cChaveSev)
+
+						dbSelectArea("SE1")
+						nRecSe1 := Recno()
+						DbGoBottom()
+						DbSkip()
+						DbSelectArea("SEV")
+						dbSetOrder(2)
+						While xFilial("SEV")+SEV->(EV_PREFIXO+EV_NUM+EV_PARCELA+EV_TIPO+EV_CLIFOR+;
+							EV_LOJA+EV_IDENT) == cChaveSev+"1" .And. !Eof()
+
+							If SEV->EV_LA != "S"
+								dbSelectArea( "SED" )
+								MsSeek( xFilial("SED")+SEV->EV_NATUREZ ) // Posiciona na natureza, pois a conta pode estar la.
+								dbSelectArea("SEV")
+								
+								If SEV->EV_RATEICC == "1" .and. lPadraoCC .and. lPadrao// Rateou multinat por c.custo
+									dbSelectArea("SEZ")
+									dbSetOrder(4)
+									MsSeek(cChaveSeZ+SEV->EV_NATUREZ) // Posiciona no arquivo de Rateio C.Custo da MultiNat
+								
+									While !Eof() .and. xFilial("SEZ")+SEZ->(EZ_PREFIXO+EZ_NUM+;
+										EZ_PARCELA+EZ_TIPO+EZ_CLIFOR+EZ_LOJA+EZ_NATUREZ+EZ_IDENT) == cChaveSeZ+SEV->EV_NATUREZ+"1"
+										
+										If SEZ->EZ_LA != "S"
+
+											If lUsaFlag
+												aAdd(aFlagCTB,{"EZ_LA","S","SEZ",SEZ->(Recno()),0,0,0})
+											EndIf
+
+											nTotDoc	+=	DetProva(nHdlPrv,"506","FINA370",cLote,,,,,,,,@aFlagCTB)
+
+											If LanceiCtb // Vem do DetProva																								
+												If !lUsaFlag
+													RecLock("SEZ")
+													SEZ->EZ_LA    := "S"
+													MsUnlock( )
+												EndIf
+											Endif
+										Endif
+										dbSkip()
+									Enddo
+									DbSelectArea("SEV")
+								Else
+									If lUsaFlag
+										aAdd(aFlagCTB,{"EV_LA","S","SEV",SEV->(Recno()),0,0,0})
+									EndIf
+									nTotDoc	:= DetProva(nHdlPrv,cPadrao,"FINA370",cLote,,,,,,,,@aFlagCTB)
+								Endif
+								
+								If LanceiCtb // Vem do DetProva
+									If !lUsaFlag	
+										RecLock("SEV")
+										SEV->EV_LA    := "S"
+										MsUnlock( )
+									EndIf
+								Endif
+								
+							Endif
+
+							DbSelectArea("SEV")
+							DbSkip()
+						Enddo
+						nTotal  	+=	nTotDoc
+						nTotProc	+=	nTotDoc // Totaliza por processo
+
+						If !lCabecalho
+							a370Cabecalho(@nHdlPrv,@cArquivo)
+						Endif
+						nRecSev := SEV->(Recno())
+						nRecSez := SEZ->(Recno())
+						dbSelectArea("SEV")
+						dbGobottom()
+						dbSkip()
+						DbSelectArea("SEZ")
+						dbGobottom()
+						dbSkip()
+						nTotDoc	+=	DetProva(nHdlPrv,"506","FINA370",cLote,,,,,,,,@aFlagCTB)
+						If mv_par12 == 2 .And. nTotDoc > 0 // Por documento
+							Ca370Incl(cArquivo,@nHdlPrv,cLote,nTotal,@aFlagCTB)
+							nTotDoc := 0
+						Endif
+						
+						dbSelectArea("SE1")
+						DbGoto(nRecSe1)
+					Endif
+
+					dbSelectArea("SEV")
+					DbGoBottom()
+					DbSkip()
+					
+					DbSelectArea("SE1")
+					dbGoto(nRecSe1)
+					If lUsaFlag
+						aAdd(aFlagCTB,{"E1_LA","S","SE1",SE1->(Recno()),0,0,0})
+					EndIf
+					If !lCabecalho							/// Se não houver cabeçalho aberto, abre.
+						a370Cabecalho(@nHdlPrv,@cArquivo)
+					EndIf
+					
+					If lCtbPls
+						nTotDoc	:= PlsCtbSe1(@nHdlPrv,cPadrao,"FINA370",cLote)
+					Else
+						nTotDoc	:= DetProva(nHdlPrv,cPadrao,"FINA370",cLote,,,,,,,,@aFlagCTB)
+					Endif
+					nTotal	+= nTotDoc
+					nTotProc	+= nTotDoc //Totaliza por processo
+					If mv_par12 == 2 .And. nTotDoc > 0 // Por documento
+						Ca370Incl(cArquivo,@nHdlPrv,cLote,nTotal,@aFlagCTB)
+					Endif
+					//ÚÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ¿
+					//³ Atualiza Flag de Lan‡amento Cont bil		  ³
+					//ÀÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÙ
+					If LanceiCtb
+						If !lUsaFlag
+							Reclock("SE1")
+							REPLACE E1_LA With "S"
+							MsUnlock( )
+						EndIf
+					EndIf
+				Endif
+				DbSelectArea("SE1")
+				dbSkip()
+			Enddo
+			If mv_par12 == 3 .And. nTotProc > 0 // Por processo
+				Ca370Incl(cArquivo,@nHdlPrv,cLote,nTotal,@aFlagCTB)
+				nTotProc := 0
+			Endif
+			If lLerSE5
+				//ÚÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ¿
+				//³ Movimenta‡„o Banc ria a Receber - SE5990 						  ³
+				//ÀÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÙ
+				dbSelectArea( "SE5" )
+				dbSetOrder( 1 )
+				dbSeek( cFilial+Dtos(mv_par04),.T. )
+				aRecsSE5 := {}
+				While !Eof() .And. cFilial == SE5->E5_FILIAL .And. ( SE5->E5_DATA >= mv_par04 ;
+					.And. SE5->E5_DATA <= mv_par05 )
+					
+					cPadrao 	:= "563"
+					lX			:= .F.
+					SEH->(dbSetOrder(1))
+					
+					If SE5->E5_TIPODOC $ "AP/RF/PE/EP" .And. SEH->(MsSeek(xFilial("SEH")+SubStr(SE5->E5_DOCUMEN,1,8)))
+						lX		:= .T.
+						If SE5->E5_TIPODOC $ "AP/EP"
+							If ( SE5->E5_TIPODOC=="AP" .And. SE5->E5_RECPAG=="P" ) .Or.;
+								( SE5->E5_TIPODOC=="EP" .And. SE5->E5_RECPAG=="R" )
+								cPadrao := "580"
+							Else
+								cPadrao := "581"
+							EndIf
+						Else
+							If ( SE5->E5_TIPODOC=="RF" .And. SE5->E5_RECPAG=="R" ) .Or.;
+								( SE5->E5_TIPODOC=="PE" .And. SE5->E5_RECPAG=="P" )
+								cPadrao := "585"
+							Else
+								cPadrao := "586"
+							EndIf
+						EndIf
+						//ÚÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ¿
+						//³ SEH ja esta posicionado  ³
+						//ÀÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÙ
+						RecLock("SEH")
+						SEH->EH_VALREG := 0
+						SEH->EH_VALREG2:= 0
+						SEH->EH_VALIRF := 0
+						SEH->EH_VALIOF := 0
+						SEH->EH_VALSWAP:= 0
+						SEH->EH_VALISWP:= 0
+						SEH->EH_VALOUTR:= 0
+						SEH->EH_VALGAP := 0
+						SEH->EH_VALCRED:= 0
+						SEH->EH_VALJUR := 0
+						SEH->EH_VALJUR2:= 0
+						SEH->EH_VALVCLP:= 0
+						SEH->EH_VALVCCP:= 0
+						SEH->EH_VALVCJR:= 0
+						SEH->EH_VALREG := 0
+						SEH->EH_VALREG2:= 0
+						MsUnlock()
+						
+						dbSelectArea("SEI")
+						dbSetOrder(1)
+						dbSeek(xFilial("SEI")+SEH->EH_APLEMP+SubStr(SE5->E5_DOCUMEN,1,10))
+						
+						If ( !VerPadrao("581") .And. cPadrao$"581#580" .And. SEI->EI_STATUS=="C" )
+							dbSelectArea("SE5")
+							dbSkip()
+							Loop
+						EndIf
+						If ( !VerPadrao("586") .And. cPadrao$"586#585" .And. SEI->EI_STATUS=="C" )
+							dbSelectArea("SE5")
+							dbSkip()
+							Loop
+						EndIf
+						
+						While ( SEI->EI_FILIAL+SEI->EI_APLEMP+SEI->EI_NUMERO+SEI->EI_REVISAO+SEI->EI_SEQ==;
+							xFilial("SEI")+SEH->EH_APLEMP+SubStr(SE5->E5_DOCUMEN,1,10) )
+							RecLock("SEH")
+							If ( SEI->EI_TIPODOC == "I1" .And. SEI->EI_MOTBX=="APR" )
+								SEH->EH_VALIRF := SEI->EI_VALOR
+							EndIf
+							If ( SEI->EI_TIPODOC == "I2" .And. SEI->EI_MOTBX=="APR" )
+								SEH->EH_VALIOF := SEI->EI_VALOR
+							EndIf
+							If ( SEI->EI_TIPODOC == "I3" .And. SEI->EI_MOTBX=="APR" )
+								SEH->EH_VALISWP:= SEI->EI_VALOR
+							EndIf
+							If ( SEI->EI_TIPODOC == "I4" .And. SEI->EI_MOTBX=="APR" )
+								SEH->EH_VALOUTR:= SEI->EI_VALOR
+							EndIf
+							If ( SEI->EI_TIPODOC == "I5" .And. SEI->EI_MOTBX=="APR" )
+								SEH->EH_VALGAP := SEI->EI_VALOR
+							EndIf
+							If ( SEI->EI_TIPODOC == "JR" .And. SEI->EI_MOTBX=="APR" )
+								SEH->EH_VALJUR := SEI->EI_VALOR
+								SEH->EH_VALJUR2:= SEI->EI_VLMOED2
+							EndIf
+							If ( SEI->EI_TIPODOC == "V1" .And. SEI->EI_MOTBX=="APR" )
+								SEH->EH_VALVCLP := SEI->EI_VALOR
+							EndIf
+							If ( SEI->EI_TIPODOC == "V2" .And. SEI->EI_MOTBX=="APR" )
+								SEH->EH_VALVCCP := SEI->EI_VALOR
+							EndIf
+							If ( SEI->EI_TIPODOC == "V3" .And. SEI->EI_MOTBX=="APR" )
+								SEH->EH_VALVCJR := SEI->EI_VALOR
+							EndIf
+							MsUnLock()
+							dbSelectArea("SEI")
+							dbSkip()
+						EndDo
+						If ( VerPadrao("582") )
+							If !lCabecalho
+								a370Cabecalho(@nHdlPrv,@cArquivo)
+							EndIf
+							nTotDoc	:= DetProva(nHdlPrv,"582","FINA370",cLote,,,,,,,,@aFlagCTB)
+							nTotal	+=	nTotDoc
+							nTotProc += nTotDoc
+							If mv_par12 == 2 .And. nTotDoc > 0 // Por documento
+								Ca370Incl(cArquivo,@nHdlPrv,cLote,nTotal,@aFlagCTB)
+							Endif
+						EndIf
+						
+						dbSelectArea("SEH")
+						dbSetOrder(1)
+						MsSeek(xFilial("SEH")+SubStr(SE5->E5_DOCUMEN,1,8))
+						RecLock("SEH")
+						SEH->EH_VALREG := 0
+						SEH->EH_VALREG2:= 0
+						SEH->EH_VALIRF := 0
+						SEH->EH_VALIOF := 0
+						SEH->EH_VALSWAP:= 0
+						SEH->EH_VALISWP:= 0
+						SEH->EH_VALOUTR:= 0
+						SEH->EH_VALGAP := 0
+						SEH->EH_VALCRED:= 0
+						SEH->EH_VALJUR := 0
+						SEH->EH_VALJUR2:= 0
+						SEH->EH_VALVCLP:= 0
+						SEH->EH_VALVCCP:= 0
+						SEH->EH_VALVCJR:= 0
+						SEH->EH_VALREG := 0
+						SEH->EH_VALREG2:= 0
+						MsUnlock()
+						
+						dbSelectArea("SEI")
+						dbSetOrder(1)
+						dbSeek(xFilial("SEI")+SEH->EH_APLEMP+SubStr(SE5->E5_DOCUMEN,1,10))
+						While ( SEI->EI_FILIAL+SEI->EI_APLEMP+SEI->EI_NUMERO+SEI->EI_REVISAO+SEI->EI_SEQ==;
+							xFilial("SEI")+SEH->EH_APLEMP+SubStr(SE5->E5_DOCUMEN,1,10) )
+							RecLock("SEH")
+							If ( SEI->EI_TIPODOC == "RG" .And. SEI->EI_MOTBX=="NOR" )
+								SEH->EH_VALREG := SEI->EI_VALOR
+								SEH->EH_VALREG2:= SEI->EI_VALOR
+							EndIf
+							If ( SEI->EI_TIPODOC == "I1" .And. SEI->EI_MOTBX=="NOR" )
+								SEH->EH_VALIRF := SEI->EI_VALOR
+							EndIf
+							If ( SEI->EI_TIPODOC == "I2" .And. SEI->EI_MOTBX=="NOR" )
+								SEH->EH_VALIOF := SEI->EI_VALOR
+							EndIf
+							If ( SEI->EI_TIPODOC == "SW" .And. SEI->EI_MOTBX=="NOR" )
+								SEH->EH_VALSWAP:= SEI->EI_VALOR
+							EndIf
+							If ( SEI->EI_TIPODOC == "I3" .And. SEI->EI_MOTBX=="NOR" )
+								SEH->EH_VALISWP:= SEI->EI_VALOR
+							EndIf
+							If ( SEI->EI_TIPODOC == "I4" .And. SEI->EI_MOTBX=="NOR" )
+								SEH->EH_VALOUTR:= SEI->EI_VALOR
+							EndIf
+							If ( SEI->EI_TIPODOC == "I5" .And. SEI->EI_MOTBX=="NOR" )
+								SEH->EH_VALGAP := SEI->EI_VALOR
+							EndIf
+							If ( SEI->EI_TIPODOC == "VL" .And. SEI->EI_MOTBX=="NOR" )
+								SEH->EH_VALCRED:= SEI->EI_VALOR
+							EndIf
+							If ( SEI->EI_TIPODOC == "JR" .And. SEI->EI_MOTBX=="NOR" )
+								SEH->EH_VALJUR := SEI->EI_VALOR
+								SEH->EH_VALJUR2:= SEI->EI_VLMOED2
+							EndIf
+							If ( SEI->EI_TIPODOC == "V1" .And. SEI->EI_MOTBX=="NOR" )
+								SEH->EH_VALVCLP := SEI->EI_VALOR
+							EndIf
+							If ( SEI->EI_TIPODOC == "V2" .And. SEI->EI_MOTBX=="NOR" )
+								SEH->EH_VALVCCP := SEI->EI_VALOR
+							EndIf
+							If ( SEI->EI_TIPODOC == "V3" .And. SEI->EI_MOTBX=="NOR" )
+								SEH->EH_VALVCJR := SEI->EI_VALOR
+							EndIf
+							If ( SEI->EI_TIPODOC == "BL" .And. SEI->EI_MOTBX=="NOR" )
+								SEH->EH_VALREG := SEI->EI_VALOR
+								SEH->EH_VALREG2:= SEI->EI_VLMOED2
+							EndIf
+							If ( SEI->EI_TIPODOC == "BC" .And. SEI->EI_MOTBX=="NOR" )
+								SEH->EH_VALREG := SEI->EI_VALOR
+								SEH->EH_VALREG2:= SEI->EI_VLMOED2
+							EndIf
+							If ( SEI->EI_TIPODOC == "BJ" .And. SEI->EI_MOTBX=="NOR" )
+								SEH->EH_VALREG := SEI->EI_VALOR
+								SEH->EH_VALREG2:= SEI->EI_VLMOED2
+							EndIf
+							If ( SEI->EI_TIPODOC == "BP" .And. SEI->EI_MOTBX=="NOR" )
+								VALOR := SEI->EI_VALOR
+							EndIf
+							MsUnLock()
+							dbSelectArea("SEI")
+							dbSkip()
+						EndDo
+					EndIf
+					
+					dbSelectArea("SE5")
+					
+					//ÚÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ¿
+					//³ Caracteriza-se lancamento os registros com :		  ³
+					//³ E5_TIPODOC = brancos                         		  ³
+					//³ E5_TIPODOC = "DB" // Receita Bancaria - FINA200     ³
+					//ÀÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÙ
+					If ( !lX )
+						If !(SE5->E5_TIPODOC $ "DB")
+							If !Empty(SE5->E5_TIPODOC) .OR. SE5->E5_RECPAG == "P"
+								SE5->(dbSkip())
+								Loop
+							Endif
+						EndIf
+					EndIf
+					
+					If SE5->E5_SITUACA == "C" .or. SubStr(SE5->E5_LA,1,1) == "S" ;
+						.or. SE5->E5_RECPAG == "P"
+						dbSkip()
+						Loop
+					Endif
+					
+					If SE5->E5_RATEIO == "S" .And. CtbInUse()
+						cPadrao := "517"
+					EndIf
+					
+					//ÚÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ¿
+					//³ Posiciona na natureza.										  ³
+					//ÀÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÙ
+					dbSelectArea( "SED" )
+					dbSeek(xFilial()+SE5->E5_NATUREZ)
+					
+					//ÚÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ¿
+					//³ Posiciona no banco.											  ³
+					//ÀÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÙ
+					dbSelectArea("SA6")
+					dbSetOrder(1)
+					dbSeek(xFilial()+SE5->E5_BANCO+SE5->E5_AGENCIA+SE5->E5_CONTA)
+					
+					dbSelectArea("SE5")
+					lPadrao:=VerPadrao(cPadrao)
+					
+					If l370E5R
+						Execblock("F370E5R",.F.,.F.)
+					Endif
+					
+					IF lPadrao
+						If SE5->E5_RATEIO != "S"
+							If !lCabecalho
+								a370Cabecalho(@nHdlPrv,@cArquivo)
+							Endif
+							If lUsaFlag
+								aAdd(aFlagCTB,{"E5_LA","S","SE5",SE5->(Recno()),0,0,0})
+							EndiF
+							nTotDoc	:= DetProva(nHdlPrv,cPadrao,"FINA370",cLote,,,,,,,,@aFlagCTB)
+							nTotProc	+= nTotDoc
+							nTotal	+=	nTotDoc
+							If mv_par12 == 2 .And. nTotDoc > 0 // Por documento
+								Ca370Incl(cArquivo,@nHdlPrv,cLote,nTotal,@aFlagCTB)
+							Endif
+							//ÚÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ¿
+							//³ Atualiza Flag de Lan‡amento Cont bil		  ³
+							//ÀÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÙ
+							If LanceiCtb
+								AADD(aRecsSE5,SE5->(RECNO()))
+							EndIf
+						Else
+							If CtbInUse()				// Somente para SIGACTB
+								If nHdlPrv <= 0
+									a370Cabecalho(@nHdlPrv,@cArquivo)
+								EndIf
+								RegToMemory("SE5",.F.,.F.)
+								If lUsaFlag
+									aAdd(aFlagCTB,{"E5_LA","S","SE5",SE5->(Recno()),0,0,0})
+								EndIf
+								// Devido a estrutura do programa, o rateio ja eh "quebrado"
+								// por documento.
+								CtbRatFin(cPadrao,"FINA370",cLote,4," ",4,,,,@nHdlPrv,@nTotDoc)
+								lCabecalho := If(nHdlPrv <= 0, lCabecalho, .T.)
+								nTotProc	+= nTotDoc
+								nTotal	+=	nTotDoc
+								If mv_par12 == 2 .And. nTotDoc > 0 // Por documento
+									Ca370Incl(cArquivo,@nHdlPrv,cLote,nTotal,@aFlagCTB)
+								Endif
+								//ÚÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ¿
+								//³ Atualiza Flag de Lan‡amento Cont bil	   ³
+								//ÀÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÙ
+								If LanceiCtb
+									AADD(aRecsSE5,SE5->(RECNO()))
+								EndIf
+								// Verifica o arquivo de rateio, e apaga o arquivo temporario
+								// para que no proximo rateio seja criado novamente
+								If Select("TMP1") > 0
+									DbSelectArea( "TMP1" )
+									cArq := DbInfo(DBI_FULLPATH)
+									cArq := AllTrim(SubStr(cArq,Rat("\",cArq)+1))
+									DbCloseArea()
+									FErase(cArq)
+								EndIf
+							EndIf
+						Endif
+					EndIf
+					dbSelectArea("SE5")
+					dbSkip()
+				End
+				
+				//Seto o flag de contabilizacao - SE5
+				If Len(aRecsSE5) > 0 .and. !lUsaFlag
+					dbSelectArea("SE5")
+					For nX := 1 to Len(aRecsSE5)
+						dbGoto(aRecsSE5[nX])
+						Reclock("SE5")
+						REPLACE E5_LA With "S"
+						MsUnlock()
+					Next
+				Endif
+				If mv_par12 == 3 .And. nTotProc > 0 // Por processo
+					Ca370Incl(cArquivo,@nHdlPrv,cLote,nTotal,@aFlagCTB)
+					nTotProc := 0
+				Endif
+			Endif
+		Endif
+		
+		If (mv_par06 == 2 .or. mv_par06 == 4) .and. lLerSE2
+			//ÚÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ¿
+			//³ Contas a Pagar - SE2990												  ³
+			//ÀÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÙ
+			#IFDEF TOP
+				dbSelectArea( "TRBSE2" )
+			#ELSE
+				dbSelectArea("SE2")
+			#ENDIF
+			dbSetOrder(nIndSe2+1)
+			dbSeek(xFilial("SE2")+DtoS(mv_par04),.T.)
+			
+			//ÚÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ¿
+			//³ Contabiliza pelo E2_EMIS1                  			  ³
+			//ÀÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÙ
+			While !Eof() .And. xFilial("SE2") == E2_FILIAL .And. E2_EMIS1 >= mv_par04 ;
+				.And. E2_EMIS1 <= mv_par05
+				#IFDEF TOP
+					SE2->(dbGoto(TRBSE2->(Recno())))
+				#ENDIF
+				lMulNatSE2 := .F.
+				//ÚÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ¿
+				//³ Verifica se ser  gerado Lan‡amento Cont bil			  ³
+				//ÀÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÙ
+				If	SE2->E2_LA = "S" .Or. SE2->E2_TIPO $ MVPROVIS
+					dbSkip()
+					Loop
+				Endif
+				
+				If	SE2->E2_TIPO $ MVTAXA+"/"+MVISS+"/"+MVINSS .And.;
+					( AllTrim(SE2->E2_FORNECE) $ GetMv( "MV_UNIAO" ) .Or.;
+					AllTrim(SE2->E2_FORNECE) $ GetMv( "MV_MUNIC" ))
+					// Contabiliza rateio de impostos em multiplas naturezas e multiplos
+					// centros de custos.
+					lPadrao:=VerPadrao("510")
+					lPadraoCC := VerPadrao("508")  // Rateio C.Custo de MultiNat Pagar
+					If lPadrao
+						If SE2->E2_RATEIO != "S"
+							If !lCabecalho
+								a370Cabecalho(@nHdlPrv,@cArquivo)
+							Endif
+							cChaveSev := RetChaveSev("SE2")
+							cChaveSeZ := RetChaveSev("SE2",,"SEZ")
+							DbSelectArea("SEV")
+							// Se utiliza multiplas naturezas, contabiliza pelo SEV
+							If SE2->E2_MULTNAT=="1" .And. MsSeek(cChaveSev)
+								lMulNatSE2 := .F.
+								dbSelectArea("SE2")
+								nRecSe2 := Recno()
+								DbGoBottom()
+								DbSkip()
+
+								DbSelectArea("SEV")
+								dbSetOrder(2)
+								While xFilial("SEV")+SEV->(EV_PREFIXO+EV_NUM+EV_PARCELA+EV_TIPO+EV_CLIFOR+;
+									EV_LOJA+EV_IDENT) == cChaveSev+"1" .And. !Eof()
+									If SEV->EV_LA != "S"
+										dbSelectArea( "SED" )
+										MsSeek( xFilial("SED")+SEV->EV_NATUREZ ) // Posiciona na natureza, pois a conta pode estar la.
+										dbSelectArea("SEV")
+										If SEV->EV_RATEICC == "1" .and. lPadrao .and. lPadraoCC // Rateou multinat por c.custo
+											dbSelectArea("SEZ")
+											dbSetOrder(4)
+											MsSeek(cChaveSeZ+SEV->EV_NATUREZ) // Posiciona no arquivo de Rateio C.Custo da MultiNat
+											While !Eof() .and. xFilial("SEZ")+SEZ->(EZ_PREFIXO+EZ_NUM+;
+												EZ_PARCELA+EZ_TIPO+EZ_CLIFOR+EZ_LOJA+EZ_NATUREZ+EZ_IDENT) == cChaveSeZ+SEV->EV_NATUREZ+"1"
+
+												If SEZ->EZ_LA != "S"
+
+													If lUsaFlag
+														aAdd(aFlagCTB,{"EZ_LA","S","SEZ",SEZ->(Recno()),0,0,0})
+													EndIf
+
+													VALOR := 0
+													VALOR2 := 0
+													VALOR3 := 0
+													VALOR4 := 0
+													Do Case
+														Case SEZ->EZ_TIPO $ MVTAXA
+															VALOR2 := SEZ->EZ_VALOR
+														Case SEZ->EZ_TIPO $ MVISS
+															VALOR3 := SEZ->EZ_VALOR
+														Case SEZ->EZ_TIPO $ MVINSS
+															VALOR4 := SEZ->EZ_VALOR
+													EndCase
+													nTotDoc	+=	DetProva(nHdlPrv,"508","FINA370",cLote,,,,,,,,@aFlagCTB)
+													If LanceiCtb // Vem do DetProva
+														If !lUsaFlag
+															RecLock("SEZ")
+															SEZ->EZ_LA    := "S"
+															MsUnlock( )
+														EndIf
+													Endif
+												Endif
+												dbSkip()
+											Enddo
+										Else
+											VALOR := 0
+											VALOR2 := 0
+											VALOR3 := 0
+											VALOR4 := 0
+											Do Case
+												Case SEV->EV_TIPO $ MVTAXA
+													VALOR2 := SEV->EV_VALOR
+												Case SEV->EV_TIPO $ MVISS
+													VALOR3 := SEV->EV_VALOR
+												Case SEV->EV_TIPO $ MVINSS
+													VALOR4 := SEV->EV_VALOR
+											EndCase
+
+											If lUsaFlag
+												aAdd(aFlagCTB,{"EV_LA","S","SEV",SEV->(Recno()),0,0,0})
+											EndIf
+
+											nTotDoc	+=	DetProva(nHdlPrv,cPadrao,"FINA370",cLote,,,,,,,,@aFlagCTB)
+
+										Endif
+										If LanceiCtb // Vem do DetProva
+											If !lUsaFlag
+												RecLock("SEV")
+												SEV->EV_LA    := "S"
+												MsUnlock( )
+											EndIf
+										Endif
+									Endif
+									dbSelectArea("SEV")
+									DbSkip()
+								Enddo
+								nTotal  	+=	nTotDoc
+								nTotProc	+=	nTotDoc // Totaliza por processo
+								nRecSev := SEV->(Recno())
+								nRecSez := SEZ->(Recno())
+								dbSelectArea("SEV")
+								dbGobottom()
+								dbSkip()
+								dbSelectArea("SEV")
+								dbGobottom()
+								dbSkip()
+								dbSelectArea("SE2")			// permite contabilizar os impostos pelo SE2
+								dbGoto(nRecSe2)
+								If lUsaFlag
+									aAdd(aFlagCTB,{"E2_LA","S","SE2",SE2->(Recno()),0,0,0})
+								EndiF
+								If !lCabecalho
+									a370Cabecalho(@nHdlPrv,@cArquivo)
+								Endif
+								nTotDoc	+=	DetProva(nHdlPrv,"508","FINA370",cLote,,,,,,,,@aFlagCTB)
+								SEV->(dbGoto(nRecSev))
+								SEZ->(dbGoto(nRecSez))
+								dbSelectArea("SE2")
+								DbGoto(nRecSe2)
+								If mv_par12 == 2 .And. nTotDoc > 0 // Por documento
+									If lF370NatP
+										ExecBlock("F370NATP",.F.,.F.,{nHdlPrv,cLote})
+									Endif
+									Ca370Incl(cArquivo,@nHdlPrv,cLote,nTotal,@aFlagCTB)
+									nTotDoc := 0
+								Endif
+							Endif
+							//ÚÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ¿
+							//³ Atualiza Flag de Lan‡amento Cont bil 		  ³
+							//ÀÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÙ
+							If LanceiCtb
+								If !lUsaFlag
+									Reclock("SE2")
+									Replace E2_LA With "S"
+									SE2->(MsUnlock())
+								EndIF
+							EndIf
+						Endif
+					Endif
+					// Fim da contabilizacao de titulos de impostos por multiplas natureza
+					// e multiplos centros de custos
+					#IFDEF TOP
+						dbSelectArea( "TRBSE2" )
+					#ELSE
+						dbSelectArea("SE2")
+					#ENDIF
+					If lMulNatSE2
+						dbSkip()
+						Loop
+					Endif
+				Endif
+				
+				nRegAnt := Recno()
+				dbSkip()
+				nProxReg := Recno()
+				DbGoto(nRegAnt)
+				
+				cPadrao := "510"
+				
+				IF	SE2->E2_TIPO $ MVPAGANT
+					cPadrao:="513"
+				EndIF
+				
+				If	SE2->E2_RATEIO == "S"
+					cPadrao := "511"
+				EndIf
+				
+				If	SE2->E2_DESDOBR == "S"
+					cPadrao := "577"
+				EndIf
+				
+				//ÚÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ¿
+				//³ Posiciona no fornecedor.									  ³
+				//ÀÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÙ
+				dbSelectArea( "SA2" )
+				dbSeek( xFilial("SA2")+SE2->E2_FORNECE+SE2->E2_LOJA )
+				
+				//ÚÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ¿
+				//³ Posiciona na natureza.										  ³
+				//ÀÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÙ
+				dbSelectArea( "SED" )
+				dbSeek( xFilial("SED")+SE2->E2_NATUREZ )
+				dbSelectArea("SE2")
+				
+				//ÚÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ¿
+				//³ Posiciona na SE5 e no Banco,se PA e SEF para Cheque ³
+				//ÀÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÙ
+				If SE2->E2_TIPO $ MVPAGANT
+					dbSelectArea("SE5")
+					dbSetOrder(2)
+					dbSeek( xFilial()+"PA"+SE2->E2_PREFIXO+SE2->E2_NUM+SE2->E2_PARCELA+SE2->E2_TIPO+DtoS(SE2->E2_EMISSAO)+SE2->E2_FORNECE+SE2->E2_LOJA)
+					dbSetOrder(1)
+					
+					dbSelectArea("SEF")
+					dbSetOrder(3)
+					dbSeek(xFilial()+SE2->E2_PREFIXO+SE2->E2_NUM+SE2->E2_PARCELA+SE2->E2_TIPO+SE2->E2_NUMBCO)
+					
+					dbSelectArea( "SA6" )
+					dbSetOrder(1)
+					If SE5->(Found())
+						dbSeek( xFilial()+SE5->E5_BANCO+SE5->E5_AGENCIA+SE5->E5_CONTA)
+					Else
+						dbSeek( xFilial()+SEF->EF_BANCO+SEF->EF_AGENCIA+SEF->EF_CONTA)
+					Endif
+					dbSelectArea( "SE2" )
+				Endif
+				lPadrao:=VerPadrao(cPadrao)
+				lPadraoCC := VerPadrao("508")  // Rateio C.Custo de MultiNat Pagar
+				lCtbPls := (SE2->(FieldPos("E2_PLNUCOB")) > 0 .And.;
+							! Empty(SE2->E2_PLNUCOB)) .Or.;
+							(SE2->(FieldPos("E2_MATRIC")) > 0 .And.;
+							! Empty(SE2->E2_MATRIC)) .Or.;
+							(SE2->(FieldPos("E2_CODRDA")) > 0 .And.;
+							! Empty(SE2->E2_CODRDA)) .Or.;
+							(SE2->(FieldPos("E2_PLOPELT")) > 0 .And.;
+							! Empty(SE2->E2_PLOPELT)) .And. FindFunction("PLSCTBSE2")
+
+				If lCtbPls .And. FindFunction("PLSLPSE2")
+					lPadrao := PlsLpSe2()
+				Endif
+				
+				If lPadrao
+					If SE2->E2_RATEIO != "S"
+						If !lCabecalho
+							a370Cabecalho(@nHdlPrv,@cArquivo)
+						Endif
+						cChaveSev := RetChaveSev("SE2")
+						cChaveSeZ := RetChaveSev("SE2",,"SEZ")
+						DbSelectArea("SEV")
+						// Se utiliza multiplas naturezas, contabiliza pelo SEV
+						If ! lCtbPls .And. SE2->E2_MULTNAT=="1" .And. MsSeek(cChaveSev)
+							dbSelectArea("SE2")
+							nRecSe2 := Recno()
+							DbGoBottom()
+							DbSkip()
+							DbSelectArea("SEV")
+							dbSetOrder(2)
+							While xFilial("SEV")+SEV->(EV_PREFIXO+EV_NUM+EV_PARCELA+EV_TIPO+EV_CLIFOR+;
+								EV_LOJA+EV_IDENT) == cChaveSev+"1" .And. !Eof()
+								If SEV->EV_LA != "S"
+
+									dbSelectArea( "SED" )
+									MsSeek( xFilial("SED")+SEV->EV_NATUREZ ) // Posiciona na natureza, pois a conta pode estar la.
+									dbSelectArea("SEV")
+									If SEV->EV_RATEICC == "1" .and. lPadrao .and. lPadraoCC // Rateou multinat por c.custo
+
+										dbSelectArea("SEZ")
+										dbSetOrder(4)
+										MsSeek(cChaveSeZ+SEV->EV_NATUREZ) // Posiciona no arquivo de Rateio C.Custo da MultiNat
+										While !Eof() .and. xFilial("SEZ")+SEZ->(EZ_PREFIXO+EZ_NUM+;
+												EZ_PARCELA+EZ_TIPO+EZ_CLIFOR+EZ_LOJA+EZ_NATUREZ+EZ_IDENT) == cChaveSeZ+SEV->EV_NATUREZ+"1"
+
+											If SEZ->EZ_LA != "S"
+												If lUsaFlag
+													aAdd(aFlagCTB,{"EZ_LA","S","SEZ",SEZ->(Recno()),0,0,0})
+												EndiF
+	
+												VALOR2	:= 0
+												VALOR3	:= 0
+												VALOR4	:= 0
+												VALOR  	:= 0
+												Do Case
+													Case SEZ->EZ_TIPO $ MVTAXA
+														VALOR2 := SEZ->EZ_VALOR
+													Case SEZ->EZ_TIPO $ MVISS
+														VALOR3 := SEZ->EZ_VALOR
+													Case SEZ->EZ_TIPO $ MVINSS
+														VALOR4 := SEZ->EZ_VALOR
+													Otherwise
+														VALOR  := SEZ->EZ_VALOR
+												EndCase
+												nTotDoc	+=	DetProva(nHdlPrv,"508","FINA370",cLote,,,,,,,,@aFlagCTB)
+												If LanceiCtb // Vem do DetProva
+													If !lUsaFlag
+														RecLock("SEZ")
+														SEZ->EZ_LA    := "S"
+														MsUnlock( )
+													EndIf
+												Endif
+											Endif
+
+											dbSkip()
+										Enddo
+										DbSelectArea("SEV")
+									Else
+										VALOR := 0
+										VALOR2 := 0
+										VALOR3 := 0
+										VALOR4 := 0
+										Do Case
+											Case SEV->EV_TIPO $ MVTAXA
+												VALOR2 := SEV->EV_VALOR
+											Case SEV->EV_TIPO $ MVISS
+												VALOR3 := SEV->EV_VALOR
+											Case SEV->EV_TIPO $ MVINSS
+												VALOR4 := SEV->EV_VALOR
+										EndCase
+										If lUsaFlag
+											aAdd(aFlagCTB,{"EV_LA","S","SEV",SEV->(Recno()),0,0,0})
+										EndIf
+										nTotDoc	:= DetProva(nHdlPrv,cPadrao,"FINA370",cLote,,,,,,,,@aFlagCTB)
+									Endif
+									If LanceiCtb // Vem do DetProva
+										If !lUsaFlag
+											RecLock("SEV")
+											SEV->EV_LA    := "S"
+											MsUnlock( )
+										EndIf
+									Endif
+								Endif
+								dbSelectArea("SEV")
+								DbSkip()
+							Enddo
+							nTotal  	+=	nTotDoc
+							nTotProc	+=	nTotDoc // Totaliza por processo
+							dbSelectArea("SE2")
+							DbGoto(nRecSe2)
+							If mv_par12 == 3 .And. nTotProc > 0 // Por processo
+								If lF370NatP
+									ExecBlock("F370NATP",.F.,.F.,{nHdlPrv,cLote})
+								Endif
+								Ca370Incl(cArquivo,@nHdlPrv,cLote,nTotProc,@aFlagCTB)
+								nTotProc := 0
+							Endif
+						Endif
+						dbSelectArea("SEV")
+						DbGoBottom()
+						DbSkip()
+						dbSelectArea( "SE2" )
+						
+						If !lCabecalho
+							a370Cabecalho(@nHdlPrv,@cArquivo)
+						Endif
+						
+						If lUsaFlag
+							aAdd(aFlagCTB,{"E2_LA","S","SE2",SE2->(Recno()),0,0,0})
+						EndIf
+						
+						If lCtbPls
+							nTotDoc	:= PlsCtbSe2(nHdlPrv,cPadrao,"FINA370",cLote)
+						ElseIf SE2->E2_MULTNAT <> "1"
+							nTotDoc	:=	DetProva(nHdlPrv,cPadrao,"FINA370",cLote,,,,,,,,@aFlagCTB)
+							nTotProc	+= nTotDoc
+							nTotal	+=	nTotDoc
+						Endif
+						If mv_par12 == 2 .And. nTotDoc > 0 // Por documento
+							Ca370Incl(cArquivo,@nHdlPrv,cLote,nTotal,@aFlagCTB)
+							nTotDoc := 0
+						Endif
+						//ÚÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ¿
+						//³ Atualiza Flag de Lan‡amento Cont bil 		  ³
+						//ÀÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÙ
+						If LanceiCtb
+							If !lUsaFlag
+								Reclock("SE2")
+								Replace E2_LA With "S"
+								SE2->(MsUnlock())
+							EndIf
+						EndIf
+					Else
+						If !CtbInUse()
+							/// Fa370Rat já cria cabecalho contab. caso não esteja aberto
+								If lUsaFlag
+									aAdd(aFlagCTB,{"E2_LA","S","SE2",SE2->(Recno()),0,0,0})
+								EndIf
+							nTotDoc	:=	Fa370Rat(AllTrim(SE2->E2_ARQRAT),@nHdlPrv,@cArquivo)
+							nTotProc	+= nTotDoc
+							nTotal	+=	nTotDoc
+							If mv_par12 == 2 .And. nTotDoc > 0 // Por documento
+									Ca370Incl(cArquivo,@nHdlPrv,cLote,nTotal,@aFlagCTB)
+							Endif
+							
+							If nTotal != 0
+								//ÚÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ¿
+								//³ Atualiza Flag de Lan‡amento Cont bil		  ³
+								//ÀÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÙ
+								dbSelectArea("SE2")
+									If !lUsaFlag
+										Reclock("SE2")
+										Replace E2_LA With "S"
+										SE2->(MsUnlock())
+									EndIf
+							Endif
+						Else
+							// Devido a estrutura do programa, o rateio ja eh "quebrado"
+							// por documento.
+							If !lCabecalho							/// Se não houver cabeçalho aberto, abre.
+								a370Cabecalho(@nHdlPrv,@cArquivo)
+							EndIf
+							RegToMemory("SE2",.F.,.F.)
+								If lUsaFlag
+									aAdd(aFlagCTB,{"E2_LA","S","SE2",SE2->(Recno()),0,0,0})
+								EndIf
+							CtbRatFin(cPadrao,"FINA370",cLote,4," ",4,,,,@nHdlPrv,@nTotDoc)
+							lCabecalho := If(nHdlPrv <= 0, lCabecalho, .T.)
+							nTotProc	+= nTotDoc
+							nTotal	+=	nTotDoc
+							If mv_par12 == 2 .And. nTotDoc > 0 // Por documento
+									Ca370Incl(cArquivo,@nHdlPrv,cLote,nTotal,@aFlagCTB)
+							Endif
+							//ÚÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ¿
+							//³ Atualiza Flag de Lan‡amento Cont bil		  ³
+							//ÀÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÙ
+							If LanceiCtb
+								//ÚÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ¿
+								//³ Atualiza Flag de Lan‡amento Cont bil		  ³
+								//ÀÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÙ
+								dbSelectArea("SE2")
+									If !lUsaFlag
+										Reclock("SE2")
+										Replace E2_LA With "S"
+										SE2->(MsUnlock())
+									EndIf
+							EndIf
+							// Verifica o arquivo de rateio, e apaga o arquivo temporario
+							// para que no proximo rateio seja criado novamente
+							If Select("TMP1") > 0
+								DbSelectArea( "TMP1" )
+								cArq := DbInfo(DBI_FULLPATH)
+								cArq := AllTrim(SubStr(cArq,Rat("\",cArq)+1))
+								DbCloseArea()
+								FErase(cArq)
+							EndIf
+						EndIf
+					Endif
+				Endif
+				#IFDEF TOP
+					dbSelectArea("TRBSE2")
+				#ELSE
+					dbSelectArea("SE2")
+				#ENDIF
+				dbGoto(nProxReg)
+			Enddo
+			If mv_par12 == 3 .And. nTotProc > 0 // Por processo
+					Ca370Incl(cArquivo,@nHdlPrv,cLote,nTotal,@aFlagCTB)
+				nTotProc := 0
+			Endif
+			
+			#IFDEF TOP
+				dbSelectArea( "TRBSE2" )
+			#ENDIF
+			
+			//ÚÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ¿
+			//³ Movimenta‡„o Banc ria a Pagar - SE5990							  ³
+			//ÀÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÙ
+			dbSelectArea( "SE5" )
+			dbSetOrder( 1 )
+			dbSeek( cFilial+Dtos(mv_par04),.T. )
+			
+			aRecsSE5 := {}
+			While !Eof() .And. cFilial == SE5->E5_FILIAL .And. ( SE5->E5_DATA >= mv_par04 ;
+				.And. SE5->E5_DATA <= mv_par05 .and. lLerSE5)
+				
+				If SE5->E5_SITUACA == "C" .or. SubStr(SE5->E5_LA,1,1) == "S" .or. SE5->E5_RECPAG == "R"
+					dbSkip()
+					Loop
+				Endif
+				
+				// Nao contabiliza movimentacao bancaria de adiantamento
+				If SE5->E5_RECPAG == "P" .And. SE5->E5_TIPO	== MVPAGANT
+					dbSkip()
+					Loop
+				Endif
+				
+				cPadrao := "562"
+				lX := .f.
+				SEH->(DbSetOrder(1))
+				If SE5->E5_TIPODOC $ "AP/RF/PE/EP" .And. SEH->(MsSeek(xFilial("SEH")+SubStr(SE5->E5_DOCUMEN,1,8)))
+					If SE5->E5_TIPODOC $ "AP/EP"
+						If ( SE5->E5_TIPODOC=="AP" .And. SE5->E5_RECPAG=="P" ) .Or.;
+							( SE5->E5_TIPODOC=="EP" .And. SE5->E5_RECPAG=="R" )
+							cPadrao := "580"
+						Else
+							cPadrao := "581"
+						EndIf
+					Else
+						If ( SE5->E5_TIPODOC=="RF" .And. SE5->E5_RECPAG=="R" ) .Or.;
+							( SE5->E5_TIPODOC=="PE" .And. SE5->E5_RECPAG=="P" )
+							cPadrao := "585"
+						Else
+							cPadrao := "586"
+						EndIf
+					EndIf
+					lX := .T.
+					//ÚÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ¿
+					//³ SEH ja estah posicionado	³
+					//ÀÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÙ
+					RecLock("SEH")
+					SEH->EH_VALREG := 0
+					SEH->EH_VALREG2:= 0
+					SEH->EH_VALIRF := 0
+					SEH->EH_VALIOF := 0
+					SEH->EH_VALSWAP:= 0
+					SEH->EH_VALISWP:= 0
+					SEH->EH_VALOUTR:= 0
+					SEH->EH_VALGAP := 0
+					SEH->EH_VALCRED:= 0
+					SEH->EH_VALJUR := 0
+					SEH->EH_VALJUR2:= 0
+					SEH->EH_VALVCLP:= 0
+					SEH->EH_VALVCCP:= 0
+					SEH->EH_VALVCJR:= 0
+					SEH->EH_VALREG := 0
+					SEH->EH_VALREG2:= 0
+					MsUnlock()
+					
+					dbSelectArea("SEI")
+					dbSetOrder(1)
+					dbSeek(xFilial("SEI")+SEH->EH_APLEMP+SubStr(SE5->E5_DOCUMEN,1,10))
+					
+					If ( !VerPadrao("581") .And. cPadrao$"581#580" .And. SEI->EI_STATUS=="C" )
+						dbSelectArea("SE5")
+						dbSkip()
+						Loop
+					EndIf
+					If ( !VerPadrao("586") .And. cPadrao$"586#585" .And. SEI->EI_STATUS=="C" )
+						dbSelectArea("SE5")
+						dbSkip()
+						Loop
+					EndIf
+					
+					While ( SEI->EI_FILIAL+SEI->EI_APLEMP+SEI->EI_NUMERO+SEI->EI_REVISAO+SEI->EI_SEQ==;
+						xFilial("SEI")+SEH->EH_APLEMP+SubStr(SE5->E5_DOCUMEN,1,10) )
+						RecLock("SEH")
+						If ( SEI->EI_TIPODOC == "I1" .And. SEI->EI_MOTBX=="APR" )
+							SEH->EH_VALIRF := SEI->EI_VALOR
+						EndIf
+						If ( SEI->EI_TIPODOC == "I2" .And. SEI->EI_MOTBX=="APR" )
+							SEH->EH_VALIOF := SEI->EI_VALOR
+						EndIf
+						If ( SEI->EI_TIPODOC == "I3" .And. SEI->EI_MOTBX=="APR" )
+							SEH->EH_VALISWP:= SEI->EI_VALOR
+						EndIf
+						If ( SEI->EI_TIPODOC == "I4" .And. SEI->EI_MOTBX=="APR" )
+							SEH->EH_VALOUTR:= SEI->EI_VALOR
+						EndIf
+						If ( SEI->EI_TIPODOC == "I5" .And. SEI->EI_MOTBX=="APR" )
+							SEH->EH_VALGAP := SEI->EI_VALOR
+						EndIf
+						If ( SEI->EI_TIPODOC == "JR" .And. SEI->EI_MOTBX=="APR" )
+							SEH->EH_VALJUR := SEI->EI_VALOR
+							SEH->EH_VALJUR2:= SEI->EI_VLMOED2
+						EndIf
+						If ( SEI->EI_TIPODOC == "V1" .And. SEI->EI_MOTBX=="APR" )
+							SEH->EH_VALVCLP := SEI->EI_VALOR
+						EndIf
+						If ( SEI->EI_TIPODOC == "V2" .And. SEI->EI_MOTBX=="APR" )
+							SEH->EH_VALVCCP := SEI->EI_VALOR
+						EndIf
+						If ( SEI->EI_TIPODOC == "V3" .And. SEI->EI_MOTBX=="APR" )
+							SEH->EH_VALVCJR := SEI->EI_VALOR
+						EndIf
+						MsUnLock()
+						dbSelectArea("SEI")
+						dbSkip()
+					EndDo
+					If ( VerPadrao("582") )
+						If !lCabecalho
+							a370Cabecalho(@nHdlPrv,@cArquivo)
+						EndIf
+						nTotDoc	:=	DetProva(nHdlPrv,"582","FINA370",cLote,,,,,,,,@aFlagCTB)
+						nTotProc	+= nTotDoc
+						nTotal	+=	nTotDoc
+						If mv_par12 == 2 .And. nTotDoc > 0 // Por documento
+							Ca370Incl(cArquivo,@nHdlPrv,cLote,nTotal,@aFlagCTB)
+						Endif
+					EndIf
+					
+					dbSelectArea("SEH")
+					dbSetOrder(1)
+					MsSeek(xFilial("SEH")+SubStr(SE5->E5_DOCUMEN,1,8))
+					RecLock("SEH")
+					SEH->EH_VALREG := 0
+					SEH->EH_VALREG2:= 0
+					SEH->EH_VALIRF := 0
+					SEH->EH_VALIOF := 0
+					SEH->EH_VALSWAP:= 0
+					SEH->EH_VALISWP:= 0
+					SEH->EH_VALOUTR:= 0
+					SEH->EH_VALGAP := 0
+					SEH->EH_VALCRED:= 0
+					SEH->EH_VALJUR := 0
+					SEH->EH_VALJUR2:= 0
+					SEH->EH_VALVCLP:= 0
+					SEH->EH_VALVCCP:= 0
+					SEH->EH_VALVCJR:= 0
+					SEH->EH_VALREG := 0
+					SEH->EH_VALREG2:= 0
+					
+					dbSelectArea("SEI")
+					dbSetOrder(1)
+					dbSeek(xFilial("SEI")+SEH->EH_APLEMP+SubStr(SE5->E5_DOCUMEN,1,10))
+					
+					While ( SEI->EI_FILIAL+SEI->EI_APLEMP+SEI->EI_NUMERO+SEI->EI_REVISAO+SEI->EI_SEQ==;
+						xFilial("SEI")+SEH->EH_APLEMP+SubStr(SE5->E5_DOCUMEN,1,10) )
+						RecLock("SEH")
+						If ( SEI->EI_TIPODOC == "RG" .And. SEI->EI_MOTBX=="NOR" )
+							SEH->EH_VALREG := SEI->EI_VALOR
+							SEH->EH_VALREG2:= SEI->EI_VALOR
+						EndIf
+						If ( SEI->EI_TIPODOC == "I1" .And. SEI->EI_MOTBX=="NOR" )
+							SEH->EH_VALIRF := SEI->EI_VALOR
+						EndIf
+						If ( SEI->EI_TIPODOC == "I2" .And. SEI->EI_MOTBX=="NOR" )
+							SEH->EH_VALIOF := SEI->EI_VALOR
+						EndIf
+						If ( SEI->EI_TIPODOC == "SW" .And. SEI->EI_MOTBX=="NOR" )
+							SEH->EH_VALSWAP:= SEI->EI_VALOR
+						EndIf
+						If ( SEI->EI_TIPODOC == "I3" .And. SEI->EI_MOTBX=="NOR" )
+							SEH->EH_VALISWP:= SEI->EI_VALOR
+						EndIf
+						If ( SEI->EI_TIPODOC == "I4" .And. SEI->EI_MOTBX=="NOR" )
+							SEH->EH_VALOUTR:= SEI->EI_VALOR
+						EndIf
+						If ( SEI->EI_TIPODOC == "I5" .And. SEI->EI_MOTBX=="NOR" )
+							SEH->EH_VALGAP := SEI->EI_VALOR
+						EndIf
+						If ( SEI->EI_TIPODOC == "VL" .And. SEI->EI_MOTBX=="NOR" )
+							SEH->EH_VALCRED:= SEI->EI_VALOR
+						EndIf
+						If ( SEI->EI_TIPODOC == "JR" .And. SEI->EI_MOTBX=="NOR" )
+							SEH->EH_VALJUR := SEI->EI_VALOR
+							SEH->EH_VALJUR2:= SEI->EI_VLMOED2
+						EndIf
+						If ( SEI->EI_TIPODOC == "V1" .And. SEI->EI_MOTBX=="NOR" )
+							SEH->EH_VALVCLP := SEI->EI_VALOR
+						EndIf
+						If ( SEI->EI_TIPODOC == "V2" .And. SEI->EI_MOTBX=="NOR" )
+							SEH->EH_VALVCCP := SEI->EI_VALOR
+						EndIf
+						If ( SEI->EI_TIPODOC == "V3" .And. SEI->EI_MOTBX=="NOR" )
+							SEH->EH_VALVCJR := SEI->EI_VALOR
+						EndIf
+						If ( SEI->EI_TIPODOC == "BL" .And. SEI->EI_MOTBX=="NOR" )
+							SEH->EH_VALREG := SEI->EI_VALOR
+							SEH->EH_VALREG2:= SEI->EI_VLMOED2
+						EndIf
+						If ( SEI->EI_TIPODOC == "BC" .And. SEI->EI_MOTBX=="NOR" )
+							SEH->EH_VALREG := SEI->EI_VALOR
+							SEH->EH_VALREG2:= SEI->EI_VLMOED2
+						EndIf
+						If ( SEI->EI_TIPODOC == "BJ" .And. SEI->EI_MOTBX=="NOR" )
+							SEH->EH_VALREG := SEI->EI_VALOR
+							SEH->EH_VALREG2:= SEI->EI_VLMOED2
+						EndIf
+						If ( SEI->EI_TIPODOC == "BP" .And. SEI->EI_MOTBX=="NOR" )
+							VALOR := SEI->EI_VALOR
+						EndIf
+						MsUnLock()
+						dbSelectArea("SEI")
+						dbSkip()
+					EndDo
+				EndIf
+				dbSelectArea("SE5")
+				If !lX
+					If !Empty(SE5->E5_TIPODOC) .Or.;
+						Empty(SE5->E5_NATUREZ)	// Para nao contabilizar totalizar do bordero
+						// como movimentacao bancaria a pagar.
+						If !(SE5->E5_TIPODOC $ "DB/OD")
+							//ÚÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ¿
+							//³ Caracteriza-se lancamento os registros com :		  ³
+							//³ E5_TIPODOC = brancos                         		  ³
+							//³ E5_TIPODOC = "DB" // Desp Bancaria gerada no FINA200³
+							//³ E5_TIPODOC = "OD" // Outras Despesas gerada FINA200 ³
+							//ÀÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÙ
+							SE5->( dbSkip())
+							Loop
+						EndIF
+					Endif
+				Endif
+				
+				If SE5->E5_RATEIO == "S" .And. CtbInUse()
+					cPadrao := "516"
+				EndIf
+				
+				//ÚÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ¿
+				//³ Posiciona na natureza.										  ³
+				//ÀÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÙ
+				dbSelectArea( "SED" )
+				dbSeek( cFilial+SE5->E5_NATUREZ )
+				//ÚÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ¿
+				//³ Posiciona no banco.											  ³
+				//ÀÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÙ
+				dbSelectArea( "SA6" )
+				dbSetOrder(1)
+				dbSeek( cFilial+SE5->E5_BANCO+SE5->E5_AGENCIA+SE5->E5_CONTA )
+				
+				If l370E5P
+					Execblock("F370E5P",.F.,.F.)
+				Endif
+				
+				lPadrao:=VerPadrao(cPadrao)
+				IF lPadrao
+					If SE5->E5_RATEIO != "S"
+						If nHdlPrv <= 0
+							a370Cabecalho(@nHdlPrv,@cArquivo)
+						End
+						If lUsaFlag
+							aAdd(aFlagCTB,{"E5_LA","S","SE5",SE5->(Recno()),0,0,0})
+						EndIf
+						nTotDoc	:=	DetProva(nHdlPrv,cPadrao,"FINA370",cLote,,,,,,,,@aFlagCTB)
+						nTotProc	+= nTotDoc
+						nTotal	+=	nTotDoc
+						If mv_par12 == 2 .And. nTotDoc > 0 // Por documento
+							Ca370Incl(cArquivo,@nHdlPrv,cLote,nTotal,@aFlagCTB)
+						Endif
+						//ÚÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ¿
+						//³ Atualiza Flag de Lan‡amento Cont bil		  ³
+						//ÀÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÙ
+						If LanceiCtb
+							AADD(aRecsSE5,SE5->(RECNO()))
+						EndIf
+					Else			// Rateio 516 -> somente sigactb!
+						If CtbInUse()
+							// Devido a estrutura do programa, o rateio ja eh "quebrado"
+							// por documento.
+							If nHdlPrv <= 0
+								a370Cabecalho(@nHdlPrv,@cArquivo)
+							EndIf
+							RegToMemory("SE5",.F.,.F.)
+							If lUsaFlag
+								aAdd(aFlagCTB,{"E5_LA","S","SE5",SE5->(Recno()),0,0,0})
+							EndIf
+							CtbRatFin(cPadrao,"FINA370",cLote,4," ",4,,,,@nHdlPrv,@nTotDoc)
+							lCabecalho := If(nHdlPrv <= 0, lCabecalho, .T.)
+							nTotProc	+= nTotDoc
+							nTotal	+=	nTotDoc
+							If mv_par12 == 2 .And. nTotDoc > 0 // Por documento
+								Ca370Incl(cArquivo,@nHdlPrv,cLote,nTotal,@aFlagCTB)
+							Endif
+							//ÚÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ¿
+							//³ Atualiza Flag de Lan‡amento Cont bil		  ³
+							//ÀÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÙ
+							If LanceiCtb
+								AADD(aRecsSE5,SE5->(RECNO()))
+							EndIf
+							// Verifica o arquivo de rateio, e apaga o arquivo temporario
+							// para que no proximo rateio seja criado novamente
+							If Select("TMP1") > 0
+								DbSelectArea( "TMP1" )
+								cArq := DbInfo(DBI_FULLPATH)
+								cArq := AllTrim(SubStr(cArq,Rat("\",cArq)+1))
+								DbCloseArea()
+								FErase(cArq)
+							EndIf
+						EndIf
+					EndIf
+				End
+				dbSelectArea("SE5")
+				dbSkip()
+			End
+			
+			//Seto o flag de contabilizacao - SE5
+			If Len(aRecsSE5) > 0 .and. !lUsaFlag
+				dbSelectArea("SE5")
+				For nX := 1 to Len(aRecsSE5)
+					dbGoto(aRecsSE5[nX])
+					Reclock("SE5")
+					REPLACE E5_LA With "S"
+					MsUnlock()
+				Next
+			Endif
+			
+			If mv_par12 == 3 .And. nTotProc > 0 // Por processo
+					Ca370Incl(cArquivo,@nHdlPrv,cLote,nTotal,@aFlagCTB)
+				nTotProc := 0
+			Endif
+		End
+		
+		aRecsSE5 := {}
+		If (mv_par06 == 1 .or. mv_par06 == 4) .and. lLerSE5
+			//ÚÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ¿
+			//³ Baixas a Receber 														  ³
+			//ÀÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÙ
+			dbSelectArea( "SE5" )
+			
+			//ÚÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ¿
+			//³ Verifica qual a data a ser utilizada para baixa				  ³
+			//ÀÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÙ
+			cCampo:=IIF(mv_par07 == 1,"E5_DATA",Iif(mv_par07 == 2,"E5_DTDIGIT","E5_DTDISPO"))
+			dbSetOrder( nIndex+1 )
+			
+			dbSeek( cFilial+"R"+dtos(mv_par04),.t.)
+			
+			While ! SE5->(Eof()) .and. SE5->E5_RECPAG == "R" .and. &cCampo <= mv_par05
+				
+				//ÚÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ¿
+				//³ Nao serao contabilizadas Mov. Fin. Manuais e Transf.Bancaria neste ponto  ³
+				//ÀÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÙ
+				// Nem aplicacoes, emprestimos, estornos de aplicacoes e estornos de emprestimos
+				If Empty(SE5->E5_TIPODOC) .OR. SE5->E5_TIPODOC $ "TR/TE/DB/OD/AP/RF/PE/EP"
+					dbSkip()
+					Loop
+				Endif
+				
+				lAdiant := .f.
+				lEstorno := .F.
+				lEstRaNcc := .F.
+				lCompens := .F.
+				If SE5->E5_TIPODOC == "ES"
+					lEstorno := .T.
+				Endif
+				If SE5->E5_TIPODOC == "ES" .and. SE5->E5_TIPO $ MVRECANT+"/"+MV_CRNEG
+					lEstRaNcc := .T.
+				Endif
+				If SE5->E5_TIPO $ MVPAGANT+"/"+MV_CPNEG
+					lAdiant := .T.
+				Endif
+				
+				If  SE5->E5_TIPODOC == "BA" .and. SE5->E5_MOTBX == "CMP"
+					lCompens := .T.
+				Endif
+				
+				// Despreza baixas do titulo principal, para nao duplicar.
+				If SE5->E5_TIPODOC == "CP" .and. SE5->E5_MOTBX == "CMP"
+					dbSkip()
+					Loop
+				Endif
+				
+				If (lAdiant .or. lEstorno) .and. !lEstRaNcc
+					dbSelectArea("SE2")
+					dbSetOrder(1)
+					If !(dbSeek(cFilial+SE5->E5_PREFIXO+SE5->E5_NUMERO+SE5->E5_PARCELA+SE5->E5_TIPO+SE5->E5_CLIFOR+SE5->E5_LOJA))
+						//ÚÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ¿
+						//³ Localizada inconsistˆncia no arquivo SE5. A fun‡„o fa370conc	 ³
+						//³ pergunta se o usu rio quer continuar ou abandonar.				 ³
+						//ÀÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÙ
+						If FA370CONC() # 1
+							Break
+						Endif
+						dbSelectArea("SE5")
+						dbSkip()
+						Loop
+					Endif
+				Else
+					dbSelectArea( "SE1" )
+					dbSetOrder( 2 )
+					
+					cFilorig := xFilial()
+					If lCompens
+						If !Empty(xFilial("SE5"))
+							IF !Empty(SE5->E5_FILORIG)
+								cFilOrig := SE5->E5_FILORIG
+							Endif
+						Endif
+					Endif
+					
+					If !(dbSeek( cFilOrig +SE5->E5_CLIFOR+SE5->E5_LOJA+SE5->E5_PREFIXO+SE5->E5_NUMERO+SE5->E5_PARCELA+SE5->E5_TIPO ))
+						//ÚÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ¿
+						//³ Localizada inconsistˆncia no arquivo SE5. A fun‡„o fa370conc	 ³
+						//³ pergunta se o usu rio quer continuar ou abandonar.				 ³
+						//ÀÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÙ
+						If FA370CONC() # 1
+							Break
+						Endif
+						dbSelectArea("SE5")
+						dbSkip()
+						Loop
+					Else
+						//ÚÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ¿
+						//³ Carrega variavies para contabilizacao dos    ³
+						//³ abatimentos (impostos da lei 10925).         ³			
+						//ÀÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÙ
+					 	dbSelectArea("__SE1")
+				 		dbSetOrder( 1 )
+						__SE1->(MsSeek(cFilOrig +SE5->(E5_PREFIXO+E5_NUMERO+E5_PARCELA)))
+						While __SE1->(!EOF()) .And.;
+						      __SE1->(E1_FILIAL + E1_PREFIXO + E1_NUM + E1_PARCELA) ==;
+						      (cFilOrig + SE5->(E5_PREFIXO + E5_NUMERO + E5_PARCELA))
+							If __SE1->E1_TIPO == MVPIABT
+								VALOR5 := __SE1->E1_VALOR			
+							ElseIf __SE1->E1_TIPO == MVCFABT
+								VALOR6 := __SE1->E1_VALOR
+							ElseIf __SE1->E1_TIPO == MVCSABT
+								VALOR7 := __SE1->E1_VALOR						
+							Endif			
+							__SE1->(dbSkip())
+						Enddo
+					Endif
+				Endif
+				
+				nPis:=0
+				nCofins:=0
+				nCsll:=0
+				nVretPis:=0
+				nVretCof:=0
+				nVretCsl:=0
+
+				If (lAdiant .or. lEstorno) .and. !lEstRaNcc
+					nValLiq	:= SE2->E2_VALLIQ
+					nDescont := SE2->E2_DESCONT
+					nJuros	:= SE2->E2_JUROS
+					nMulta	:= SE2->E2_MULTA
+					nCorrec	:= SE2->E2_CORREC
+					If lPccBaixa
+						nPis		:= SE2->E2_PIS
+						nCofins	:= SE2->E2_COFINS
+						nCsll		:= SE2->E2_CSLL
+						nVretPis := SE2->E2_VRETPIS
+						nVretCof := SE2->E2_VRETCOF
+						nVretCsl := SE2->E2_VRETCSL
+					Endif
+				Else
+					nValLiq	:= SE1->E1_VALLIQ
+					nDescont := SE1->E1_DESCONT
+					nJuros	:= SE1->E1_JUROS
+					nMulta	:= SE1->E1_MULTA
+					nCorrec	:= SE1->E1_CORREC
+					cSitOri  := SE1->E1_SITUACA
+				Endif
+				
+				dbSelectArea( "SE5" )
+				nVl:=nDc:=nJr:=nMt:=nCm:=0
+				lTitulo := .F.
+				cSeq	  :=	SE5->E5_SEQ
+				cBanco  := " "
+				nRegSE5 := 0
+				nRegOrigSE5 := 0
+				
+				If (lAdiant .or. lEstorno) .and. !lEstRaNcc
+					cChaveSe5 := "xFilial()==SE5->E5_FILIAL.And.SE2->E2_PREFIXO==SE5->E5_PREFIXO.And.SE2->E2_NUM==SE5->E5_NUMERO.And.SE2->E2_PARCELA==SE5->E5_PARCELA.And.SE2->E2_TIPO==SE5->E5_TIPO.And.cSeq==SE5->E5_SEQ .And. SE5->E5_CLIFOR+SE5->E5_LOJA == SE2->E2_FORNECE+SE2->E2_LOJA"
+				Else
+					cChaveSe5 := "xFilial()==SE5->E5_FILIAL.And.SE1->E1_PREFIXO==SE5->E5_PREFIXO.And.SE1->E1_NUM==SE5->E5_NUMERO.And.SE1->E1_PARCELA==SE5->E5_PARCELA.And.SE1->E1_TIPO==SE5->E5_TIPO.And.cSeq==SE5->E5_SEQ .And.SE5->E5_CLIFOR+SE5->E5_LOJA==SE1->E1_CLIENTE+SE1->E1_LOJA"
+				Endif
+				
+				While !Eof() .And. &cChaveSe5
+					
+					If !(SE5->E5_RECPAG == "R" .and. &cCampo <= mv_par05)
+						Exit
+					Endif
+					
+					If &cCampo > mv_par05
+						Exit
+					Endif
+
+					nPisBx := 0
+					nCofBx := 0
+					nCslBx := 0
+				
+					dbSelectArea("SE5")
+					
+					If  SE5->E5_TIPODOC $ "BAüVLüV2üES/LJ"
+						nVl	  := E5_VALOR
+						cBanco  := SE5->E5_BANCO+SE5->E5_AGENCIA+SE5->E5_CONTA
+						nRegSE5 := SE5->(Recno())
+						cSitCob := " "
+						If !Empty(SE5->E5_SITCOB)
+							cSitCob := SE5->E5_SITCOB
+						Endif
+						lMultnat := SE5->E5_MULTNAT == "1"
+						cSeqSE5	:= SE5->E5_SEQ
+						If lPccBaixa
+							IF Empty(SE5->E5_PRETPIS)
+								nPisBx := SE5->E5_VRETPIS
+								nCofBx := SE5->E5_VRETCOF
+								nCslBx := SE5->E5_VRETCSL
+							Endif
+						Endif
+					ElseIf SE5->E5_TIPODOC $ "DCüD2"
+						nDc	  := E5_VALOR
+						If nRegSE5 == 0; nRegSE5 := SE5->(Recno()); Endif
+					ElseIf SE5->E5_TIPODOC $ "JRüJ2üTL"
+						nJr	  := E5_VALOR
+						If nRegSE5 == 0; nRegSE5 := SE5->(Recno()); Endif
+					ElseIf SE5->E5_TIPODOC $ "MTüM2"
+						nMt := E5_VALOR
+						If nRegSE5 == 0; nRegSE5 := SE5->(Recno()); Endif
+					ElseIf SE5->E5_TIPODOC $ "CMüC2"
+						nCm := E5_VALOR
+						If nRegSE5 == 0; nRegSE5 := SE5->(Recno()); Endif
+					Endif
+					
+					//ÚÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ¿
+					//³ Atualiza Flag de Lan‡amento Cont bil		  ³
+					//ÀÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÙ
+					lTitulo := .T.
+					nRegAnt := SE5->(RecNo())
+					AADD(aRecsSE5,SE5->(RECNO()))
+					SE5->(dbSkip())
+					nReg := SE5->(Recno())
+					SE5->(DbGoto(nRegAnt))
+					If lUsaFlag
+						aAdd(aFlagCTB,{"E5_LA","S"+SubStr(E5_LA,2,1),"SE5",SE5->(Recno()),0,0,0})
+					EndIf
+					SE5->(dbGoto(nReg))
+					dbSelectArea("SE5")
+				Enddo
+				
+				If lTitulo
+					If (lAdiant .or. lEstorno) .and. !lEstRaNcc
+						Reclock( "SE2" )
+						Replace E2_VALLIQ  With nVl
+						Replace E2_DESCONT With nDc
+						Replace E2_JUROS	 With nJr
+						Replace E2_MULTA	 With nMt
+						Replace E2_CORREC  With nCm
+						If lPccBaixa
+							Replace E2_PIS		With nPisBx
+							Replace E2_COFINS	With nCofBx
+							Replace E2_CSLL	With nCslBx
+							Replace E2_VRETPIS	With nPisBx
+							Replace E2_VRETCOF	With nCofBx
+							Replace E2_VRETCSL	With nCslBx
+						Endif
+						SE2->(MsUnlock())
+					Else
+						Reclock( "SE1" )
+						Replace E1_VALLIQ  With nVl
+						Replace E1_DESCONT With nDc
+						Replace E1_JUROS   With nJr
+						Replace E1_MULTA   With nMt
+						Replace E1_CORREC  With nCm
+						If !Empty(cSitCob)
+							Replace E1_SITUACA With cSitCob
+						Endif
+						SE1->( MsUnlock())
+					Endif
+				Endif
+				
+				//ÚÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ¿
+				//³ Posiciona no cliente/fornecedor 						  ³
+				//ÀÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÙ
+				If lTitulo
+					If (lAdiant .or. lEstorno) .and. !lEstRaNcc
+						dbSelectArea("SA2")
+						dbSeek(xFilial()+SE2->E2_FORNECE+SE2->E2_LOJA)
+						dbSelectArea( "SED" )
+						dbSeek( xFilial()+SE2->E2_NATUREZ )
+					Else
+						dbSelectArea( "SA1" )
+						dbSeek( cFilial+SE1->E1_CLIENTE+SE1->E1_LOJA )
+						dbSelectArea( "SED" )
+						dbSeek( cFilial+SE1->E1_NATUREZ )
+					Endif
+					//ÚÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ¿
+					//³ Posiciona no banco. 										  ³
+					//ÀÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÙ
+					dbSelectArea( "SA6" )
+					dbSetOrder(1)
+					dbSeek( xFilial("SA6")+cBanco)
+				Endif
+				
+				//ÚÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ¿
+				//³ Posiciona o arquivo SE5 para que os lan‡amentos  ³
+				//³ cont beis possam localizar o motivo da baixa.	  ³
+				//ÀÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÙ
+				nRegOrigSE5 := 0
+				if  nRegSE5 > 0
+					nRegOrigSE5 := SE5->(Recno())
+					SE5->(dbGoTo(nRegSE5))
+				Endif
+				If lAdiant
+					cPadrao := "530"
+				Elseif lEstorno
+					cPadrao := "531"
+				ElseIf lCompens
+					cPadrao := "596"
+				Else
+					dbSelectArea( "SE1" )
+					If cPaisLoc == "CHI" .And. SE5->E5_MOTBX == "DEV"
+						cPadrao := "574"
+					Else
+						cPadrao := fa070Pad()
+					EndIf
+				Endif
+				lPadrao := VerPadrao(cPadrao)
+				lPadraoCc := VerPadrao("536") //Rateio por C.Custo de MultiNat C.Receber
+				lPadraoCcE := VerPadrao("539") //Estorno do rateio C.Custo de MultiMat CR
+				IF lPadrao
+					If !lCabecalho
+						a370Cabecalho(@nHdlPrv,@cArquivo)
+					Endif
+					//Contabilizando estorno de C.Pagar
+					If lEstorno
+						cChaveSev := RetChaveSev("SE2")+"2"+cSeqSE5
+						cChaveSez := RetChaveSev("SE2",,"SEZ")
+					Else
+						cChaveSev := RetChaveSev("SE1")+"2"+cSeqSE5
+						cChaveSez := RetChaveSev("SE1",,"SEZ")
+					Endif
+					
+					DbSelectArea("SEV")
+					dbSetOrder(2)
+					// Se utiliza multiplas naturezas, contabiliza pelo SEV
+					If lMultNat .And. MsSeek(cChaveSev)
+						dbSelectArea("SE1")
+						nRecSe1 := Recno()
+						DbGoBottom()
+						DbSkip()
+						dbSelectArea("SE2")
+						nRecSe2 := Recno()
+						DbGoBottom()
+						DbSkip()
+						
+						DbSelectArea("SEV")
+						
+						While xFilial("SEV")+SEV->(EV_PREFIXO+EV_NUM+EV_PARCELA+EV_TIPO+EV_CLIFOR+;
+							EV_LOJA+EV_IDENT+EV_SEQ) == cChaveSev .And. !Eof()
+							
+							//Se estou contabilizando um estorno, trata-se de um C. Pagar,
+							//So vou contabilizar os EV_SITUACA == E
+							If (lEstorno .and. !(SEV->EV_SITUACA == "E")) .or. ;
+								(!lEstorno .and. (SEV->EV_SITUACA == "E"))
+								//Se nao for um estorno, nao devo contabilizar o registro se
+								//EV_SITUACA == E
+								dbSkip()
+								Loop
+							ElseIf lEstorno
+								//O lancamento a ser considerado passa a ser o do estorno
+								lPadraoCC := lPadraoCCE
+							Endif
+							
+							If SEV->EV_LA != "S"
+								dbSelectArea( "SED" )
+								MsSeek( xFilial("SED")+SEV->EV_NATUREZ ) // Posiciona na natureza, pois a conta pode estar la.
+								dbSelectArea("SEV")
+								If SEV->EV_RATEICC == "1" .and. lPadraoCC .and. lPadrao // Rateou multinat por c.custo
+									dbSelectArea("SEZ")
+									dbSetOrder(4)
+									MsSeek(cChaveSeZ+SEV->EV_NATUREZ+"2"+cSeqSE5) // Posiciona no arquivo de Rateio C.Custo da MultiNat
+									While !Eof() .and. xFilial("SEZ")+SEZ->(EZ_PREFIXO+EZ_NUM+;
+										EZ_PARCELA+EZ_TIPO+EZ_CLIFOR+EZ_LOJA+EZ_NATUREZ+EZ_IDENT+EZ_SEQ) == cChaveSeZ+SEV->EV_NATUREZ+"2"+cSeqSE5
+										
+										//Se estou contabilizando um estorno, trata-se de um C. Pagar,
+										//So vou contabilizar os EZ_SITUACA == E
+										//Se nao for um estorno, nao devo contabilizar o registro se
+										//EZ_SITUACA == E
+										If (lEstorno .and. !(SEZ->EZ_SITUACA == "E")) .or. ;
+											(!lEstorno .and. (SEZ->EZ_SITUACA == "E"))
+											dbSkip()
+											Loop
+										Endif
+										If SEZ->EZ_LA != "S"
+
+											aAdd(aFlagCTB,{"EZ_LA","S","SEZ",SEZ->(Recno()),0,0,0})
+											//O lacto padrao fica:
+											//536 - Rateio multinat com c.custo C.Receber
+											//539 - Estorno de Rat. Multinat C.Custo C.Pagar
+											cPadraoCC := If(SEZ->EZ_SITUACA == "E","539","536")
+											VALOR := SEZ->EZ_VALOR
+											nTotDoc	+=	DetProva(nHdlPrv,cPadraoCC,"FINA370",cLote,,,,,,,,@aFlagCTB)
+											If LanceiCtb // Vem do DetProva
+												If !lUsaFlag
+													RecLock("SEZ")
+													SEZ->EZ_LA    := "S"
+													MsUnlock( )
+												EndIf
+											Endif
+										Endif
+										dbSkip()
+									Enddo
+									DbSelectArea("SEV")
+								Else
+									If lUsaFlag
+										aAdd(aFlagCTB,{"EV_LA","S","SEV",SEV->(Recno()),0,0,0})
+									EndIf
+		  						    nTotDoc	:=	DetProva(nHdlPrv,cPadrao,"FINA370",cLote,,,,,,,,@aFlagCTB)
+								Endif
+								If LanceiCtb // Vem do DetProva
+									If !lUsaFlag
+										RecLock("SEV")
+										SEV->EV_LA    := "S"
+										MsUnlock( )
+									EndIf
+								Endif
+							Endif
+							DbSelectArea("SEV")
+							DbSkip()
+							VALOR := 0
+						Enddo
+						nTotal  	+=	nTotDoc
+						nTotProc	+=	nTotDoc // Totaliza por processo
+						
+						If mv_par12 == 2 .And. nTotDoc > 0 // Por documento
+							Ca370Incl(cArquivo,@nHdlPrv,cLote,nTotal,@aFlagCTB)
+							nTotDoc := 0
+						Endif
+						
+						dbSelectArea("SE2")
+						DbGoto(nRecSe2)
+						
+						dbSelectArea("SE1")
+						DbGoto(nRecSe1)
+					Else
+						dbSelectArea("SEV")
+						DbGoBottom()
+						DbSkip()
+						DbSelectArea("SE1")
+						If SE1->E1_TIPO == MVPIABT
+							VALOR5 := SE1->E1_VALOR			
+						ElseIf SE1->E1_TIPO == MVCFABT
+							VALOR6 := SE1->E1_VALOR
+						ElseIf SE1->E1_TIPO == MVCSABT
+							VALOR7 := SE1->E1_VALOR			
+						Endif	
+					    nTotDoc	:=	DetProva(nHdlPrv,cPadrao,"FINA370",cLote,,,,,,,,@aFlagCTB)
+						nTotProc	+= nTotDoc
+						nTotal	+=	nTotDoc
+						If mv_par12 == 2 .And. nTotDoc > 0 // Por documento
+							Ca370Incl(cArquivo,@nHdlPrv,cLote,nTotal,@aFlagCTB)
+						Endif
+					Endif
+				Endif
+				//ÚÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ¿
+				//³ Devolve a posi‡„o original do arquivo  ³
+				//ÀÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÙ
+				If nRegOrigSE5 > 0
+					SE5->(dbGoTo(nRegOrigSE5))
+				Endif
+				If !lAdiant .and. !lEstorno
+					dbSelectArea("SE1")
+					If !Eof() .And. !Bof()
+						Reclock( "SE1" )
+						Replace E1_VALLIQ  With nValliq
+						Replace E1_DESCONT With nDescont
+						Replace E1_JUROS	 With nJuros
+						Replace E1_MULTA	 With nMulta
+						Replace E1_CORREC  With nCorrec
+						Replace E1_SITUACA With cSitOri
+						SE1->( MsUnlock( ) )
+					EndIF
+				Else
+					dbSelectArea("SE2")
+					If !Eof() .And. !Bof()
+						Reclock( "SE2" )
+						Replace E2_VALLIQ  With nValliq
+						Replace E2_DESCONT With nDescont
+						Replace E2_JUROS	 With nJuros
+						Replace E2_MULTA	 With nMulta
+						Replace E2_CORREC  With nCorrec
+						If lPccBaixa
+							Replace E2_PIS		With nPis
+							Replace E2_COFINS	With nCofins
+							Replace E2_CSLL	With nCsll
+							Replace E2_VRETPIS	With nVretPis
+							Replace E2_VRETCOF	With nVretCof
+							Replace E2_VRETCSL	With nVretCsl
+						Endif
+						SE2->( MsUnlock())
+					EndIf
+				Endif
+				dbSelectArea("SE5")
+			Enddo
+			
+			If Len(aRecsSE5) > 0 .and. !lUsaFlag
+				dbSelectArea("SE5")
+				For nX := 1 to Len(aRecsSE5)
+					dbGoto(aRecsSE5[nX])
+					Reclock("SE5")
+					REPLACE E5_LA With "S"
+					MsUnlock()
+				Next
+			Endif
+						
+			If mv_par12 == 3 .And. nTotProc > 0 // Por processo
+				Ca370Incl(cArquivo,@nHdlPrv,cLote,nTotal,@aFlagCTB)
+				nTotProc := 0
+			Endif
+			dbSelectArea( "SE5" )
+		Endif
+		
+		If (mv_par06 == 2 .or. mv_par06 == 4) .and. lLerSE5
+			//ÚÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ¿
+			//³ Baixas a Pagar															  ³
+			//ÀÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÙ
+			dbSelectArea( "SE5" )
+			aRecsSE5 := {}
+			VALOR 		:= 0
+			VALOR2		:= 0
+			VALOR3		:= 0
+			VALOR4		:= 0
+			VALOR5		:= 0
+			
+			nValorTotal := 0
+			nBordero	:= 0
+			nTotBord	:= 0
+			nBordDc		:= 0
+			nBordJr		:= 0
+			nBordMt		:= 0
+			nBordCm		:= 0
+			
+			//ÚÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ¿
+			//³ Verifica qual a data a ser utilizada para baixa				  ³
+			//ÀÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÙ
+			cCampo:=IIF(mv_par07 == 1,"E5_DATA",Iif(mv_par07 == 2,"E5_DTDIGIT","E5_DTDISPO"))
+			dbSetOrder( nIndex+1 )
+			dbSeek( cFilial +"P"+dTos(mv_par04),.T.)
+			cNumBor := ""
+			While !SE5->(Eof()) .And. SE5->E5_RECPAG == "P" .and. &cCampo <= mv_par05
+				
+				//ÚÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ¿
+				//³ Nao serao contabilizadas Mov. Fin. Manuais e Transf.Bancaria neste ponto  ³
+				//ÀÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÙ
+				// Nem aplicacoes, emprestimos, estornos de aplicacoes e estornos de emprestimos
+				If Empty(SE5->E5_TIPODOC) .OR. SE5->E5_TIPODOC $ "TR/TE/DB/OD/LJ/AP/RF/PE/EP"
+					dbSkip()
+					Loop
+				Endif
+				
+				lAdiant := .F.
+				lEstorno := .F.
+				lEstPaNdf := .F.
+				lEstCart2 := .F.
+				lCompens  := .F.
+				
+				IF SE5->E5_TIPODOC == "ES"
+					lEstorno := .T.
+				Endif
+				
+				IF SE5->E5_TIPODOC == "E2"
+					lEstCart2 := .T.
+				Endif
+				
+				IF SE5->E5_TIPO $ MVPAGANT+"/"+MV_CPNEG .and. SE5->E5_TIPODOC == "ES"
+					lEstPaNdf := .T.
+				Endif
+				
+				IF SE5->E5_TIPO $ MVRECANT+"/"+MV_CRNEG
+					lAdiant := .T.
+				Endif
+				
+				If SE5->E5_TIPODOC == "BA" .and. SE5->E5_MOTBX == "CMP"
+					lCompens := .T.
+				Endif
+				
+				//ÚÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ¿
+				//³ Apenas contabilza se :                                       ³
+				//³ For realmente uma baixa de contas a PAGAR                    ³
+				//³ mv_ctbaixa diferente de "C" - Cheque                         |
+				//³ Ou se for igual a C e for uma baixa no banco caixa			  |
+				//³______________________________________________________________|
+				
+				
+				If !lAdiant .and. !lEstorno .and. !lEstCart2
+					If cCtBaixa == "C" .And. SE5->E5_MOTBX == "NOR"  .And.;
+						!(Substr(SE5->E5_BANCO,1,2)=="CX" .or. SE5->E5_BANCO$cCarteira)
+						dbSkip()
+						Loop
+					Endif
+				Endif
+				
+				// A baixa de adiantamento ou estorno de baixa a receber gera registro a pagar
+				
+				If (lAdiant .or. lEstorno .or. lEstCart2) .and. !lEstPaNdf
+					dbSelectArea("SE1")
+					dbSetOrder(2)
+					If !(dbSeek(xFilial()+SE5->E5_CLIFOR+SE5->E5_LOJA+SE5->E5_PREFIXO+SE5->E5_NUMERO+SE5->E5_PARCELA+SE5->E5_TIPO))
+						//ÚÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ¿
+						//³ Localizada inconsistˆncia no arquivo SE5. A fun‡„o fa370conc	 ³
+						//³ pergunta se o usu rio quer continuar ou abandonar.				 ³
+						//ÀÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÙ
+						If FA370CONC() # 1
+							Break
+						Endif
+						dbSelectArea("SE5")
+						dbSkip()
+						Loop
+					Endif
+				Else
+					dbSelectArea( "SE2" )
+					dbSetOrder( 1 )
+					
+					cFilorig := xFilial("SE2")
+					If lCompens
+						If !Empty(xFilial("SE5"))
+							IF !Empty(SE5->E5_FILORIG)
+								cFilOrig := SE5->E5_FILORIG
+							Endif
+						Endif
+					Endif
+					
+					If !(dbSeek( cFilOrig +SE5->E5_PREFIXO+SE5->E5_NUMERO+SE5->E5_PARCELA+SE5->E5_TIPO+SE5->E5_CLIFOR+SE5->E5_LOJA))
+						//ÚÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ¿
+						//³ Localizada inconsistˆncia no arquivo SE5. A fun‡„o fa370conc	 ³
+						//³ pergunta se o usu rio quer continuar ou abandonar.				 ³
+						//ÀÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÙ
+						If FA370CONC() # 1
+							Break
+						Endif
+						dbSelectArea("SE5")
+						dbSkip()
+						Loop
+					Endif
+				Endif
+				
+				nPis:=0
+				nCofins:=0
+				nCsll:=0
+				nVretPis:=0
+				nVretCof:=0
+				nVretCsl:=0
+				
+				If (lAdiant .or. lEstorno .or. lEstCart2) .and. !lEstPaNdf
+					nValLiq	:= SE1->E1_VALLIQ
+					nDescont := SE1->E1_DESCONT
+					nJuros	:= SE1->E1_JUROS
+					nMulta	:= SE1->E1_MULTA
+					nCorrec	:= SE1->E1_CORREC
+				Else
+					nValLiq	:= SE2->E2_VALLIQ
+					nDescont := SE2->E2_DESCONT
+					nJuros	:= SE2->E2_JUROS
+					nMulta	:= SE2->E2_MULTA
+					nCorrec	:= SE2->E2_CORREC
+					If lPccBaixa
+						nPis		:= SE2->E2_PIS
+						nCofins	:= SE2->E2_COFINS
+						nCsll		:= SE2->E2_CSLL
+						nVretPis := SE2->E2_VRETPIS
+						nVretCof := SE2->E2_VRETCOF
+						nVretCsl := SE2->E2_VRETCSL
+					Endif
+				Endif
+				
+				dbSelectArea( "SE5" )
+				nVl:=nDc:=nJr:=nMt:=nCm:=0
+				lTitulo := .F.
+				cSeq	  :=	SE5->E5_SEQ
+				cBanco  := " "
+				nRegSE5 := 0
+				nRegOrigSE5 := 0
+				
+				If (lAdiant .or. lEstorno .or. lEstCart2) .and. !lEstPaNdf
+					cChaveSe5 := "xFilial()==SE5->E5_FILIAL.And.SE1->E1_PREFIXO==SE5->E5_PREFIXO.And.SE1->E1_NUM==SE5->E5_NUMERO.And.SE1->E1_PARCELA==SE5->E5_PARCELA.And.SE1->E1_TIPO==SE5->E5_TIPO.And.cSeq==SE5->E5_SEQ .And.SE5->E5_CLIFOR+SE5->E5_LOJA==SE1->E1_CLIENTE+SE1->E1_LOJA"
+				Else
+					cChaveSe5 := "xFilial()==SE5->E5_FILIAL.And.SE2->E2_PREFIXO==SE5->E5_PREFIXO.And.SE2->E2_NUM==SE5->E5_NUMERO.And.SE2->E2_PARCELA==SE5->E5_PARCELA.And.SE2->E2_TIPO==SE5->E5_TIPO.And.cSeq==SE5->E5_SEQ .And. SE5->E5_CLIFOR+SE5->E5_LOJA == SE2->E2_FORNECE+SE2->E2_LOJA"
+				Endif
+				
+				cNumBor := SE5->E5_DOCUMEN
+				STRLCTPAD := SE5->E5_DOCUMEN
+					If SE5->(FieldPos("E5_FORNADT")) > 0
+						CODFORCP := SE5->E5_FORNADT
+						LOJFORCP := SE5->E5_LOJAADT
+					EndIf
+				While  !Eof() .And. &cChaveSE5
+					
+					dbSelectArea("SE5")
+					
+					// Se nao satisfizer a primeira condicao, Despreza o registro
+					If !(SE5->E5_RECPAG == "P" .and. &cCampo <= mv_par05)
+						Exit
+					Endif
+					
+					nPisBx := 0
+					nCofBx := 0
+					nCslBx := 0
+					
+					If	SE5->E5_TIPODOC $ "BAüVLüV2üES/LJ/E2"
+						cBanco  := SE5->E5_BANCO+SE5->E5_AGENCIA+SE5->E5_CONTA
+						cCheque := SE5->E5_NUMCHEQ
+						nVl	  := SE5->E5_VALOR
+						nRegSE5 := SE5->(Recno())
+						lMultnat := SE5->E5_MULTNAT == "1"
+						cSeqSE5	:= SE5->E5_SEQ
+						If lPccBaixa
+							IF Empty(SE5->E5_PRETPIS)
+								nPisBx := SE5->E5_VRETPIS
+								nCofBx := SE5->E5_VRETCOF
+								nCslBx := SE5->E5_VRETCSL
+							Endif
+						Endif
+					ElseIf SE5->E5_TIPODOC $ "DCüD2"
+						nDc	  := SE5->E5_VALOR
+						If nRegSE5 == 0; nRegSE5 := SE5->(Recno()); Endif
+					ElseIf SE5->E5_TIPODOC $ "JRüJ2/TL"
+						nJr	  := SE5->E5_VALOR
+						If nRegSE5 == 0; nRegSE5 := SE5->(Recno()); Endif
+					ElseIf SE5->E5_TIPODOC $ "MTüM2"
+						nMt := SE5->E5_VALOR
+						If nRegSE5 == 0; nRegSE5 := SE5->(Recno()); Endif
+					ElseIf SE5->E5_TIPODOC $ "CMüC2"
+						nCm := SE5->E5_VALOR
+						If nRegSE5 == 0; nRegSE5 := SE5->(Recno()); Endif
+					Endif
+					
+					//ÚÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ¿
+					//³ Atualiza Flag de Lan‡amento Cont bil		  ³
+					//ÀÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÙ
+					nRegAnt := SE5->(Recno())
+					AADD(aRecsSE5,SE5->(RECNO()))
+					SE5->(dbSkip())
+					cProxBor := SE5->E5_DOCUMEN
+					nReg := Recno()
+					SE5->(DbGoto(nRegAnt))
+					If lUsaFlag
+						aAdd(aFlagCTB,{"E5_LA","S"+SubStr(SE5->E5_LA,2,1),"SE5",SE5->(Recno()),0,0,0})
+					EndIf
+					lTitulo := .T.
+					dbGoto(nReg)
+				EndDO
+				
+				If lTitulo
+					If (lAdiant .or. lEstorno .or. lEstCart2) .and. !lEstPaNdf
+						Reclock( "SE1" )
+						Replace E1_VALLIQ  With nVl
+						Replace E1_DESCONT With nDc
+						Replace E1_JUROS	 With nJr
+						Replace E1_MULTA	 With nMt
+						Replace E1_CORREC  With nCm
+						SE1->( MsUnlock())
+					Else
+						Reclock( "SE2" )
+						Replace E2_VALLIQ  With nVl
+						Replace E2_DESCONT With nDc
+						Replace E2_JUROS	 With nJr
+						Replace E2_MULTA	 With nMt
+						Replace E2_CORREC  With nCm
+						If lPccBaixa
+							Replace E2_PIS		With nPisBx
+							Replace E2_COFINS	With nCofBx
+							Replace E2_CSLL	With nCslBx
+							Replace E2_VRETPIS	With nPisBx
+							Replace E2_VRETCOF	With nCofBx
+							Replace E2_VRETCSL	With nCslBx
+						Endif
+						SE2->(MsUnlock())
+					Endif
+				Endif
+				
+				If lTitulo
+					//ÚÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ¿
+					//³ Posiciona no fornecedor. 									  ³
+					//ÀÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÙ
+					If (lAdiant .or. lEstorno .or. lEstCart2) .and. !lEstPaNdf
+						dbSelectArea( "SA1" )
+						dbSeek( cFilial+SE1->E1_CLIENTE+SE1->E1_LOJA )
+						dbSelectArea( "SED" )
+						dbSeek( cFilial+SE1->E1_NATUREZ )
+					Else
+						dbSelectArea("SA2")
+						dbSeek(xFilial()+SE2->E2_FORNECE+SE2->E2_LOJA)
+						dbSelectArea( "SED" )
+						dbSeek( xFilial()+SE2->E2_NATUREZ )
+						nValorTotal += SE2->E2_VALLIQ
+					Endif
+					
+					//ÚÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ¿
+					//³ Posiciona no banco.											  ³
+					//ÀÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÙ
+					dbSelectArea( "SA6" )
+					dbSetOrder(1)
+					dbSeek( cFilial+cBanco)
+					dbSelectArea( "SE5" )
+				Endif
+				
+				//ÚÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ¿
+				//³ Posiciona o arquivo SE5 para que os lan‡amentos  ³
+				//³ cont beis possam localizar o motivo da baixa. 	  ³
+				//ÀÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÙ
+				nRegOrigSE5 := 0
+				If nRegSE5 > 0
+					nRegOrigSE5 := SE5->(Recno())
+					SE5->(dbGoTo(nRegSE5))
+				Endif
+				
+				If lEstorno .and. lEstPaNdf
+					cPadrao := "531"
+				ElseIf lEstorno
+					cPadrao := "527"
+				Elseif lEstCart2
+					cPadrao := "540"
+				ElseIf lAdiant
+					dbSelectArea( "SE1" )
+					cPadrao := fa070Pad()
+				Elseif lCompens
+					cPadrao := "597"
+				Else
+					cPadrao := Iif(Empty(SE2->E2_NUMBOR),"530","532")
+					
+					// Totalizo por Bordero
+					
+					If cPadrao = "532" .And. mv_par13 = 2
+						nBordero 	+= SE2->E2_VALLIQ
+						nTotBord 	+= SE2->E2_VALLIQ
+						nBordDc		+= SE2->E2_DESCONT
+						nBordJr		+= SE2->E2_JUROS
+						nBordMt		+= SE2->E2_MULTA
+						nBordCm		+= SE2->E2_CORREC
+					Endif
+					
+					// Disponibilizo a Variavel VALOR com o total dos borderos aglutinados
+					
+					If cPadrao = "532" .And. cProxBor <> cNumBor
+						VALOR 		:= nBordero
+						VALOR2		:= nBordDc
+						VALOR3		:= nBordJr
+						VALOR4		:= nBordMt
+						VALOR5		:= nBordCm
+						
+						nBordero 	:= 0.00
+						nBordDc		:= 0
+						nBordJr		:= 0
+						nBordMt		:= 0
+						nBordCm		:= 0
+					Else
+						VALOR 		:= 0.00
+						VALOR2		:= 0.00
+						VALOR3		:= 0.00
+						VALOR4		:= 0.00
+						VALOR5		:= 0.00
+					Endif
+				Endif
+				lPadrao := VerPadrao(cPadrao)
+				lPadraoCc := VerPadrao("537") //Rateio por C.Custo de MultiNat C.Pagar
+				lPadraoCcE := VerPadrao("538") //Estorno do rateio C.Custo de MultiMat CR
+				IF  lPadrao
+					If !lCabecalho
+						a370Cabecalho(@nHdlPrv,@cArquivo)
+					Endif
+
+					// Se utiliza multiplas naturezas, contabiliza pelo SEV
+					If lMultNat 						
+						//Contabilizando estorno de C.Receber
+						If lEstorno
+							cChaveSev := RetChaveSev("SE1")+"2"+cSeqSE5
+							cChaveSez := RetChaveSev("SE1",,"SEZ")
+						Else
+							cChaveSev := RetChaveSev("SE2")+"2"+cSeqSE5
+							cChaveSez := RetChaveSev("SE2",,"SEZ")
+						Endif
+				
+						DbSelectArea("SEV")
+						dbSetOrder(2)
+						If MsSeek(cChaveSev)
+
+							dbSelectArea("SE2")
+							nValorTotal -= SE2->E2_VALLIQ							
+
+							nRecSe2 := Recno()
+							DbGoBottom()
+							DbSkip()
+							
+							dbSelectArea("SE1")
+							nRecSe1 := Recno()
+							DbGoBottom()
+							DbSkip()
+							
+							DbSelectArea("SEV")
+	
+							While xFilial("SEV")+SEV->(EV_PREFIXO+EV_NUM+EV_PARCELA+EV_TIPO+EV_CLIFOR+;
+								EV_LOJA+EV_IDENT+EV_SEQ) == cChaveSev .And. !Eof()
+								
+								//Se estou contabilizando um estorno, trata-se de um C. Pagar,
+								//So vou contabilizar os EV_SITUACA == E
+								//Se nao for um estorno, nao devo contabilizar o registro se
+								//EV_SITUACA == E
+								If (lEstorno .and. !(SEV->EV_SITUACA == "E")) .or. ;
+									(!lEstorno .and. (SEV->EV_SITUACA == "E"))
+									dbSkip()
+									Loop
+								ElseIf lEstorno
+									//O lancamento a ser considerado passa a ser o do estorno
+									lPadraoCC := lPadraoCCE
+								Endif
+								
+								If SEV->EV_LA != "S"
+									dbSelectArea( "SED" )
+									MsSeek( xFilial("SED")+SEV->EV_NATUREZ ) // Posiciona na natureza, pois a conta pode estar la.
+									dbSelectArea("SEV")
+									If SEV->EV_RATEICC == "1" .and. lPadraoCC .and. lPadrao // Rateou multinat por c.custo
+										dbSelectArea("SEZ")
+										dbSetOrder(4)
+										MsSeek(cChaveSeZ+SEV->EV_NATUREZ+"2"+cSeqSE5) // Posiciona no arquivo de Rateio C.Custo da MultiNat
+										While !Eof() .and. xFilial("SEZ")+SEZ->(EZ_PREFIXO+EZ_NUM+;
+											EZ_PARCELA+EZ_TIPO+EZ_CLIFOR+EZ_LOJA+EZ_NATUREZ+EZ_IDENT+EZ_SEQ) == cChaveSeZ+SEV->EV_NATUREZ+"2"+cSeqSE5
+											
+											//Se estou contabilizando um estorno, trata-se de um C. Pagar,
+											//So vou contabilizar os EZ_SITUACA == E
+											//Se nao for um estorno, nao devo contabilizar o registro se
+											//EZ_SITUACA == E
+											If (lEstorno .and. !(SEZ->EZ_SITUACA == "E")) .or. ;
+												(!lEstorno .and. (SEZ->EZ_SITUACA == "E"))
+												dbSkip()
+												Loop
+											Endif
+											If SEZ->EZ_LA != "S"
+												If lUsaFlag
+													aAdd(aFlagCTB,{"EZ_LA","S","SEZ",SEZ->(Recno()),0,0,0})
+												EndIf
+												//O lacto padrao fica:
+												//537 - Rateio multinat com c.custo C.Pagar
+												//538 - Estorno de Rat. Multinat C.Custo C.Receber
+												cPadraoCC := If(SEZ->EZ_SITUACA == "E","538","537")
+												VALOR := SEZ->EZ_VALOR
+												nTotDoc	+=	DetProva(nHdlPrv,cPadraoCC,"FINA370",cLote,,,,,,,,@aFlagCTB)
+												If LanceiCtb // Vem do DetProva
+													If !lUsaFlag
+														RecLock("SEZ")
+														SEZ->EZ_LA    := "S"
+														MsUnlock( )
+													EndIf
+												Endif
+											Endif
+											dbSkip()
+										Enddo
+										DbSelectArea("SEV")
+									Else
+										If lUsaFlag
+											aAdd(aFlagCTB,{"EZ_LA","S","SEZ",SEZ->(Recno()),0,0,0})
+										EndIf
+										nTotDoc	:=	DetProva(nHdlPrv,cPadrao,"FINA370",cLote,,,,,,,,@aFlagCTB)
+									Endif
+									If LanceiCtb // Vem do DetProva
+										If !lUsaFlag
+											RecLock("SEV")
+											SEV->EV_LA    := "S"
+											MsUnlock( )   
+										EndIf
+									Endif
+								Endif
+								DbSelectArea("SEV")
+								DbSkip()
+								VALOR := 0
+							Enddo
+							nTotal  	+=	nTotDoc
+							nTotProc	+=	nTotDoc // Totaliza por processo
+							
+							If mv_par12 == 2 .And. nTotDoc > 0 // Por documento
+								Ca370Incl(cArquivo,@nHdlPrv,cLote,nTotal,@aFlagCTB)
+								nTotDoc := 0
+							Endif
+							dbSelectArea("SE1")
+							DbGoto(nRecSe1)
+							dbSelectArea("SE2")
+							DbGoto(nRecSe2)
+						EndIf
+					Else
+						dbSelectArea("SEV")
+						DbGoBottom()
+						DbSkip()
+						DbSelectArea("SE2")
+						nTotDoc	:=	DetProva(nHdlPrv,cPadrao,"FINA370",cLote,,,,,,,,@aFlagCTB)
+						nTotProc	+= nTotDoc
+						nTotal	+=	nTotDoc
+						If mv_par12 == 2 .And. nTotDoc > 0 // Por documento
+							Ca370Incl(cArquivo,@nHdlPrv,cLote,nTotal,@aFlagCTB)
+						Endif
+					Endif
+				EndIF
+				//ÚÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ¿
+				//³ Devolve a posi‡„o original do arquivo  ³
+				//ÀÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÙ
+				If nRegOrigSE5 > 0
+					SE5->(dbGoTo(nRegOrigSE5))
+				Endif
+				If (lAdiant .or. lEstorno .or. lEstCart2) .and. !lEstPaNdf
+					dbSelectArea("SE1")
+					If !Eof() .And. !Bof()
+						Reclock( "SE1" )
+						Replace E1_VALLIQ  With nValliq
+						Replace E1_DESCONT With nDescont
+						Replace E1_JUROS	 With nJuros
+						Replace E1_MULTA	 With nMulta
+						Replace E1_CORREC  With nCorrec
+						SE1->( MsUnlock( ) )
+					EndIF
+					dbSelectArea( "SE5" )
+				Else
+					dbSelectArea("SE2")
+					If !Eof() .And. !Bof()
+						Reclock( "SE2" )
+						Replace E2_VALLIQ  With nValliq
+						Replace E2_DESCONT With nDescont
+						Replace E2_JUROS	 With nJuros
+						Replace E2_MULTA	 With nMulta
+						Replace E2_CORREC  With nCorrec
+						If lPccBaixa
+							Replace E2_PIS		With nPis
+							Replace E2_COFINS	With nCofins
+							Replace E2_CSLL	With nCsll
+							Replace E2_VRETPIS	With nVretPis
+							Replace E2_VRETCOF	With nVretCof
+							Replace E2_VRETCSL	With nVretCsl
+						Endif
+						SE2->( MsUnlock())
+					EndIf
+					dbSelectArea( "SE5" )
+				Endif
+			EndDO
+			
+			If nValorTotal > 0
+				If !lCabecalho
+					a370Cabecalho(@nHdlPrv,@cArquivo)
+				EndIF
+				VALOR 	:= If(mv_par13 = 1, nValorTotal, 0.00)
+				VALOR2	:= VALOR3	:= VALOR4	:= VALOR5	:= 0.00
+				dbSelectArea("SE2")
+				dbGobottom()
+				dbSkip()
+				// Se estiver contabilizando carteira a Pagar apenas,
+				// desposiciona E1 tambem, pois no LP podera conter
+				// E1_VALLIQ e este campo retornara um valor, duplicando
+				// o LP 527. Ex. Criar um LP 527 contabilizando pelo E1_VALLIQ
+				// Fazer uma Baixa e um cancelamento, contabilizar off-line
+				// escolhendo apenas a carteira a Pagar
+				If mv_par06 == 2 .Or. mv_par06 == 4
+					dbSelectArea("SE1")
+					dbGobottom()
+					dbSkip()
+				Endif
+				nTotDoc	:=	DetProva(nHdlPrv,cPadrao,"FINA370",cLote,,,,,,,,@aFlagCTB)
+				nTotProc	+= nTotDoc
+				nTotal	+=	nTotDoc
+				If mv_par12 == 2 .And. nTotDoc > 0 // Por documento
+					Ca370Incl(cArquivo,@nHdlPrv,cLote,nTotal,@aFlagCTB)
+				Endif
+			EndIF
+		EndIF
+		
+		If Len(aRecsSE5) > 0 .and. !lUsaFlag
+			dbSelectArea("SE5")
+			For nX := 1 to Len(aRecsSE5)
+				dbGoto(aRecsSE5[nX])
+				Reclock("SE5")
+				REPLACE E5_LA With "S"
+				MsUnlock()
+			Next
+		Endif
+		
+		If mv_par12 == 3 .And. nTotProc > 0 // Por processo
+			Ca370Incl(cArquivo,@nHdlPrv,cLote,nTotal,@aFlagCTB)
+			nTotProc := 0
+		Endif
+		
+		If (mv_par06 = 3  .Or. mv_par06 = 4) .and. lLerSEF
+			//ÚÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ¿
+			//³ Contabiliza‡ao de Cheques  											  ³
+			//ÀÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÙ
+			dbSelectArea("SEF")
+			dbSetOrder(1)
+			dbSeek( cFilial,.T. )
+			While !Eof() .And. xFilial("SEF") == SEF->EF_FILIAL
+				
+				//ÚÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ¿
+				//³ Guarda o pr¢ximo registro para IndR‚gua					  ³
+				//ÀÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÙ
+				nRegAnt := Recno()
+				dbSkip()
+				nProxReg := RecNo()
+				dbGoto(nRegAnt)
+				
+				If SEF->EF_DATA >= mv_par04 .And. SEF->EF_DATA <= mv_par05 .And. !Empty(SEF->EF_NUM) .and. ;
+					SubStr(SEF->EF_LA,1,1) != "S" .and. ;
+					(Alltrim(SEF->EF_ORIGEM) $ "FINA050#FINA080#FINA070#FINA190#FINA090#FINA390TIT#FINA390AVU" .Or. ;
+					Empty(SEF->EF_ORIGEM))
+					
+					cPadrao := "590"
+					lChqSTit := .F.
+					IF SEF->EF_ORIGEM == "FINA390TIT"
+						cPadrao := "566"
+					Endif
+					IF SEF->EF_ORIGEM == "FINA390AVU"
+						cPadrao := "567"
+					Endif
+					If !GetMv("MV_CTBAIXA") $ "AC" .and. Alltrim(SEF->EF_ORIGEM) $ "FINA050#FINA080#FINA190#FINA090#FINA390TIT"
+						dbSelectArea("SEF")
+						dbGoto(nProxReg)
+						Loop
+					Endif
+					
+					// Nao contabilizo cancelados em off-line
+					If SEF->EF_IMPRESS == "C"
+						dbSelectArea("SEF")
+						dbGoto(nProxReg)
+						Loop
+					Endif
+					
+					// Nao contabilizo cheques de PA nao aglutinados
+					If SEF->EF_IMPRESS != "A" .and. Alltrim(SEF->EF_ORIGEM) == "FINA050"
+						dbSelectArea("SEF")
+						dbGoto(nProxReg)
+						Loop
+					Endif
+					
+					
+					If SEF->EF_IMPRESS $ "SN "	// Cheque impresso ou n„o
+						VALOR     := SEF->EF_VALOR		// para lan‡amento padr„o
+						STRLCTPAD := SEF->EF_HIST
+						NUMCHEQUE := SEF->EF_NUM
+						ORIGCHEQ  := SEF->EF_ORIGEM
+						//ÚÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ¿
+						//³ Antes de desposicionar deve gravar flag de contabi- ³
+						//³ lizado.                                             ³
+						//ÀÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÙ
+							If lUsaFlag
+								aAdd(aFlagCTB,{"EF_LA","S","SEF",SEF->(Recno()),0,0,0})
+							Else
+								Reclock("SEF")
+								SEF->EF_LA := "S"
+								MsUnlock()
+							EndIf
+						//ÚÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ¿
+						//³ Desposiciona propositalmente o SEF para que APENAS a³
+						//³ variavel VALOR esteja com conteudo. O reposicionamen³
+						//³ to ‚ feito na volta do Looping.                     ³
+						//ÀÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÙ
+						If Alltrim(SEF->EF_ORIGEM) == "FINA190"  // Jun‡Æo de cheques
+							dbSelectArea("SEF")
+							dbGoBottom()
+							dbSkip()
+							dbSelectArea("SE1")
+							dbGoBottom()
+							dbSkip()
+							dbSelectArea("SE2")
+							dbGoBottom()
+							dbSkip()
+							dbSelectArea("SE5")
+							dbGoBottom()
+							dbSkip()
+						Endif
+						If Alltrim(SEF->EF_ORIGEM) == "FINA390TIT"  // Chq s/ Titulo
+							dbSelectArea("SE1")
+							dbGoBottom()
+							dbSkip()
+							dbSelectArea("SE2")
+							dbGoBottom()
+							dbSkip()
+							VALOR     := 0
+							lChqStit	:= .T.
+						Endif
+						If Alltrim(SEF->EF_ORIGEM) == "FINA390AVU"  // Cheque Avulso
+							VALOR     := 0
+							STRLCTPAD := ""
+							NUMCHEQUE := ""
+							ORIGCHEQ  := ""
+							lChqStit	:= .T.
+						Endif
+					Elseif SEF->EF_IMPRESS == "A"	// Cheque Aglutinado
+						VALOR     := 0
+						STRLCTPAD := ""
+						NUMCHEQUE := ""
+						ORIGCHEQ  := ""
+						dbSelectArea("SE5")
+						dbSetOrder(2)		//posiciona no SE5
+						If !(dbSeek(xFilial()+"VL"+SEF->EF_PREFIXO+SEF->EF_TITULO+SEF->EF_PARCELA+SEF->EF_TIPO+DtoS(SEF->EF_DATA)+SEF->EF_FORNECE+SEF->EF_LOJA+SEF->EF_SEQUENC))
+							dbSeek(xFilial()+"BA"+SEF->EF_PREFIXO+SEF->EF_TITULO+SEF->EF_PARCELA+SEF->EF_TIPO+DtoS(SEF->EF_DATA)+SEF->EF_FORNECE+SEF->EF_LOJA+SEF->EF_SEQUENC)
+						Endif
+						dbSetOrder(1)
+					Endif
+					
+					//ÚÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ¿
+					//³ Posiciona Registros                                 ³
+					//ÀÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÙ
+					If !SEF->(EOF())
+						dbSelectArea( "SA6" )
+						dbSetOrder(1)
+						dbSeek( cFilial+SEF->EF_BANCO+SEF->EF_AGENCIA+SEF->EF_CONTA)
+						If !lChqSTit
+							If SEF->EF_TIPO $ MVRECANT + "/" + MV_CRNEG
+								//ÚÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ¿
+								//³ Neste caso o titulo veio de um Contas³
+								//³ a Receber (SE1)                      ³
+								//ÀÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÙ
+								dbSelectArea("SE1")
+								DbSetOrder(1)
+								If dbSeek(xFilial()+SEF->EF_PREFIXO+SEF->EF_TITULO+SEF->EF_PARCELA+SEF->EF_TIPO+SEF->EF_FORNECE+SEF->EF_LOJA)
+									dbSelectArea("SED")
+									dbSeek(xFilial()+SE1->E1_NATUREZ)
+									dbSelectArea("SA1")
+									dbSeek(xFilial()+SEF->EF_FORNECE+SEF->EF_LOJA)
+								Endif
+							Else
+								dbSelectArea( "SE2" )
+								dbSetOrder(1)
+								If dbSeek(xFilial("SE2")+SEF->EF_PREFIXO+SEF->EF_TITULO+;
+									SEF->EF_PARCELA+SEF->EF_TIPO+;
+									SEF->EF_FORNECE+SEF->EF_LOJA,.F.)
+									dbSelectArea("SED")
+									dbSetOrder(1)
+									dbSeek(xFilial("SED")+SE2->E2_NATUREZ)
+									dbSelectArea("SA2")
+									dbSetOrder(1)
+									dbSeek(xFilial("SA2")+SE2->E2_FORNECE+SE2->E2_LOJA)
+								EndIf
+							Endif
+							If Alltrim(SEF->EF_ORIGEM) == "FINA390TIT"  // Chq s/ Titulo
+								//ÚÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ¿
+								//³ Antes de desposicionar deve gravar flag de contabi- ³
+								//³ lizado.                                             ³
+								//ÀÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÙ
+									If lUsaFlag
+										aAdd(aFlagCTB,{"EF_LA","S","SEF",SEF->(Recno()),0,0,0})
+									Else
+										Reclock("SEF")
+										SEF->EF_LA := "S"
+										MsUnlock()
+									EndIf
+								dbSelectArea("SEF")
+								dbGoBottom()
+								dbSkip()
+							Endif
+						Endif
+					EndIf
+					dbSelectArea( "SEF" )
+					
+					lPadrao:=VerPadrao(cPadrao)
+					IF lPadrao
+						If !lCabecalho
+							a370Cabecalho(@nHdlPrv,@cArquivo)
+						End
+						nTotDoc	:=	DetProva(nHdlPrv,cPadrao,"FINA370",cLote,,,,,,,,@aFlagCTB)
+						nTotProc	+= nTotDoc
+						nTotal	+=	nTotDoc
+						If mv_par12 == 2 .And. nTotDoc > 0 // Por documento
+							Ca370Incl(cArquivo,@nHdlPrv,cLote,nTotal,@aFlagCTB)
+						Endif
+						//ÚÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ¿
+						//³ Atualiza Flag de Lan‡amento Cont bil		  ³
+						//ÀÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÙ
+						If LanceiCtb .And. !(SEF->(Eof()))
+							If !lUsaFlag
+								Reclock("SEF")
+								SEF->EF_LA := "S"
+								MsUnlock()
+							EndIf
+						EndIf
+					Endif
+				Endif
+				dbSelectArea("SEF")
+				dbGoto(nProxReg)
+			Enddo
+			If mv_par12 == 3 .And. nTotProc > 0 // Por processo
+				Ca370Incl(cArquivo,@nHdlPrv,cLote,nTotal,@aFlagCTB)
+			Endif
+			
+			//ÚÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ¿
+			//³ Movimenta‡„o Banc ria - Transferencia & Estorno da Transf.   ³
+			//ÀÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÙ
+			aTrf := {"TR","TE"}
+			nTamTot	:= Len(SE5->(E5_PREFIXO+E5_NUMERO+E5_PARCELA+E5_TIPO))
+			For nLacoTrf := 1 to Len(aTrf)
+				dbSelectArea( "SE5" )
+				dbSetOrder( 2 )
+				SE5->( dbSeek( cFilial+aTrf[nLacoTrf]+Space(nTamTot+TamParcela("E5_PARCELA",0,1,2))+Dtos(mv_par04),.T. ))
+				
+				aRecsSE5 := {}
+				While SE5->( !Eof()) .And. cFilial == SE5->E5_FILIAL .And. ( SE5->E5_DATA >= mv_par04 ;
+					.And. SE5->E5_DATA <= mv_par05 ) .and. SE5->E5_TIPODOC == aTrf[nLacoTrf]
+					
+					If SE5->E5_RECPAG == "P"
+						cPadrao := "560"
+					Elseif SE5->E5_RECPAG == "R"
+						cPadrao := "561"
+					EndIf
+					
+					//ÚÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ¿
+					//³ Verifica se ser  gerado Lan‡amento Cont bil			  ³
+					//ÀÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÙ
+					If SubStr(SE5->E5_LA,1,1) == "S"
+						SE5->( dbSkip( ) )
+						Loop
+					End
+					
+					If SE5->E5_SITUACA == "C"
+						SE5->( dbSkip() )
+						Loop
+					End
+					
+					//Transferencia ou estorno de transferencia carteira descontada
+					If SE5->E5_TIPODOC $ "TR#TE" .and. !Empty(SE5->E5_NUMERO)
+						SE5->( dbSkip() )
+						Loop
+					Endif
+					
+					//ÚÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ¿
+					//³ Posiciona na natureza.										  ³
+					//ÀÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÙ
+					dbSelectArea( "SED" )
+					SED->( dbSeek( cFilial+SE5->E5_NATUREZ ) )
+					
+					//ÚÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ¿
+					//³ Posiciona no banco.											  ³
+					//ÀÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÙ
+					dbSelectArea( "SA6" )
+					dbSetOrder(1)
+					SA6->( dbSeek( cFilial+SE5->E5_BANCO+SE5->E5_AGENCIA+SE5->E5_CONTA ) )
+					
+					If l370E5T
+						Execblock("F370E5T",.F.,.F.)
+					Endif
+					
+					dbSelectArea( "SE5" )
+					
+					lPadrao:=VerPadrao(cPadrao)
+					IF lPadrao
+						If !lCabecalho
+							a370Cabecalho(@nHdlPrv,@cArquivo)
+						Endif
+						If lUsaFlag
+							aAdd(aFlagCTB,{"E5_LA","S","SE5",SE5->(Recno()),0,0,0})
+						EndIf
+						nTotDoc	:=	DetProva(nHdlPrv,cPadrao,"FINA370",cLote,,,,,,,,@aFlagCTB)
+						nTotProc	+= nTotDoc
+						nTotal	+=	nTotDoc
+						If mv_par12 == 2 .And. nTotDoc > 0 // Por documento
+							Ca370Incl(cArquivo,@nHdlPrv,cLote,nTotal,@aFlagCTB)
+						Endif
+						//ÚÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ¿
+						//³ Atualiza Flag de Lan‡amento Cont bil		  ³
+						//ÀÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÙ
+						If LanceiCtb
+							AADD(aRecsSE5,SE5->(RECNO()))
+						EndIf
+					Endif
+					SE5->( dbSkip() )
+				EndDo
+				
+				//Seto o flag de contabilizacao - SE5
+				If Len(aRecsSE5) > 0 .and. !lUsaFlag
+					dbSelectArea("SE5")
+					For nX := 1 to Len(aRecsSE5)
+						dbGoto(aRecsSE5[nX])
+						Reclock("SE5")
+						REPLACE E5_LA With "S"
+						MsUnlock()
+					Next
+				Endif
+				
+				If mv_par12 == 3 .And. nTotProc > 0 // Por processo
+					Ca370Incl(cArquivo,@nHdlPrv,cLote,nTotal,@aFlagCTB)
+					nTotProc := 0
+				Endif
+			Next
+		Endif
+		
+		//ÚÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ¿
+		//³ Caixinha   SEU990             				     ³
+		//ÀÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÙ
+		If mv_par06 != 3 .and. lLerSEU
+			//ÚÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ¿
+			//³ Caixinha   SEU990             				  						  ³
+			//ÀÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÙ
+			dbSelectArea( "SET" )
+			dbSetOrder( 1 )
+			dbSeek( cFilial)
+			nOrderSEU	:=	IIf(mv_par07<>1,2,4)
+			bCampo		:=	IIf(mv_par07<>1,{|| EU_BAIXA },{|| EU_DTDIGIT })
+			While !Eof() .And. cFilial == SET->ET_FILIAL
+				dbSelectArea( "SEU" )
+				dbSetOrder( nOrderSEU )
+				dbSeek( cFilial + SET->ET_CODIGO + DTOS(MV_PAR04) , .F. )
+				While !Eof() .And. cFilial == SEU->EU_FILIAL .And. EU_CAIXA == SET->ET_CODIGO .And. Eval(bCampo) <= mv_par05
+					
+					//ÚÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ¿
+					//³ Ponto de Entrada para filtrar registros do SEU. ³
+					//ÀÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÙ
+					If l370EUFIL
+						If !Execblock("F370EUF",.F.,.F.)
+							dbSkip()
+							Loop
+						EndIf
+					EndIf
+					
+					//ÚÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ¿
+					//³ Verifica se ser  gerado Lan‡amento Cont bil			  ³
+					//ÀÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÙ
+					If SEU->EU_LA == "S"
+						SEU->( dbSkip())
+						Loop
+					Endif
+					
+					// Tipo 00 sem Nro de adiantamento = Despesa (P)
+					// Tipo 00 com Nro de adiantamento = Prestação de contas (R)
+					// Tipo 01 - Adiantamento (P)
+					// Tipo 02 - Devolucao de adiantamento (R)
+					// Tipo 10 - Movimento Banco -> Caixinha  (R)
+					// Tipo 11 - Movimento Caixinha -> Banco (P)
+					
+					lSkipLct := .F.
+					
+					//Receber
+					//Verifico se eh Despesa. Se for, ignoro
+					If mv_par06 == 1 .and. SEU->EU_TIPO $ "00" .AND. EMPTY(SEU->EU_NROADIA)
+						lSkipLct := .T.
+					Endif
+					//Verifico se eh um Adiantamento ou Devolucao para o banco. Se for Ignoro
+					If mv_par06 == 1 .and. SEU->EU_TIPO $ "01/11"
+						lSkipLct := .T.
+					Endif
+					
+					//Pagar
+					//Verifico se eh Prestacao de contas de adiantamento para o caixinha.
+					//Se for, ignoro pois eh movimento de entrada
+					If mv_par06 == 2 .and. SEU->EU_TIPO $ "00" .and. !EMPTY(SEU->EU_NROADIA)
+						lSkipLct := .T.
+					Endif
+					//Verifico se eh uma devolucao de dinheiro de adiantamento para o caixinha ou
+					// se eh uma reposicao (Banco -> Caixinha).
+					// Se for Ignoro pois eh movimento de entrada!!
+					If mv_par06 == 2 .and. SEU->EU_TIPO $ "02/10"
+						lSkipLct := .T.
+					Endif
+					
+					If lSkipLct
+						SEU->( dbSkip())
+						Loop
+					Endif
+					
+					
+					//Reposicao = 10 - Devolucao de reposicao = 11
+					If SEU->EU_TIPO $ "10/11"
+						//ÚÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ¿
+						//³ Posiciona no banco.											  ³
+						//ÀÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÙ
+						dbSelectArea( "SA6" )
+						dbSetOrder(1)
+						dbSeek( cFilial+SET->ET_BANCO+SET->ET_AGEBCO+SET->ET_CTABCO )
+						cPadrao:="573"
+					Else
+						cPadrao:="572"
+					Endif
+					
+					dbSelectArea("SEU")
+					lPadrao:=VerPadrao(cPadrao)
+					IF lPadrao
+						If !lCabecalho
+							a370Cabecalho(@nHdlPrv,@cArquivo)
+						Endif
+						If lUsaFlag
+							aAdd(aFlagCTB,{"EU_LA","S","SEU",SEU->(Recno()),0,0,0})
+						EndIf
+						nTotDoc	:=	DetProva(nHdlPrv,cPadrao,"FINA370",cLote,,,,,,,,@aFlagCTB)
+						nTotProc	+= nTotDoc
+						nTotal	+=	nTotDoc
+						If mv_par12 == 2 .And. nTotDoc > 0 // Por documento
+								Ca370Incl(cArquivo,@nHdlPrv,cLote,nTotal,@aFlagCTB)
+						Endif
+						//ÚÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ¿
+						//³ Atualiza Flag de Lan‡amento Cont bil		  ³
+						//ÀÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÙ
+						If LanceiCtb
+							If !lUsaFlag
+								Reclock("SEU")
+								REPLACE EU_LA With "S"
+								MsUnlock( )
+							EndIf
+						EndIf
+					Endif
+					dbSkip()
+				Enddo
+				DbSelectArea("SET")
+				DbSkip()
+			Enddo
+			If mv_par12 == 3 .And. nTotProc > 0 // Por processo
+				Ca370Incl(cArquivo,@nHdlPrv,cLote,nTotal,@aFlagCTB)
+				nTotProc := 0
+			Endif
+		Endif
+		//ÚÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ¿
+		//³ Grava Rodap‚ 													  ³
+		//ÀÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÙ
+		If lCabecalho .And. nTotal > 0 .And. mv_par12 == 1 // Por periodo
+			RodaProva(nHdlPrv,nTotal)
+			//ÚÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ¿
+			//³ Envia para Lan‡amento Cont bil 							  ³
+			//ÀÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÙ
+			lDigita:=IIF(mv_par01==1,.T.,.F.)
+			lAglut :=IIF(mv_par02==1,.T.,.F.)
+			cA100Incl(cArquivo,nHdlPrv,3,cLote,lDigita,lAglut,,,,@aFlagCTB)
+			aFlagCTB := {}
+		Endif
+		
+	Next 	  // final do la‡o dos dias
+	
+	END SEQUENCE
+	
+	dbSelectArea("SE5")
+	RetIndex("SE5")
+	Ferase(cIndex+OrdBagExt())
+	
+	If mv_par06 = 2 .Or. mv_par06 = 4
+		#IFDEF TOP
+			IF Select("TRBSE2") > 0
+				dbSelectArea( "TRBSE2" )
+				dbCloseArea()
+			Endif
+		#ELSE
+			dbSelectArea("SE2")
+			RetIndex("SE2")
+			Ferase(cIndSE2+OrdBagExt())
+		#ENDIF
+	ElseIf mv_par06 = 3 .Or. mv_par06 = 4
+		dbSelectArea("SEF")
+		RetIndex("SEF")
+		Ferase(cIndSEF+OrdBagExt())
+	EndIf
+	
+	If Empty(xFilial("SE1"))
+		lLerSE1 := .F.
+	Endif
+	
+	If Empty(xFilial("SE2"))
+		lLerSE2 := .F.
+	Endif
+	
+	If Empty(xFilial("SE5"))
+		lLerSE5 := .F.
+	Endif
+	
+	If Empty(xFilial("SEF"))
+		lLerSEF := .F.
+	Endif
+	
+	If Empty(xFilial("SEU"))
+		lLerSEU := .F.
+	Endif
+	
+	If !lLerSE1 .and. !lLerSE2 .and. !lLerSE5 .and. !lLerSEF .And. !lLerSEU
+		Exit
+	Endif
+	
+	dbSelectArea("SM0")
+	dbSkip()
+	
+	//ÚÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ¿
+	//³ Data inicial precisa ser "resetada"                 ³
+	//ÀÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÙ
+	mv_par04 := mv_par04 - nLaco + 2
+	
+Enddo
+
+//ÚÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ¿
+//³ Recupera o valor real da data base por seguranca	  ³
+//ÀÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÙ
+dDataBase := dDataAnt
+
+//ÚÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ¿
+//³ Recupera a filial original                      	  ³
+//ÀÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÙ
+SM0->(dbGoto(nRegEmp))
+cFilAnt := SM0->M0_CODFIL
+
+//ÚÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ¿
+//³ Recupera a Integridade dos Dados									  ³
+//ÀÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÙ
+MsUnlockAll()
+
+dbSelectArea( "SE1" )
+dbSetOrder( 1 )
+dbSeek(xFilial())
+dbSelectArea( "SE2" )
+dbSetOrder( 1 )
+dbSeek(xFilial())
+dbSelectArea("SEF")
+dbSetOrder(1)
+dbSeek(xFilial())
+dbSelectArea( "SE5" )
+Retindex("SE5")
+dbClearFilter()
+
+If !CtbInUse()
+	If mv_par11 == 1			// Atualiza‡„o de Sint‚ticas
+		aDataIni := DataInicio()
+		aDataFim := DataFinal()
+		aTabela22:= DataTabela()
+		If mv_par08 == 1 		// Considera filiais De/Ate
+			Cona070(.T., mv_par09, mv_par10, mv_par04, mv_par05)
+		Else						// Desconsidera Filiais
+			Cona070(.T., NIL , NIL , mv_par04, mv_par05)
+		EndIf
+	EndIf
+EndIf
+
+Return NIL
+
+/*
+ÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜ
+±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±
+±±ÚÄÄÄÄÄÄÄÄÄÄÂÄÄÄÄÄÄÄÄÄÄÂÄÄÄÄÄÄÄÂÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÂÄÄÄÄÄÄÂÄÄÄÄÄÄÄÄÄÄ¿±±
+±±³Fun‡„o	 ³ FA370CONC³ Autor ³ Vinicius Barreira	  ³ Data ³ 24/08/95 ³±±
+±±ÃÄÄÄÄÄÄÄÄÄÄÅÄÄÄÄÄÄÄÄÄÄÁÄÄÄÄÄÄÄÁÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÁÄÄÄÄÄÄÁÄÄÄÄÄÄÄÄÄÄ´±±
+±±³Descri‡„o ³ Tela de Aviso de Falha na consistˆncia do SE5				  ³±±
+±±ÃÄÄÄÄÄÄÄÄÄÄÅÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ´±±
+±±³Sintaxe	 ³ FA370CONC() 															  ³±±
+±±ÃÄÄÄÄÄÄÄÄÄÄÅÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ´±±
+±±³Uso		 ³ SIGAFIN																	  ³±±
+±±ÀÄÄÄÄÄÄÄÄÄÄÁÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÙ±±
+±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±
+ßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßß
+*/
+Function FA370CONC()
+Local nOpca 	:= 0
+Local aSays := {} , aButtons := {}
+Local cCadast := STR0019 //"Contabiliza‡„o"
+
+If IsBlind()
+	Return 0
+Endif
+
+AADD (aSays , STR0020) //"     Foi encontrado  um  Registro no arquivo SE5 que n„o possui "
+AADD (aSays , STR0021) //"correspondˆncia nos arquivos de Contas a Receber ou Pagar. Vocˆ "
+AADD (aSays , STR0022) //"pode parar agora a contabiliza‡„o ou continuar assim mesmo.     "
+AADD (aSays , STR0023) //"Obs.: A rotina de refaz acumulados ajusta o arquivo SE5.        "
+AADD (aSays , STR0024 + Iif(SE5->E5_RECPAG=="R",STR0014,STR0013)) //"Arquivo : "###"Receber"###"Pagar"
+AADD (aSays , STR0025 + SE5->E5_PREFIXO+"-"+SE5->E5_NUMERO+"-"+SE5->E5_PARCELA+"-"+SE5->E5_TIPO ) //"Dados do Titulo: "
+AADD (aSays , STR0035 + STR(SE5->(RECNO()))) //"Registro SE5 -> "
+
+AADD(aButtons, { 1,.T.,{|o| nOpca:= 1,o:oWnd:End()}} )
+AADD(aButtons, { 2,.T.,{|o| o:oWnd:End() }} )
+FormBatch( cCadast, aSays, aButtons )
+	
+Return nOpca
+	
+/*
+ÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜ
+±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±
+±±ÚÄÄÄÄÄÄÄÄÄÄÂÄÄÄÄÄÄÄÄÄÄÂÄÄÄÄÄÄÄÂÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÂÄÄÄÄÄÄÂÄÄÄÄÄÄÄÄÄÄ¿±±
+±±³Fun‡„o	 ³ Fa370Rat ³ Autor ³ Pilar S. Albaladejo   ³ Data ³ 25/08/95 ³±±
+±±ÃÄÄÄÄÄÄÄÄÄÄÅÄÄÄÄÄÄÄÄÄÄÁÄÄÄÄÄÄÄÁÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÁÄÄÄÄÄÄÁÄÄÄÄÄÄÄÄÄÄ´±±
+±±³Descri‡„o ³ Grava linha de rateio no arquivo de contra-prova			  ³±±
+±±ÃÄÄÄÄÄÄÄÄÄÄÅÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ´±±
+±±³Sintaxe	 ³ Fa370Rat()																  ³±±
+±±ÃÄÄÄÄÄÄÄÄÄÄÅÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ´±±
+±±³Uso		 ³ SIGAFIN																	  ³±±
+±±ÀÄÄÄÄÄÄÄÄÄÄÁÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÙ±±
+±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±
+ßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßß
+*/
+Function Fa370Rat(cArqRat,nHdlPrv,cArquivo)
+
+Local nBytes := 0
+Local nHdlRateio
+Local nTotal := 0
+Local nTamArq
+Local xBuffer, cArqOrig, cArqDest
+
+// Abre arquivo de rateio
+cArqRat		:= GetMv("MV_PROVA") + cArqRat + ".LAN"
+IF !FILE(cArqRat)
+	Help(" ",1,"Fa370NOARQ",,cArqRat,3,1)
+	Return 0
+EndIF
+
+If nHdlPRv == 0 .or. (nHdlPrv == 65536 .and. GetHProva() < 0 )
+	a370Cabecalho(@nHdlPrv,@cArquivo,.T.)
+	lCabecalho := .T.
+Endif
+nHdlPrv  := GetHProva()
+cArquivo := GetHFile()
+
+nHdlRateio	:= Fopen(cArqRat)
+nTamArq		:= FSEEK(nHdlRateio,0,2)
+xBuffer		:= Space( 312 )
+FSEEK(nHdlRateio,0,0)
+FREAD(nHdlRateio,@xBuffer,312)
+
+While .T.
+	If nBytes < nTamArq
+		xBuffer:=Space(312)
+		FREAD(nHdlRateio,@xBuffer,312)
+		IF  Substr(xBuffer,309,2) = "FF"     // Fim de Arquivo
+			Exit
+		Endif
+		nTotal += Val(Substr(xBuffer,42,16))
+		// Escreve no arquivo de contra-prova
+		FWRITE(nHdlPrv,xBuffer,312)
+		dbCommit()
+		nBytes+=312
+	Else
+		Exit
+	Endif
+End
+
+// Renomeia arquivo de rateio
+Fclose(nHdlRateio)
+cArqOrig:=Trim(cArqRat)
+cArqDest:=Substr(cArqRat,1,Len(cArqRat)-4)+".#LA"
+fRename(cArqOrig,cArqDest)
+Return nTotal
+
+/*
+ÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜ
+±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±
+±±ÚÄÄÄÄÄÄÄÄÄÄÂÄÄÄÄÄÄÄÄÄÄÂÄÄÄÄÄÄÄÂÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÂÄÄÄÄÄÄÂÄÄÄÄÄÄÄÄÄÄ¿±±
+±±³Fun‡„o	 ³a370Cabeca³ Autor ³ Wagner Xavier 		  ³ Data ³ 24/08/94 ³±±
+±±ÃÄÄÄÄÄÄÄÄÄÄÅÄÄÄÄÄÄÄÄÄÄÁÄÄÄÄÄÄÄÁÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÁÄÄÄÄÄÄÁÄÄÄÄÄÄÄÄÄÄ´±±
+±±³Descri‡„o ³Monta o arquivo de Contra Prova (Lancamentos off line) 	  ³±±
+±±ÃÄÄÄÄÄÄÄÄÄÄÅÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ´±±
+±±³Sintaxe	 ³a370Cabeca																  ³±±
+±±ÃÄÄÄÄÄÄÄÄÄÄÅÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ´±±
+±±³Uso		 ³SIGAFIN																	  ³±±
+±±ÀÄÄÄÄÄÄÄÄÄÄÁÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÙ±±
+±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±
+ßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßß
+*/
+Function a370Cabecalho(nHdlPrv,cArquivo,lCriar)
+lCriar:=if(lCriar=NIL,.f.,lCriar)
+nHdlPrv:=HeadProva(cLote,"FINA370",Substr(cUsuario,7,6),@cArquivo,lCriar)
+lCabecalho:=.T.
+Return
+
+/*
+ÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜ
+±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±
+±±ÚÄÄÄÄÄÄÄÄÄÄÂÄÄÄÄÄÄÄÄÄÄÂÄÄÄÄÄÄÄÂÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÂÄÄÄÄÄÄÂÄÄÄÄÄÄÄÄÄÄ¿±±
+±±³Fun‡„o	 ³Ca370Incl ³ Autor ³ Claudio D. de Souza	  ³ Data ³ 12/08/02 ³±±
+±±ÃÄÄÄÄÄÄÄÄÄÄÅÄÄÄÄÄÄÄÄÄÄÁÄÄÄÄÄÄÄÁÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÁÄÄÄÄÄÄÁÄÄÄÄÄÄÄÄÄÄ´±±
+±±³Descri‡„o ³Envia lancamentos para contabilizade.                  	  ³±±
+±±ÃÄÄÄÄÄÄÄÄÄÄÅÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ´±±
+±±³Sintaxe	 ³Ca370Incl 																  ³±±
+±±ÃÄÄÄÄÄÄÄÄÄÄÅÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ´±±
+±±³Uso		 ³FINA370																	  ³±±
+±±ÀÄÄÄÄÄÄÄÄÄÄÁÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÙ±±
+±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±
+ßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßß
+*/
+Static Function Ca370Incl(cArquivo,nHdlPrv,cLote,nTotal,aFlagCTB)
+Local lDigita,;
+		lAglut
+
+//ÚÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ¿
+//³ Grava Rodap‚ 													  ³
+//ÀÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÙ
+If nHdlPrv > 0
+	RodaProva(nHdlPrv,nTotal)
+	//ÚÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ¿
+	//³ Envia para Lan‡amento Cont bil 							  ³
+	//ÀÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÙ
+	lDigita:=IIF(mv_par01==1,.T.,.F.)
+	lAglut :=IIF(mv_par02==1,.T.,.F.)
+		cA100Incl(cArquivo,nHdlPrv,3,cLote,lDigita,lAglut,,,,@aFlagCTB)
+		aFlagCTB := {}
+	lCabecalho := .F.
+	nHdlPrv := 0
+Endif
+
+Return Nil
+
+
+/*
+ÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜ
+±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±
+±±ÚÄÄÄÄÄÄÄÄÄÄÂÄÄÄÄÄÄÄÄÄÄÂÄÄÄÄÄÄÄÂÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÂÄÄÄÄÄÄÂÄÄÄÄÄÄÄÄÄÄ¿±±
+±±³Fun‡„o	 ³AjustaSX1 ³ Autor ³ Paulo  Augusto        ³ Data ³ 01/08/05 ³±±
+±±ÃÄÄÄÄÄÄÄÄÄÄÅÄÄÄÄÄÄÄÄÄÄÁÄÄÄÄÄÄÄÁÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÁÄÄÄÄÄÄÁÄÄÄÄÄÄÄÄÄÄ´±±
+±±³Descri‡„o ³Atualiza perguntas no SX1                              	  ³±±
+±±ÃÄÄÄÄÄÄÄÄÄÄÅÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ´±±
+±±³Sintaxe	 ³AjustaSX1 																  ³±±
+±±ÃÄÄÄÄÄÄÄÄÄÄÅÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ´±±
+±±³Uso		 ³FINA370																	  ³±±
+±±ÀÄÄÄÄÄÄÄÄÄÄÁÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÙ±±
+±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±
+ßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßß
+*/
+
+Static Function AjustaSX1()
+
+Local aArea:=GetArea()
+Local aHelpPor := {}
+Local aHelpSpa := {}
+Local aHelpEng := {}
+
+DbselectArea("SX1")
+Dbseek("FIN37007")
+If Empty(x1_DEF03)
+	RecLock("SX1")
+	Replace x1_DEF03 		With "Pela dt. dispo."
+	Replace x1_DEFSPA3 	With "Por fecha disp."
+	Replace x1_DEFENG3	With "By date avail."
+	MsUnlock( )
+EndIf                    
+
+Aadd(aHelpPor,"Selecione se as emissões devem ser" )
+Aadd(aHelpPor,"contabilizadas pela 'DT Emissão'" )
+Aadd(aHelpPor,"ou pela 'Data Base'.")
+
+Aadd(aHelpSpa,"Indique si las emisiones deben ser" )
+Aadd(aHelpSpa,"contabilizadas por la 'Fch. Emision'" )
+Aadd(aHelpSpa,"o por la 'Fecha Base'.")
+
+Aadd(aHelpEng,"Indicate if the issuances must be posted" )
+Aadd(aHelpEng,"per 'Issue date' or 'Base date'.  " )
+
+
+//Acerto do help da pergunta 3.
+
+dbSelectArea("SX1")
+dbSetOrder(1)
+
+If Dbseek("FIN37003")
+	PutSX1Help("P.FIN37003.",aHelpPor,aHelpEng,aHelpSpa)
+EndIf	       
+
+RestArea(aArea)
+Return()
+
+Function A370CanProc(nCarteira, dDtVldDe, dDtVldAte)
+Local lRet		:= .T.
+Local nX			:= 1
+Local aInfos	:= {}
+Local nEr		:= 0 
+Local cFile		:= ""
+Local cBuffer	:= ""
+Local cUserLck	:= ""
+Local nCart
+Local dDe
+Local dAte
+Local nHandleR
+Local nHandle := -1
+Local lCreate	:= .F.
+Local lOK
+ 
+MakeDir("\SEMAFORO\")
+
+__nHandlelck := Nil
+ 
+While !LockByName("CTBA370LOCKPROC"+cEmpAnt,.T.,.T.,.T.)
+    nER++
+    IF nER > 30
+        UserException(STR0027) //"Ocorreu uma falha no semaforo de processamento CTBA370LOCKPROC."
+    Endif
+    Sleep(1000)
+End
+               
+While nx <= 20
+    cFile := "\SEMAFORO\CTBA370"+StrZero(nX,2,0)+".LCK"
+    If ( nHandle := MSFCREATE(cFile) ) >= 0
+    		IF __nHandleLck != Nil
+    		   FClose(nHandle)
+    		   FERASE(cFile)
+    		Else
+    			__nHandleLck := nHandle
+    			__cFileLCk := cFile
+    			lCreate		:= .T.
+    		Endif
+    Else
+		If File(cFile)
+	        nHandleR	:= -1
+	        nER		:= 0
+	        While nHandleR < 0
+	            nHandleR := FOPEN(cFile,FO_SHARED)
+	            IF nHandleR < 0
+	                nER++
+	                IF nER > 10
+	                    UserException(STR0028) //"Ocorreu uma falha no semaforo(1) de processamento CTBA370LOCKPROC"
+	                Endif
+	                Sleep(1000)
+	            Else                   
+	            	 lOK := .F.
+	            	 nEr := 0
+	            	 While !lOK
+	            	 	cBuffer	:= ""
+		            	 FSeek(nHandleR,0,0)
+	   	             FREAD(nHandleR,@cBuffer,32)
+	   	             IF Len(Alltrim(cBuffer)) >= 17
+		      	          AADD(aInfos,cBuffer)
+			                FClose(nHandleR)
+			                lOk := .T.
+			             Else
+			                nER++
+			                IF nER > 5
+		                    UserException(STR0029) //"Ocorreu uma falha no semaforo(2) de processamento CTBA370LOCKPROC"
+		                    Sleep(1000)
+								 Endif         	 
+							 Endif
+		            End
+		      	EndIf
+	        	End
+       EndIf
+    Endif
+    nX++    
+End
+If !lCreate
+	UserException(STR0030) //"Ocorreu uma falha no semaforo(3)  de processamento CTBA370LOCKPROC"
+Else
+	FWrite(__nHandleLck,Str(nCarteira,1)+Dtos(dDtVldDe)+Dtos(dDtVldAte)+Substr(cUsuario,7,15),32)
+	FClose(__nHandleLck)
+	Fopen(__cFileLck,FO_SHARED)
+	UnLockByName("CTBA370LOCKPROC"+cEmpAnt,.T.,.T.,.T.)
+	For nX := 1 to Len(aInfos)
+	    nCart := Val(Substr(aInfos[nX],1,1))
+	    dDe := STOD(Substr(aInfos[nX],2,8))
+	    dAte := STOD(Substr(aInfos[nX],10,8))
+	    cUserLck := Substr(aInfos[nX],18,15)
+	    IF nCart != 4 .and. nCarteira != nCart
+	       Loop
+	    Endif
+	    IF dDtVldDe <= dDe .and. dDtVldAte >= dAte   
+			lRet := .F.
+	    Endif
+	    IF dDtVldDe >= dDe .and. dDtVldDe <= dAte 
+			lRet := .F.
+	    Endif
+	    IF dDtVldAte >= dDe .and. dDtVldAte <= dAte
+			lRet := .F.
+	    Endif
+	Next
+	IF lRet .And. dDtVldDe > dDtVldAte
+		lRet := .F.
+	Endif
+	
+	If !lRet
+		Aviso(STR0031,STR0032+Alltrim(cUserLck)+STR0033,{STR0034},2) //"Atenção!"###"Este processo esta sendo utilizado com parametros conflitantes ( mesmo periodo ou carteiras ) por outro usuário ( "###" ) no momento. Verifique o período e os parametros selecionados para o processamento ou tente novamente mais tarde."###"Fechar"
+	EndIf
+EndIf
+
+
+Return lRet
+
+
+
+Function A370FreeProc()
+
+FClose(__nHandleLck)
+
+FErase(__cFileLck)
+
+Return

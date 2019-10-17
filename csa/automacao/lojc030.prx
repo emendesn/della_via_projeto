@@ -1,0 +1,1656 @@
+#INCLUDE "PROTHEUS.CH"
+#INCLUDE "LOJC030.CH"
+
+#DEFINE P_TROCO            1
+#DEFINE P_PAGAMENTOS       2
+#DEFINE P_RECEBIMENTOS     3
+#DEFINE P_SANG_DINHEIRO    4
+#DEFINE P_SANG_CHEQUE      5
+#DEFINE P_SANG_CARTAO      6
+#DEFINE P_SANG_VALE        7
+#DEFINE P_SANG_CONVENIO    8
+#DEFINE P_SANG_FINANCIADO  9
+#DEFINE P_SANG_DEBAUTO    10
+#DEFINE P_SANG_OUTROS     11
+#DEFINE P_TRANSF_ORIGEM   12
+#DEFINE P_TRANSF_DESTINO  13 
+#DEFINE P_VEND_DINHEIRO   14
+#DEFINE P_VEND_CHEQUE     15
+#DEFINE P_VEND_CARTAO     16
+#DEFINE P_VEND_VALE       17
+#DEFINE P_VEND_CONVENIO   18
+#DEFINE P_VEND_FINANCIADO 19
+#DEFINE P_VEND_DEBAUTO    20
+#DEFINE P_VEND_CREDITO    21
+#DEFINE P_VEND_OUTROS     22
+#DEFINE P_DEVOLUCAO       23
+#DEFINE P_SANG_IMPOSTOS   24
+#DEFINE P_VEND_ESTACIO    25
+#DEFINE P_VEND_SERVICO    26
+#DEFINE P_MAXDEFINE       26
+
+Static oSaldFinal, oTotCre, oTotDeb, oTroco
+
+/*
+ÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜ
+±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±
+±±ÚÄÄÄÄÄÄÄÄÄÄÂÄÄÄÄÄÄÄÄÄÄÂÄÄÄÄÄÄÄÂÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÂÄÄÄÄÄÄÂÄÄÄÄÄÄÄÄÄÄ¿±±
+±±³Funcao	 ³ LOJC030	³ Autor ³ Cesar Valadao         ³ Data ³ 28/01/03 ³±±
+±±ÃÄÄÄÄÄÄÄÄÄÄÅÄÄÄÄÄÄÄÄÄÄÁÄÄÄÄÄÄÄÁÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÁÄÄÄÄÄÄÁÄÄÄÄÄÄÄÄÄÄ´±±
+±±³Descricao ³ Resumo do Caixa                      					  ³±±
+±±ÃÄÄÄÄÄÄÄÄÄÄÅÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ´±±
+±±³Sintaxe	 ³ LOJC030()									              ³±±
+±±ÃÄÄÄÄÄÄÄÄÄÄÅÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ´±±
+±±³ Uso		 ³ SIGALOJA 												  ³±±
+±±ÃÄÄÄÄÄÄÄÄÄÄÅÄÄÄÄÄÄÄÄÄÄÂÄÄÄÄÄÄÄÂÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÂÄÄÄÄÄÄÂÄÄÄÄÄÄÄÄÄÄ´±±
+±±³Alteração |          |Autora | Solange Zanardi       ³ Data ³ 15/01/04 ³±±
+±±ÃÄÄÄÄÄÄÄÄÄÄÅÄÄÄÄÄÄÄÄÄÄÁÄÄÄÄÄÄÄÁÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÁÄÄÄÄÄÄÁÄÄÄÄÄÄÄÄÄÄ´±±
+±±³BOPS      | Foram acrescentados, ào Resumo de Caixa, contadores de     ³±±
+±±³67822     | documentos por forma de pgto, o qual será exibido em tela  ³±±
+±±³          | e também impresso em relatório.                			  ³±±
+±±³          | Esta contagem contempla somente a parte de créditos.       ³±±
+±±³          | O intuito da alteração é de facilitar a conferência de     ³±±
+±±³          | documentos no fechamento de caixa.                         ³±±
+±±ÃÄÄÄÄÄÄÄÄÄÄÅÄÄÄÄÄÄÄÄÄÄÂÄÄÄÄÄÄÄÂÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÂÄÄÄÄÄÄÂÄÄÄÄÄÄÄÄÄÄ´±±
+±±³Alteração |          |Autor  | Andre Veiga           ³ Data ³ 02/09/05 ³±±
+±±ÃÄÄÄÄÄÄÄÄÄÄÅÄÄÄÄÄÄÄÄÄÄÁÄÄÄÄÄÄÄÁÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÁÄÄÄÄÄÄÁÄÄÄÄÄÄÄÄÄÄ´±±
+±±³Della Via | Alteracao do resumo de caixa para considerar as NCCs que   ³±±
+±±³          | foram utilizadas para baixar os titulos na rotina de       ³±±
+±±³          | recebimento de titulos (LOJXREC). Somente serao considera- ³±±
+±±³          | dos os titulos que forem NCC com E5_MOEDA = "CR", que e' o ³±±
+±±³          | que foi gravado na compensacao pelo LOJXREC                ³±±
+±±³          |                                                            ³±±
+±±ÀÄÄÄÄÄÄÄÄÄÄÁÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÙ±±
+±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±
+ßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßß
+*/      
+
+//ÚÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ¿
+//³ Conforme conversa com o Fernando Machima e Julio, foi retirado todo o   ³
+//³ tratamento de Localizacoes, pois o LOJC031 substitui o LOJC030.         ³
+//³ Cesar Valadao - 28/01/03                                                ³
+//ÀÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÙ
+Function LOJC030()
+Local oDlg
+Local oFnt
+Local oFnt2
+Local oFnt3
+Local oGroup
+
+Private aCaixa
+Private nTroco
+Private nTotCredito
+Private nTotDebito
+Private nSaldFinal
+Private nEstac
+Private nGorjeta
+Private oMovVen
+Private oMovSan
+Private aDadosVen 	:= {{"",0}}, aDadosSan := {{"",0}} // Arrays - 1)Descricao 2)Valor 3)Qtde Finalizações
+Private aSinal  	:= { "+", "+", "+", "+", "+", "", "+", "+" }		
+Private aDDown  	:= Array( 8 )  	 	// Contem o 2o. nivel das opcoes: Cartao de Credito, Vales, Convenio, Financiado, Cartao de Debito e Devolucao
+Private aContFina   := {0,0,0,0,0,0,0,0,0} 	// Contadores utilizados nos tipos de finalizações 
+/*
+// aContFina
+//ÚÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ¿
+//³1 - CC - CARTAO DE CREDITO   ³
+//³2 - VA - VALES               ³
+//³3 - CO - CONVENIO            ³
+//³4 - FI - FINANCIADO          ³
+//³5 - CD - CARTAO DE DEBITO    ³
+//³6 - CH - CHEQUE              ³
+//³7 - OU - OUTROS              ³
+//³8 - RC - RECEBIMENTO         ³
+//ÀÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÙ
+*/
+
+If ExistBlock("LJ030DEV")
+	aSinal  := { "+", "+", "+", "+", "+", "+","+" }
+EndIf
+
+// Protege rotina para que seja usada apenas no SIGALOJA / Front Loja
+If !AmIIn(12,23)
+	Return(NIL)
+EndIf
+
+//ÚÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ¿
+//³ Carrega as perguntas selecionadas                            ³
+//ÀÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÙ
+//ÚÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ¿
+//³ mv_par01 - De Data            ?                              ³
+//³ mv_par02 - Ate Data           ?                              ³
+//³ mv_par03 - De Caixa           ?                              ³
+//³ mv_par04 - Ate Caixa          ?                              ³
+//³ mv_par05 - De Filial          ?                              ³
+//³ mv_par06 - Ate Filial         ?                              ³
+//ÀÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÙ
+If !Pergunte("LJC030",.T.)
+	Return(NIL)
+EndIf
+
+//ÚÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ¿
+//|	A mensagem abaixo so sera apresentada caso o sistema nao	|
+//|	esteja utilizando o troco para qualquer numerario           |
+//ÀÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÙ
+If GetNewPar( "MV_LJREST", .F. )
+	nWidth 	:= 690
+	nHeight := 480
+Else
+	nWidth 	:= 690
+	nHeight := 425
+EndIf
+
+// Resumo de Caixa
+DEFINE MSDIALOG oDlg FROM 0.1,0.1 TO nHeight, nWidth TITLE STR0001 PIXEL OF oMainWnd  
+
+// Largura x Altura
+DEFINE FONT oFnt	NAME "TIMES NEW ROMAN" SIZE 9,13 BOLD  
+DEFINE FONT oFnt2	NAME "Arial" BOLD
+DEFINE FONT oFnt3	NAME "Courier New" 
+	
+@ 001 , 004 TO 037, 290 LABEL "" OF oDlg  PIXEL
+
+@ 005, 007 SAY STR0052  SIZE 60,10 OF oDlg PIXEL		// "De Data   :"
+@ 005, 070 SAY MV_PAR01 SIZE 42,10 OF oDlg PIXEL RIGHT
+@ 015, 007 SAY STR0053  SIZE 60,10 OF oDlg PIXEL		// "De Caixa  :"
+@ 015, 070 SAY MV_PAR03 SIZE 42,10 OF oDlg PIXEL RIGHT
+@ 025, 007 SAY STR0054  SIZE 60,10 OF oDlg PIXEL		// "De Filial :"
+@ 025, 070 SAY MV_PAR05 SIZE 42,10 OF oDlg PIXEL RIGHT
+@ 005, 170 SAY STR0055  SIZE 60,10 OF oDlg PIXEL		// "Ate Data   :"
+@ 005, 240 SAY MV_PAR02 SIZE 42,10 OF oDlg PIXEL RIGHT
+@ 015, 170 SAY STR0056  SIZE 60,10 OF oDlg PIXEL		// "Ate Caixa  :"
+@ 015, 240 SAY MV_PAR04 SIZE 42,10 OF oDlg PIXEL RIGHT
+@ 025, 170 SAY STR0057  SIZE 60,10 OF oDlg PIXEL		// "Ate Filial :"
+@ 025, 240 SAY MV_PAR06 SIZE 42,10 OF oDlg PIXEL RIGHT
+	                                                             
+// Creditos (Vendas)
+@ 040, 004 GROUP oGroup TO 183, 172 LABEL OemToAnsi( STR0002 ) OF oDlg PIXEL 
+oGroup:SetFont(oFnt2)
+
+@ 046, 009 LISTBOX oMovVen FIELDS HEADER STR0060 SIZE 157, 108 ; //"Finalizadora - Vlr.Total - Qtd.Documentos"
+    ON DBLCLICK	LJ030DDown(oMovVen:nAt, 1) OF oDlg PIXEL FONT oFnt3
+
+// D‚bitos (Sangrias)
+@ 040, 176 GROUP oGroup TO 183, 343 LABEL OemToAnsi( STR0003 ) OF oDlg PIXEL 
+oGroup:SetFont(oFnt2)
+
+@ 046, 181 LISTBOX oMovSan FIELDS HEADER STR0061 SIZE 157, 108 ; //"Finalizadora - Vlr.Total"
+    ON DBLCLICK	LJ030DDown(oMovSan:nAt, 2) OF oDlg PIXEL FONT oFnt3
+
+//ÚÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ¿
+//³ Seta Vetores de Dados de Credito / Debito para ListBox     ³
+//ÀÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÙ
+oMovVen:SetArray(aDadosVen)
+oMovSan:SetArray(aDadosSan)
+oMovVen:bLine := {|| {	aDadosVen[oMovVen:nAt][1] } }
+oMovSan:bLine := {|| {	aDadosSan[oMovSan:nAt][1] } }
+
+// Total de Cr‚ditos
+@ 158, 004 GROUP oGroup TO 183, 172 LABEL OemToAnsi(STR0014) OF oDlg PIXEL  
+oGroup:SetFont(oFnt2)
+
+@ 169, 102 SAY oTotCre PROMPT nTotCredito SIZE 64, 10 OF oDlg;
+	PIXEL RIGHT FONT oFnt COLOR CLR_HRED PICTURE "@E 999,999,999.99"
+
+// Total de D‚bitos
+@ 158, 176 GROUP oGroup TO 183, 343 LABEL OemToAnsi(STR0017) OF oDlg PIXEL
+oGroup:SetFont(oFnt2)
+
+@ 169, 273 SAY oTotDeb PROMPT nTotDebito SIZE 64, 10 OF oDlg;
+	PIXEL RIGHT FONT oFnt COLOR CLR_HRED PICTURE "@E 999,999,999.99"
+
+// Saldo Inicial
+@ 185, 004 GROUP oGroup TO 210, 172 LABEL OemToAnsi(STR0005) OF oDlg PIXEL  
+oGroup:SetFont(oFnt2)
+
+@ 195, 102 SAY oTroco VAR nTroco SIZE 64, 10 OF oDlg PIXEL RIGHT FONT oFnt;
+	COLOR CLR_HRED PICTURE "@E 999,999,999.99"
+
+// Saldo Final
+@ 185, 176 GROUP oGroup TO 210, 343 LABEL OemToAnsi(STR0018) OF oDlg PIXEL
+oGroup:SetFont(oFnt2)
+
+@ 195, 273 SAY oSaldFinal PROMPT nSaldFinal SIZE 64, 12 OF oDlg;
+PIXEL RIGHT FONT oFnt COLOR CLR_HRED PICTURE "@E 999,999,999.99"
+
+If GetNewPar( "MV_LJREST", .F. )
+	// Estacionamento
+	@ 212, 004 GROUP oGroup TO 237, 172 LABEL STR0063 OF oDlg PIXEL //"Estacionamento"
+	oGroup:SetFont( oFnt2 )
+	
+	@ 222, 102 SAY oEstac VAR nEstac SIZE 64, 10 OF oDlg PIXEL RIGHT FONT oFnt;
+		COLOR CLR_HRED PICTURE "@E 999,999,999.99"
+	
+	// Gorjeta
+	@ 212, 176 GROUP oGroup TO 237, 343 LABEL STR0064 OF oDlg PIXEL //"Gorjeta"
+	oGroup:SetFont( oFnt2 )
+	
+	@ 222, 273 SAY oGorjeta VAR nGorjeta SIZE 64, 12 OF oDlg PIXEL RIGHT FONT oFnt ;
+		COLOR CLR_HRED PICTURE "@E 999,999,999.99"
+EndIf
+
+@ 0.0, 73 BUTTON STR0019 SIZE 50,11 FONT oDlg:oFont ACTION Lj030Imp() OF oDlg				// Imprimir
+@ 1.2, 73 BUTTON STR0046 SIZE 50,11 FONT oDlg:oFont ;
+          ACTION ExecBlock("LJ030ECF") WHEN (lFiscal.and.ExistBlock("LJ030ECF")) OF oDlg 	// Imprimir ECF
+@ 2.5, 73 BUTTON STR0020 SIZE 50,11 FONT oDlg:oFont ACTION oDlg:End() OF oDlg CANCEL		// Sair
+	
+// "Aguarde... Montando o Resumo de Caixa"
+ACTIVATE MSDIALOG oDlg ON INIT LJMsgRun(STR0058,,{||LJ030Refresh()})
+
+dbSelectArea("SL1")
+dbSetOrder(1)
+Return(NIL)
+
+/*
+ÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜ
+±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±
+±±ÚÄÄÄÄÄÄÄÄÄÄÂÄÄÄÄÄÄÄÄÄÄÂÄÄÄÄÄÄÄÂÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÂÄÄÄÄÄÄÂÄÄÄÄÄÄÄÄÄÄ¿±±
+±±³Funcao	 ³ LJ030Imp ³ Autor ³ Gustavo Henrique      ³ Data ³ 26/06/01 ³±±
+±±ÃÄÄÄÄÄÄÄÄÄÄÅÄÄÄÄÄÄÄÄÄÄÁÄÄÄÄÄÄÄÁÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÁÄÄÄÄÄÄÁÄÄÄÄÄÄÄÄÄÄ´±±
+±±³Descricao ³ Impressao do Fechamento do Caixa        					  ³±±
+±±ÃÄÄÄÄÄÄÄÄÄÄÅÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ´±±
+±±³Sintaxe	 ³ LJ030Imp()                                                 ³±±
+±±ÃÄÄÄÄÄÄÄÄÄÄÅÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ´±±
+±±³ Uso		 ³ SIGALOJA 									              ³±±
+±±ÀÄÄÄÄÄÄÄÄÄÄÁÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÙ±±
+±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±
+ßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßß
+*/
+Function LJ030Imp()
+Local nColFim, nColIni, nLin, nI
+Local lAberto
+Local cPicture
+Local oPrint, oFont
+
+oFont  := TFont():New("Courier New",10,10,,.F.,,,,.T.,.F.)
+
+oPrint := TMSPrinter():New( STR0023 )
+
+If ! oPrint:IsPrinterActive()
+	oPrint:Setup()	// Escolhe a impressora
+Endif
+
+If ! oPrint:IsPrinterActive()
+	// "Resumo de Caixa" , "Não foi possível imprimir o Resumo de Caixa, pois não há nenhuma impressora conectada."
+	Aviso(STR0001, STR0059, {"Ok"})
+	Return(NIL)
+EndIf
+oPrint:SetPortrait()
+
+nColIni  := 50		// Coluna inicial                      
+nColFim  := 1600	// Coluna final
+nSalto   := 40		// Salto de uma linha a outra
+
+cPicture := PesqPict("SL1","L1_VLRTOT",18)
+
+// Inicia a impressao da pagina
+oPrint:StartPage()
+
+// Imprime o cabecalho
+oPrint:Say( 110, 100, PadC( Upper(STR0023), 65 ), oFont )
+
+oPrint:Line( 150, nColIni, 150, nColFim )
+
+oPrint:Say( 170, 100, STR0052 + PadR(DToC(MV_PAR01),20) + " "  + STR0055 + DToC(MV_PAR02))		// "De Data   : " ### "Ate Data   : "
+oPrint:Say( 210, 100, STR0053 + PadR(MV_PAR03,20) +       " "  + STR0056 + MV_PAR04)				// "De Caixa  : " ### "Ate Caixa  : "
+oPrint:Say( 250, 100, STR0054 + PadR(MV_PAR05,20) +       " "  + STR0057 + MV_PAR06)				// "De Filial : " ### "Ate Filial : "
+
+oPrint:Line( 300, nColIni, 300, nColFim )
+oPrint:Say( 320, 100, STR0030 + Transform( nTroco, cPicture ) )
+
+// Imprime os dados de venda
+oPrint:Line( 400, nColIni, 400, nColFim )
+oPrint:Say( 420, 100, STR0031 + Transform( nTotCredito, cPicture ) )
+
+nLin := 470
+
+For nI :=1 to len(aDadosVen)
+	lAberto := (Left(aDadosVen[nI][1],1)=="-" .and. aDadosVen[nI][2] # 0)
+	oPrint:Say( nLin, 100, OemToAnsi(padr(Left(aDadosVen[nI][1],23)+" "+;
+		SubStr(aDadosVen[nI][1],Len(aDadosVen[nI][1])-5,6)+" ",48,;
+		IIf(lAberto,"","."))) + IIf(lAberto, "", Transform(aDadosVen[nI][2], cPicture)))
+	nLin += nSalto
+Next      
+
+// Imprime os dados de Sangria
+nLin += nSalto
+oPrint:Line( nLin, nColIni, nLin, nColFim )
+nLin += nSalto
+oPrint:Say( nLin, 100, STR0033 + Transform( nTotDebito, cPicture ) )
+nLin += (nSalto + 10)
+
+For nI :=1 to len(aDadosSan)
+	oPrint:Say( nLin, 100, OemToAnsi(padr(Left(aDadosSan[nI][1],23)+" "+;
+	Space(06)+" ",48,"."))+Transform(aDadosSan[nI][2], cPicture))
+	nLin += nSalto
+Next
+
+//Estacionamento e Gorjeta
+If GetNewPar( "MV_LJREST", .F. )
+	nLin += nSalto
+	oPrint:Line( nLin, nColIni, nLin, nColFim )
+	nLin += nSalto
+	oPrint:Say( nLin, 100, STR0065 + Transform( aCaixa[P_VEND_ESTACIO], cPicture ) ) //"Estacionamento ................................."
+	nLin += (nSalto + 10)
+	oPrint:Say( nLin, 100, STR0066 + Transform( aCaixa[P_VEND_SERVICO], cPicture ) ) //"Gorjeta ........................................"
+	nLin += (nSalto + 10)
+EndIf
+
+nLin += nSalto
+oPrint:Line( nLin, nColIni, nLin, nColFim )
+nLin += nSalto
+oPrint:Say( nLin, 100, STR0034 + Transform( nSaldFinal, cPicture ) )
+nLin += (nSalto + 10)
+
+// Monta a borda de fora pois neste momento sabemos qual a linha final
+oPrint:Line( 100, nColIni, 100, nColFim )
+oPrint:Line( nLin, nColIni, nLin, nColFim )
+oPrint:Line( 100, nColIni, nLin, nColIni )
+oPrint:Line( 100, nColFim, nLin, nColFim )
+
+oPrint:EndPage()
+
+oPrint:Preview()
+
+Return(NIL)
+
+/*/
+ÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜ
+±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±
+±±ÚÄÄÄÄÄÄÄÄÄÄÂÄÄÄÄÄÄÄÄÄÄÂÄÄÄÄÄÄÄÂÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÂÄÄÄÄÄÄÂÄÄÄÄÄÄÄÄÄÄ¿±±
+±±³ Funcao	 ³MovimCaixa³ Autor ³ Cesar Valadao         ³ Data ³ 28/01/03 ³±±
+±±ÃÄÄÄÄÄÄÄÄÄÄÅÄÄÄÄÄÄÄÄÄÄÁÄÄÄÄÄÄÄÁÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÁÄÄÄÄÄÄÁÄÄÄÄÄÄÄÄÄÄ´±±
+±±³ Descricao³Carrega array com valores totais do caixa em uma data       ³±±
+±±ÃÄÄÄÄÄÄÄÄÄÄÅÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ´±±
+±±³ Sintaxe  ³MovimCaixa(ExpC1,ExpD1) = Caixa e Data Desejada             ³±±
+±±ÃÄÄÄÄÄÄÄÄÄÄÅÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ´±±
+±±³ Uso		 ³ SIGALOJA                                                   ³±±
+±±ÃÄÄÄÄÄÄÄÄÄÄÅÄÄÄÄÄÄÄÄÂÄÄÄÄÄÄÄÂÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ´±±
+±±³Analista  ³ Data   | BOPS  ³Manutencao Efetuada                        ³±±
+±±ÃÄÄÄÄÄÄÄÄÄÄÅÄÄÄÄÄÄÄÄÂÄÄÄÄÄÄÄÂÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ´±±
+±±³Luiz Couto³22/02/05³       ³Adicionado controle para os pagamentos para³±±
+±±³          ³        ³       ³somente aceitar os docs VL caso a moeda nao³±±
+±±³          ³        ³       ³seja do tipo TC.                           ³±±
+±±³Cleber M. ³02/06/05³82556  ³Tratamento na exibicao do valor recebido em³±±
+±±³          ³        ³       ³dinheiro, verificando antes se houve troco ³±±
+±±³Marcos R. ³07/07/05³83694  ³Adicionado visualizacao de vendas e NCC no ³±±
+±±³          ³        ³       ³no total de Credito Cliente.         	  ³±±
+±±³Andrea F. ³27/07/05³84193  ³Compatibilizacao do array aDDown com o     ³±±
+±±³          ³        ³       ³array aValForma.                      	  ³±±
+±±³Adrianne F³18/08/05³85231  ³Implementação do array aDDown[8] - detalhes³±±
+±±³          ³        ³       ³do Drill Down do Recebimento.			  ³±±
+±±³Marcos R. ³02/09/05³85345  ³Considerar na devolucao o ICMS Solidario.  ³±±
+±±ÀÄÄÄÄÄÄÄÄÄÄÁÄÄÄÄÄÄÄÄÁÄÄÄÄÄÄÄÁÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÙ±±
+±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±
+ßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßß
+/*/
+Function MovimCaixa(cCaixa, dDataMovto)
+
+Local nPos  		:= 0
+Local i 			:= 0
+Local z				:= 0
+Local bTab			:= 0
+Local nI, nJ  		:= 0
+Local aCaixa    	:= Array( P_MAXDEFINE )
+Local aValForma 	:= {}
+Local nSe5Valor 	:= 0
+Local nForma		:= 0	// Numero da forma de pagamento: 1) Cartao de Credito, 2) Vales, 3) Convenio
+							// 4) Financiado, 5) Cartao de Debito. Varia de acordo com o L4_FORMA
+Local cDeFilSE5	    := ""
+Local cAteFilSE5	:= ""	 
+Local cDeFilSL1   	:= ""
+Local cAteFilSL1 	:= ""
+Local cDeFilSE1  	:= ""
+Local cAteFilSE1   	:= ""
+Local cDeFilSD1    	:= ""
+Local cAteFilSD1    := ""		
+Local lUsaParam  	:= Empty(cCaixa)
+Local aDev  
+Local lLj030Dev  	:= ExistBlock("LJ030DEV")
+Local lLJ030TES  	:= ExistBlock("LJ030TES")
+Local lNivel     	:= .F. //Verifica se explode nivel
+Local aRet		 	:= {} 
+Local aAux		 	:= {} 
+Local cAlias     	:= Alias()
+Local nValPgtos  	:= 0
+Local lpTPAbISS  	:= ( GetNewPar("MV_TPABISS", "1") == "2" )
+Local nParcelas  	:= 0
+Local nRestDiv   	:= 0
+Local nDinheiro  	:= 0	//Valor recebido em dinheiro   
+Local aAuxRecebs    := {}            
+Local nVezes 		:= 0
+
+#IFDEF TOP
+	Local cQuery
+#ELSE
+	Local cNumero    := ""
+#ENDIF
+
+If Type("aContFina") <> "A"
+	aContFina:= {0,0,0,0,0,0,0,0,0} 	// Contadores utilizados nos tipos de finalizacoes 
+Endif
+
+If lUsaParam
+	cDeFilSE5  := If(Empty(xFilial("SE5")), "  ", MV_PAR05)	// Calcula a "De Filial" do SE5
+	cAteFilSE5 := If(Empty(xFilial("SE5")), "  ", MV_PAR06)	// Calcula a "Ate Filial" do SE5
+	cDeFilSL1  := If(Empty(xFilial("SL1")), "  ", MV_PAR05)	// Calcula a "De Filial" do SL1
+	cAteFilSL1 := If(Empty(xFilial("SL1")), "  ", MV_PAR06)	// Calcula a "Ate Filial" do SL1
+	cDeFilSE1  := If(Empty(xFilial("SE1")), "  ", MV_PAR05)	// Calcula a "De Filial" do SE1
+	cAteFilSE1 := If(Empty(xFilial("SE1")), "  ", MV_PAR06)	// Calcula a "Ate Filial" do SE1
+	cDeFilSD1  := If(Empty(xFilial("SD1")), "  ", MV_PAR05)	// Calcula a "De Filial" do SD1
+	cAteFilSD1 := If(Empty(xFilial("SD1")), "  ", MV_PAR06)	// Calcula a "Ate Filial" do SD1
+Else
+	cDeFilSE5  := xFilial("SE5")
+	cAteFilSE5 := xFilial("SE5")
+	cDeFilSL1  := xFilial("SL1")
+	cAteFilSL1 := xFilial("SL1")
+	cDeFilSE1  := xFilial("SE1")
+	cAteFilSE1 := xFilial("SE1")
+	cDeFilSD1  := xFilial("SD1")
+	cAteFilSD1 := xFilial("SD1")
+EndIf
+
+// Espacos para alinhar o valor a direita.
+bTab := { |x| Space( 21 - Len(x) ) }
+
+// Inicializa vetor que armazena os subitens dos itens do ListBox de Vendas
+If Len(aDDown) > 0
+	aValForma:= Array( Len(aDDown) )
+Else
+	aValForma:= Array(8)
+Endif
+		
+For nI:=1 to len(aDDown)
+	aDDown[nI]    := {}
+	aValForma[nI] := {}
+Next	
+
+For nI:=1 to Len(aCaixa)
+	aCaixa[nI] := 0
+Next
+
+dDataMovto := Iif(dDataMovto=Nil,dDataBase,dDataMovto)
+
+cCaixa := SubStr(cCaixa,1,3)
+
+//ÚÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ¿
+//³ Leitura do SE5 para considerar: Sangria, Troco e Movimenta-³
+//³ ‡”es banc rias.                                            ³
+//ÀÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÙ
+#IFDEF TOP
+	cQuery := "SELECT SE5.E5_DATA , SE5.E5_VALOR  , SE5.E5_BANCO , SE5.E5_AGENCIA,"
+	cQuery +=        "SE5.E5_CONTA, SE5.E5_PREFIXO, SE5.E5_NUMERO, SE5.E5_PARCELA,"
+	cQuery +=        "SE5.E5_TIPO , SE5.E5_TIPODOC, SE5.E5_CLIFOR, SE5.E5_LOJA   ,"
+	cQuery +=        "SE5.E5_SEQ  , SE5.E5_VENCTO , SE5.E5_MOEDA , SE5.E5_RECPAG"
+	cQuery += " FROM " + RetSQLName("SE5") + " SE5"
+	If lUsaParam
+		cQuery += " WHERE SE5.E5_FILIAL BETWEEN '" + cDeFilSE5 + "' AND '" + cAteFilSE5 + "'"
+		cQuery += " AND SE5.E5_DATA BETWEEN '" + DToS(MV_PAR01) + "' AND '" + DToS(MV_PAR02) + "'"
+		cQuery += " AND SE5.E5_BANCO BETWEEN '" + MV_PAR03 + "' AND '" + MV_PAR04 + "'"
+	Else
+		cQuery += " WHERE SE5.E5_FILIAL = '" + xFilial("SE5") + "'"
+		cQuery += " AND SE5.E5_DATA = '" + DToS(dDataMovto) + "'"
+		cQuery += " AND SE5.E5_BANCO = '" + cCaixa + "'"
+	EndIf
+	cQuery += " AND (SE5.E5_SITUACA <> 'C') AND (SE5.E5_MOEDA <> 'ES')"
+	cQuery += " AND SE5.E5_TIPODOC <> 'LJ'"
+	cQuery += " AND SE5.D_E_L_E_T_ = ' '"
+	cQuery := ChangeQuery(cQuery)
+	dbUseArea( .T., "TOPCONN", TCGenQry(,,cQuery), 'SE5TMP', .F., .T.)
+	TCSetField("SE5TMP", "E5_DATA", "D")
+	TCSetField("SE5TMP", "E5_VENCTO", "D")
+
+	While !EOF()
+		//Verifica se tem cancelamento para este titulo.
+		If TemBxCanc(E5_PREFIXO+E5_NUMERO+E5_PARCELA+E5_TIPO+E5_CLIFOR+E5_LOJA+E5_SEQ)
+			dbSkip()
+			Loop
+		EndIf
+
+		//ÚÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ¿
+		//³ Considera os titulos em NCC que foram utilizados para baixar titulos ³
+		//³ na rotina de recebimento de titulos (LOJXREC), verificando se a      ³
+		//³ moeda de baixa eh igual a "CR"                                       ³
+		//ÀÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÙ
+        If !( AllTrim(E5_TIPO) == "NCC" .And. AllTrim(E5_MOEDA) == "CR") 
+			If ( AllTrim(E5_TIPO) $ ( MV_CRNEG + "/PA" ) ) .or. E5_VENCTO > E5_DATA
+				dbSkip()
+				Loop
+			EndIf
+		Endif
+		
+		IF E5_TIPODOC $ "DC/JR/MT/CM/D2/J2/M2/C2/V2/CP/TL"  //Valores de Baixas
+			dbSkip()
+			Loop
+		EndIf
+
+		nSe5Valor := E5_VALOR
+		
+		If E5_TIPODOC == "TR" .and. E5_MOEDA == "TC" .and. E5_RECPAG == "R"	// => Saldo inicial
+			aCaixa[P_TROCO] += nSe5Valor
+		ElseIf ( E5_TIPODOC == "VL" .AND. E5_MOEDA <> "TC" ) .Or. Empty( E5_TIPODOC ) .Or. E5_TIPODOC == "BL" .Or. ( Alltrim(E5_TIPO) = "NCC" .And. Alltrim(E5_MOEDA) = "CR" ) //Pagamento -> Tipo de doc VL com moeda diferente de TC e recebimentos de titulos com NCC
+			If E5_RECPAG == "P"
+				aCaixa[P_PAGAMENTOS] 	+= nSe5Valor
+			ElseIf E5_RECPAG=="R"
+				aCaixa[P_RECEBIMENTOS] 	+= nSe5Valor
+				If aScan(aAuxRecebs, {|x| x == E5_NUMERO + E5_PARCELA}) == 0
+					AAdd(aAuxRecebs, E5_NUMERO + E5_PARCELA)				
+					aContFina[9] += 1
+				EndIf
+				// Distribui os recebimentos por forma de pagamento, para fazer o DDown na tela. 
+				If AllTrim(E5_MOEDA) != ""    
+					nPgtoAux := AllTrim(Tabela("06",E5_MOEDA,.F.))
+					nPos := aScan( aDDown[8], { |x| x[3] == E5_MOEDA } )
+					If nPos<>0
+						aDDown[8][nPos][2] += E5_VALOR
+						nVezes := Val(SubStr(aDDown[8][nPos][1],Len(aDDown[8][nPos][1]),1))+1
+						aDDown[8][nPos][1] := "  " + nPgtoAux + Space(21-Len(nPgtoAux))+ Transform(aDDown[8][nPos][2], "@E 9,999,999.99") + Space(5) + AllTrim(Str(nVezes))
+					Else
+						aAdd(aDDown[8],{"  " + nPgtoAux+ Space(21-Len(nPgtoAux))+Transform( E5_VALOR, "@E 9,999,999.99" )+ Space(5) +"1",E5_VALOR,E5_MOEDA})
+					EndIf           
+				//Caso o pagamento tenha sido feito antes dessa melhoria e não tenha forma de pagamento no SE5
+				//será incluido como "OUTROS"
+				Else 
+					nPgtoAux := "OUTROS"
+					nPos := aScan( aDDown[8], { |x| x[3] == "OU" } )
+					If nPos<>0
+						aDDown[8][nPos][2] += E5_VALOR
+						nVezes := Val(SubStr(aDDown[8][nPos][1],Len(aDDown[8][nPos][1]),1))+1
+						aDDown[8][nPos][1] := "  " + nPgtoAux + Space(21-Len(nPgtoAux))+ Transform(aDDown[8][nPos][2], "@E 9,999,999.99" ) + Space(5) + AllTrim(Str(nVezes))
+					Else
+						aAdd(aDDown[8],{"  " + nPgtoAux+ Space(21-Len(nPgtoAux))+Transform( E5_VALOR, "@E 9,999,999.99" )+ Space(5) +"1",E5_VALOR,"OU"})
+					EndIf           
+				EndIf								
+			Endif
+		ElseIf E5_TIPODOC $ "SG/TR/TE" .and. E5_RECPAG == "P"
+			If E5_MOEDA == GetMV("MV_SIMB1")
+				aCaixa[P_SANG_DINHEIRO] += nSe5Valor
+			ElseIf E5_MOEDA $ "C1,C2,C3,C4,C5,CH"
+				aCaixa[P_SANG_CHEQUE] +=	nSe5Valor
+			ElseIf E5_MOEDA == "CC"
+				aCaixa[P_SANG_CARTAO] += 	nSe5Valor			
+			ElseIf E5_MOEDA == "VL"
+				aCaixa[P_SANG_VALE] +=		nSe5Valor
+			ElseIf E5_MOEDA == "CO"
+				aCaixa[P_SANG_CONVENIO]+=	nSe5Valor
+			ElseIf E5_MOEDA == "FI"
+				aCaixa[P_SANG_FINANCIADO]+= nSe5Valor
+			ElseIf E5_MOEDA == "CD"
+				aCaixa[P_SANG_DEBAUTO]  +=nSe5Valor
+			Else
+				aCaixa[P_SANG_OUTROS] += 	nSe5Valor
+			Endif
+		ElseIf E5_TIPODOC $ "TR/TE"
+			If E5_RECPAG == "R" .and. E5_MOEDA != "TC"	// O troco entrou como saldo inicial
+				aCaixa[P_TRANSF_DESTINO] += nSe5Valor
+			Endif
+		EndIf
+
+		dbSkip()
+
+	End
+	dbSelectArea("SE5TMP")
+	dbCloseArea()
+#ELSE
+	dbSelectArea("SE5")
+	dbSetOrder(1)
+	If lUsaParam
+		MsSeek(cDeFilSE5 + DToS( MV_PAR01 ), .T. )			// Filial + Data
+	Else
+		MsSeek(xFilial() + DToS( dDataMovto ) + cCaixa )	// Filial + Data + Caixa
+	EndIf
+	While !EOF() .And. ;
+		E5_FILIAL >= cDeFilSE5 .And.;
+		E5_FILIAL <= cAteFilSE5 .And. If(lUsaParam, .T., DToS(E5_DATA)+E5_BANCO == DToS(dDataMovto)+cCaixa)
+
+		If lUsaParam .And. !(E5_DATA >= MV_PAR01 .And.;
+			 E5_DATA   <= MV_PAR02 .And.;
+			 E5_BANCO  >= MV_PAR03 .And.;
+			 E5_BANCO  <= MV_PAR04)
+			dbSkip()
+			Loop
+		EndIf
+
+		IF E5_SITUACA == "C" .or. E5_MOEDA == "ES"
+			// Estorno ou cancelado
+			dbSkip()
+			Loop
+		Endif
+
+		//Verifica se tem cancelamento para este titulo.
+		If TemBxCanc(E5_PREFIXO+E5_NUMERO+E5_PARCELA+E5_TIPO+E5_CLIFOR+E5_LOJA+E5_SEQ)
+			dbSkip()
+			Loop
+		EndIf  
+
+		If ( AllTrim(E5_TIPO) $ ( MV_CRNEG + "/PA" ) ) .or. E5_VENCTO > E5_DATA
+			dbSkip()
+			Loop
+		Endif	
+
+		If E5_TIPODOC == "LJ"		// Vendas a Vista, est  contido em L1_DINHEIRO
+			dbSkip()
+			Loop
+		Endif
+
+		IF E5_TIPODOC $ "DC/JR/MT/CM/D2/J2/M2/C2/V2/CP/TL"  //Valores de Baixas
+			dbSkip()
+			Loop
+		Endif
+
+		nSe5Valor := E5_VALOR
+
+		If E5_TIPODOC == "TR" .and. SE5->E5_MOEDA == "TC" .and. SE5->E5_RECPAG == "R"	// => Saldo inicial
+			aCaixa[P_TROCO] += nSe5Valor
+		ElseIf ( E5_TIPODOC == "VL" .AND. E5_MOEDA <> "TC" ) .Or. Empty( SE5->E5_TIPODOC ) .Or. E5_TIPODOC == "BL" //Pagamento -> Tipo de doc VL com moeda diferente de TC
+			If E5_RECPAG == "P"
+				aCaixa[P_PAGAMENTOS] 	+= nSe5Valor
+			ElseIf E5_RECPAG=="R"
+				aCaixa[P_RECEBIMENTOS] 	+= nSe5Valor    
+				If aScan(aAuxRecebs, {|x| x == E5_NUMERO + E5_PARCELA}) == 0
+					AAdd(aAuxRecebs, E5_NUMERO + E5_PARCELA)				
+					aContFina[9] += 1
+				EndIf
+				// Distribui os recebimentos por forma de pagamento, para fazer o DDown na tela. 
+				If AllTrim(E5_MOEDA) != ""    
+					nPgtoAux := AllTrim(Tabela("06",E5_MOEDA,.F.))
+					nPos := aScan( aDDown[8], { |x| x[3] == E5_MOEDA } )
+					If nPos<>0
+						aDDown[8][nPos][2] += E5_VALOR
+						nVezes := Val(SubStr(aDDown[8][nPos][1],Len(aDDown[8][nPos][1]),1))+1
+						aDDown[8][nPos][1] := "  " + nPgtoAux + Space(21-Len(nPgtoAux))+ Transform(aDDown[8][nPos][2], "@E 9,999,999.99") + Space(5) + AllTrim(Str(nVezes))
+					Else
+						aAdd(aDDown[8],{"  " + nPgtoAux+ Space(21-Len(nPgtoAux))+Transform( E5_VALOR, "@E 9,999,999.99" )+ Space(5) +"1",E5_VALOR,E5_MOEDA})
+					EndIf           
+				//Caso o pagamento tenha sido feito antes dessa melhoria e não tenha forma de pagamento no SE5
+				//será incluido como "OUTROS"
+				Else 
+					nPgtoAux := "OUTROS"
+					nPos := aScan( aDDown[8], { |x| x[3] == "OU" } )
+					If nPos<>0
+						aDDown[8][nPos][2] += E5_VALOR
+						nVezes := Val(SubStr(aDDown[8][nPos][1],Len(aDDown[8][nPos][1]),1))+1
+						aDDown[8][nPos][1] := "  " + nPgtoAux + Space(21-Len(nPgtoAux))+ Transform(aDDown[8][nPos][2], "@E 9,999,999.99" ) + Space(5) + AllTrim(Str(nVezes))
+					Else
+						aAdd(aDDown[8],{"  " + nPgtoAux+ Space(21-Len(nPgtoAux))+Transform( E5_VALOR, "@E 9,999,999.99" )+ Space(5) +"1",E5_VALOR,"OU"})
+					EndIf           
+				EndIf								
+			Endif
+		ElseIf E5_TIPODOC $ "SG/TR/TE" .and. SE5->E5_RECPAG == "P"
+			If E5_MOEDA == GetMV("MV_SIMB1")
+				aCaixa[P_SANG_DINHEIRO] += nSe5Valor
+			ElseIf E5_MOEDA $ "C1,C2,C3,C4,C5,CH"
+				aCaixa[P_SANG_CHEQUE] +=	nSe5Valor
+			ElseIf E5_MOEDA == "CC"
+				aCaixa[P_SANG_CARTAO] += 	nSe5Valor			
+			ElseIf E5_MOEDA == "VL"
+				aCaixa[P_SANG_VALE] +=		nSe5Valor
+			ElseIf E5_MOEDA == "CO"
+				aCaixa[P_SANG_CONVENIO]+=	nSe5Valor
+			ElseIf E5_MOEDA == "FI"
+				aCaixa[P_SANG_FINANCIADO]+= nSe5Valor
+			ElseIf E5_MOEDA == "CD"
+				aCaixa[P_SANG_DEBAUTO]  +=nSe5Valor
+			Else
+				aCaixa[P_SANG_OUTROS] += 	nSe5Valor
+			Endif
+		ElseIf E5_TIPODOC $ "TR/TE"
+			If E5_RECPAG == "R" .and. SE5->E5_MOEDA != "TC"	// O troco entrou como saldo inicial
+				aCaixa[P_TRANSF_DESTINO] += nSe5Valor
+			Endif
+		EndIf
+
+		dbSkip()
+
+	End
+#ENDIF
+
+dbSelectArea("SL2")
+dbSetOrder(1)
+
+#IFDEF TOP
+
+	cQuery := "SELECT SL1.L1_NUM    , SL1.L1_MOEDA  , SL1.L1_CONDPG , SL1.L1_FORMPG ," 
+	cQuery +=        "SL1.L1_TXMOEDA, SL1.L1_DINHEIR, SL1.L1_CHEQUES, SL1.L1_CARTAO ,"
+	cQuery +=        "SL1.L1_VALES  , SL1.L1_CONVENI, SL1.L1_FINANC , SL1.L1_VLRDEBI," 
+	cQuery +=        "SL1.L1_CREDITO, SL1.L1_OUTROS , SL1.L1_VLRLIQ , SL1.L1_VALISS ,"
+	cQuery +=        "SL1.L1_CLIENTE, SL1.L1_LOJA"
+
+	If SL1->(FieldPos( "L1_ABTOPCC" )) > 0
+		cQuery += ", L1_ABTOPCC"
+	EndIf
+	
+	If GetNewPar("MV_LJREST",.F.)
+		cQuery += ", L1_ESTACIO, L1_SERVICO"
+	EndIf
+
+	cQuery += " FROM " + RetSQLName("SL1") + " SL1"
+
+	If lUsaParam
+		cQuery += " WHERE SL1.L1_FILIAL BETWEEN '" + cDeFilSL1 + "' AND '" + cAteFilSL1 + "'"
+		cQuery += " AND SL1.L1_EMISSAO BETWEEN '" + DToS(MV_PAR01) + "' AND '" + DToS(MV_PAR02) + "'"
+		cQuery += " AND SL1.L1_OPERADO BETWEEN '" + MV_PAR03 + "' AND '" + MV_PAR04 + "'"
+	Else
+		cQuery += " WHERE SL1.L1_FILIAL = '" + xFilial("SL1") + "'"
+		cQuery += " AND SL1.L1_EMISSAO = '" + DToS(dDataMovto) + "'"
+		cQuery += " AND SL1.L1_OPERADO = '" + cCaixa + "'"
+	EndIf
+	cQuery += " AND (SL1.L1_TIPO <> '' OR (SL1.L1_TIPO = 'P' AND SL1.L1_DOCPED <> '')  "
+	cQuery += " OR  (SL1.L1_TIPO = 'V' AND SL1.L1_DOC <> ''))
+	cQuery += " AND SL1.D_E_L_E_T_ = ' '"
+	cQuery := ChangeQuery(cQuery)
+	dbUseArea( .T., "TOPCONN", TCGenQry(,,cQuery), 'SL1TMP', .F., .T.)
+
+	While !EOF()
+
+		dbSelectArea( "SL2" )
+		MsSeek( xFilial("SL2") + SL1TMP->L1_NUM )
+		
+		dbSelectArea( "SL1TMP" )
+			
+		If FieldPos("L1_ABTOPCC") > 0 .AND. L1_ABTOPCC > 0
+            
+			//ÚÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ¿
+			//³Se o valor em dinh. for maior que o liquido, houve troco³
+			//³deve assumir o valor liquido (recebido efetivamente)    ³
+			//ÀÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÙ
+			If L1_DINHEIR > L1_VLRLIQ
+				nDinheiro := L1_VLRLIQ
+			Else
+				nDinheiro := L1_DINHEIR
+			Endif
+			nValPgtos := 0
+			aAux      := {	nDinheiro , L1_CHEQUES, L1_CARTAO , L1_VALES  ,;
+						   	L1_CONVENI, L1_FINANC , L1_VLRDEBI, L1_CREDITO,;
+						   	L1_OUTROS }
+
+			aEval(aAux, { |x| nValPgtos += x })
+
+			// Se o valor de pagamentos for zero (abatimento de PIS/COFINS/CSLL no valor total da venda)
+			// é somado o valor do abatimento no dinheiro.
+			If ( nValPgtos <= 0 )
+				aAux[01] += L1_ABTOPCC
+			EndIf
+
+			aAdd(aAux, L1_ABTOPCC)			
+
+		Else
+
+			//ÚÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ¿
+			//³Se o valor em dinh. for maior que o liquido, houve troco³
+			//³deve assumir o valor liquido (recebido efetivamente)    ³
+			//ÀÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÙ
+			If L1_DINHEIR > L1_VLRLIQ
+				nDinheiro := L1_VLRLIQ
+			Else
+				nDinheiro := L1_DINHEIR
+			Endif
+			aAux := {	nDinheiro , L1_CHEQUES, L1_CARTAO , L1_VALES  , ;
+			          	L1_CONVENI, L1_FINANC , L1_VLRDEBI, L1_CREDITO, ;
+			          	L1_OUTROS , 0 }
+
+		EndIf
+		
+		//ÚÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ¿
+		//³Caso seja utilizado o sistema de Gestão de Restaurantes³
+		//ÀÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÙ
+		If GetNewPar("MV_LJREST",.F.)
+			AAdd( aAux, L1_ESTACIO )
+			AAdd( aAux, L1_SERVICO )
+		Else
+			AAdd( aAux, 0 )
+			AAdd( aAux, 0 )
+		EndIf
+			
+		If ( Posicione("SA1",1,xFilial("SA1")+L1_CLIENTE+L1_LOJA,"SA1->A1_RECISS") == "1" .AND. ;
+		     GetNewPar("MV_DESCISS", .F.) )
+
+			aAux[10]  += L1_VALISS
+			              
+			//-- Se o parâmetro MV_TPABISS for igual a 1, devo somar o valor do ISS nas parcelas.
+			If ! lpTPAbISS
+
+				nParcelas := 0
+				nRestDiv  := 0
+				nPos      := 0
+			
+				aEval(aAux, { |x, y| nParcelas += iIf( x > 0 .AND. y <> 10, 1, 0 ) })
+
+				For nI := 1 To Len(aAux)
+				
+					If aAux[nI] > 0 .AND. nI <> 10
+
+						nPos     := iIf( nPos > 0, nPos, nI )
+						aAux[nI] += Round(( aAux[10] / nParcelas ), 2)
+						nRestDiv += Round(( aAux[10] / nParcelas ), 2)
+						
+					EndIf
+
+				Next
+				
+				If nRestDiv <> aAux[10]
+					aAux[nPos] -= ( aAux[10] - nRestDiv )
+				EndIf
+			
+			EndIf
+			
+		EndIf
+		
+		If lLJ030TES
+			aRet := ExecBlock("LJ030TES", .F., .F., {aAux, 1})
+			If ValType(aRet) == "A"
+				aAux := aRet
+			EndIf
+		EndIf
+			
+		aCaixa[P_VEND_DINHEIRO]   += aAux[1]
+		aCaixa[P_VEND_CHEQUE]     += aAux[2]
+		aCaixa[P_VEND_CARTAO]     += aAux[3]
+		aCaixa[P_VEND_VALE]       += aAux[4]
+		aCaixa[P_VEND_CONVENIO]   += aAux[5]
+		aCaixa[P_VEND_FINANCIADO] += aAux[6]
+		aCaixa[P_VEND_DEBAUTO]    += aAux[7]
+		aCaixa[P_VEND_CREDITO]    += aAux[8]
+		aCaixa[P_VEND_OUTROS]     += aAux[9]
+		aCaixa[P_SANG_IMPOSTOS]   += aAux[10]
+		aCaixa[P_VEND_ESTACIO]    += aAux[11]
+		aCaixa[P_VEND_SERVICO]    += aAux[12]
+
+		
+		lNivel := .F.
+		
+		// Soh busca a administradora para as formas que podem ter administradora relacionada.
+		// L1_CARTAO, L1_VALES, L1_CONVENI, L1_FINANC, L1_VLRDEBI		
+		If aAux[3]<>0 .Or. aAux[4]<>0 .Or. aAux[5]<>0 .Or. aAux[6]<>0 .Or. aAux[7]<>0 .Or. ;
+  		   aAux[2]<>0 .Or. aAux[9]<>0  // Foi adicionada mais esta linha em função da inclusao de contadores
+			
+			lNivel := .T.
+			
+			SL4->( dbSeek( xFilial("SL4") + SL1TMP->L1_NUM ) )
+
+			aAux := {{},{},{},{},{}}
+			Do While SL4->( ! EoF() .and. L4_NUM == SL1TMP->L1_NUM )
+
+				// Atribui a numeracao de acordo com a forma registrada no SL4
+		    	Do Case			    
+					Case RTrim( SL4->L4_FORMA ) = "CC"		// Cartao de credito: 1a. opcao do array aDDown/aValForma
+						nForma := 1
+        				aContFina[1] += 1               	// Acumulando contador de cartão de crédito
+					Case RTrim( SL4->L4_FORMA ) = "VA"		// Vales: 2a. opcao do array aDDown/aValForma
+						nForma := 2	  
+						aContFina[2] += 1					// Acumulando contador de vales
+					Case RTrim( SL4->L4_FORMA ) = "CO"		// Convenio: 3a. opcao do array aDDown/aValForma
+						nForma := 3					
+						aContFina[3] += 1 			   	// Acumulando contador de convenios
+					Case RTrim( SL4->L4_FORMA ) = "FI"		// Financiado: 4a. opcao do array aDDown/aValForma
+						nForma := 4	  
+						aContFina[4] += 1 								
+					Case RTrim( SL4->L4_FORMA ) = "CD"		// Cartao de Debito: 5a. array opcao do aDDown/aValForma
+						nForma := 5	  
+						aContFina[5] += 1               	// Acumulando contador de cartão de debito
+					Case RTrim( SL4->L4_FORMA ) = "CH"		// Cheque
+						nForma := 0	
+						aContFina[6] += 1 				// Acumulando contador de cheques
+					Case RTrim( SL4->L4_FORMA ) = "CR"		// Credito
+						nForma := 0	
+					Case RTrim( SL4->L4_FORMA ) = "R$"		// Dinheiro
+						nForma := 0							
+					OtherWise       						// Nao eh nenhuma das foram de pagamento que tem administradora
+						nForma := 0	
+						aContFina[7] += 1					// Acumulando contador de outras condições
+				EndCase            
+
+				// Se pertence a alguma forma de pagamento relacionada a administradora
+				If nForma # 0
+
+					// Seleciona o codigo da administradora
+					cCodAdm  := Left( SL4->L4_ADMINIS, 3 )
+
+					SAE->( DBSetOrder( 1 ) )
+					SAE->( MsSeek( xFilial( "SAE" ) + cCodAdm ) )
+
+			    	cAdmCart := RTrim( Left( SAE->AE_DESC, 20 ) )
+
+					nPos := aScan( aAux[ nForma ], { |x| x[1] == cCodAdm } )
+				
+					If nPos # 0
+						aAux[nForma,nPos,3] += SL4->L4_VALOR
+						aAux[nForma,nPos,4] += 1
+					Else
+						AAdd( aAux[ nForma ], { cCodAdm, cAdmCart, SL4->L4_VALOR, 1 } )
+					EndIf			
+
+	            EndIf
+
+		        SL4->( dbSkip() )
+
+			End
+			If lLJ030TES
+				aRet := ExecBlock("LJ030TES", .F., .F., {aAux, 2})
+				If ValType(aRet) == "A"
+					aAux := aRet
+				EndIf
+			EndIf
+		ElseIf aAux[8] <> 0	      // Verifica se existe vendas com NCC.
+			aAux 	:= {{},{},{},{},{},{},{}}
+			lNivel 	:= .T.
+			aContFina[8] += 1
+			AAdd( aAux[7], { "001", OemToAnsi( STR0067 ), L1_CREDITO, 1 } )
+		Endif
+		  
+		If lNivel
+			IncAvalForma(@aAux, @aValForma)
+		EndIf
+
+		dbSelectArea( "SL1TMP" )
+		dbSkip()
+
+	End
+	dbSelectArea( "SL1TMP" )
+	dbCloseArea()
+#ELSE
+	dbSelectArea("SL1")
+	dbSetOrder(5)
+	If lUsaParam
+		MsSeek(cDeFilSL1, .T.)	// Filial
+	Else
+		MsSeek( xFilial() + cCaixa + DToS(dDataMovto))	// Filial + Caixa + Data
+	EndIf
+	While !EOF() .And. ;
+		L1_FILIAL  >= cDeFilSL1 .And.;
+		L1_FILIAL  <= cAteFilSL1 .And. If(lUsaParam, .T., DToS(L1_EMISSAO)+L1_OPERADO == DToS(dDataMovto)+cCaixa)
+
+		If lUsaParam .And. !(L1_OPERADO >= MV_PAR03 .And.;
+			 L1_OPERADO <= MV_PAR04 .And.;
+			 L1_EMISSAO >= MV_PAR01 .And.;
+			 L1_EMISSAO <= MV_PAR02)
+			dbSkip()
+			Loop
+		EndIf
+
+		If Empty(L1_TIPO) .Or. (L1_TIPO == "P" .And. Empty(L1_DOCPED)) .Or. (L1_TIPO=="V" .And. Empty(L1_DOC))
+			dbSkip()
+			Loop
+		EndIf
+
+		dbSelectArea( "SL2" )
+		MsSeek( xFilial("SL2") + SL1->L1_NUM )
+		dbSelectArea( "SL1" )
+
+		If FieldPos("L1_ABTOPCC") > 0 .AND. L1_ABTOPCC > 0
+
+			//ÚÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ¿
+			//³Se o valor em dinh. for maior que o liquido, houve troco³
+			//³deve assumir o valor liquido (recebido efetivamente)    ³
+			//ÀÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÙ
+			If L1_DINHEIR > L1_VLRLIQ
+				nDinheiro := L1_VLRLIQ
+			Else
+				nDinheiro := L1_DINHEIR
+			Endif
+			nValPgtos := 0
+			aAux      := {	nDinheiro, L1_CHEQUES, L1_CARTAO , L1_VALES  , ;
+			               L1_CONVENI, L1_FINANC , L1_VLRDEBI, L1_CREDITO, ;
+			               L1_OUTROS }
+
+			aEval(aAux, { |x| nValPgtos += x })
+
+			// Se o valor de pagamentos for zero (abatimento de PIS/COFINS/CSLL no valor total da venda)
+			// é somado o valor do abatimento no dinheiro.
+			If ( nValPgtos <= 0 )
+				aAux[01] += L1_ABTOPCC
+			EndIf
+
+			aAdd(aAux, L1_ABTOPCC)			
+
+		Else
+
+			//ÚÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ¿
+			//³Se o valor em dinh. for maior que o liquido, houve troco³
+			//³deve assumir o valor liquido (recebido efetivamente)    ³
+			//ÀÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÙ
+			If L1_DINHEIR > L1_VLRLIQ
+				nDinheiro := L1_VLRLIQ
+			Else
+				nDinheiro := L1_DINHEIR
+			Endif
+			aAux := { 	nDinheiro , L1_CHEQUES, L1_CARTAO , L1_VALES  , ;
+						L1_CONVENI, L1_FINANC , L1_VLRDEBI, L1_CREDITO, ;
+						L1_OUTROS , 0 }
+
+		EndIf
+		
+		//ÚÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ¿
+		//³Caso seja utilizado o sistema de Gestão de Restaurantes³
+		//ÀÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÙ
+		If GetNewPar("MV_LJREST",.F.)
+			AAdd( aAux, L1_ESTACIO )
+			AAdd( aAux, L1_SERVICO )
+		Else
+			AAdd( aAux, 0 )
+			AAdd( aAux, 0 )
+		EndIf		
+		
+		If ( Posicione("SA1",1,xFilial("SA1")+SL1->L1_CLIENTE+SL1->L1_LOJA,"SA1->A1_RECISS") == "1" .AND. ;
+		     GetNewPar("MV_DESCISS", .F.) )
+			
+			aAux[10]  += L1_VALISS
+			              
+			//-- Se o parâmetro MV_TPABISS for igual a 1, devo somar o valor do ISS nas parcelas.
+			If ! lpTPAbISS
+
+				nParcelas := 0
+				nRestDiv  := 0
+				nPos      := 0
+
+				aEval(aAux, { |x, y| nParcelas += iIf( x > 0 .AND. y <> 10, 1, 0 ) })
+
+				For nI := 1 To Len(aAux)
+				
+					If aAux[nI] > 0 .AND. nI <> 10
+
+						nPos     := iIf( nPos > 0, nPos, nI )
+						aAux[nI] += Round(( aAux[10] / nParcelas ), 2)
+						nRestDiv += Round(( aAux[10] / nParcelas ), 2)
+						
+					EndIf
+
+				Next
+				
+				If nRestDiv <> aAux[10]
+					aAux[nPos] -= ( aAux[10] - nRestDiv )
+				EndIf
+			
+			EndIf			
+			
+		EndIf		
+
+		If lLJ030TES
+			aRet := ExecBlock("LJ030TES", .F., .F., {aAux, 1})
+			If ValType(aRet) == "A"
+				aAux := aRet
+			EndIf
+		EndIf
+			
+		aCaixa[P_VEND_DINHEIRO]   += aAux[1]
+		aCaixa[P_VEND_CHEQUE]     += aAux[2]
+		aCaixa[P_VEND_CARTAO]     += aAux[3]
+		aCaixa[P_VEND_VALE]       += aAux[4]
+		aCaixa[P_VEND_CONVENIO]   += aAux[5]
+		aCaixa[P_VEND_FINANCIADO] += aAux[6]
+		aCaixa[P_VEND_DEBAUTO]    += aAux[7]
+		aCaixa[P_VEND_CREDITO]    += aAux[8]
+		aCaixa[P_VEND_OUTROS]     += aAux[9]
+		aCaixa[P_SANG_IMPOSTOS]   += aAux[10]		
+		aCaixa[P_VEND_ESTACIO]    += aAux[11]
+		aCaixa[P_VEND_SERVICO]    += aAux[12]		
+
+		
+		lNivel := .F.
+		
+		// Soh busca a administradora para as formas que podem ter administradora relacionada.
+		// L1_CARTAO, L1_VALES, L1_CONVENI, L1_FINANC, L1_VLRDEBI
+		If aAux[3]<>0 .Or. aAux[4]<>0 .Or. aAux[5]<>0 .Or. aAux[6]<>0 .Or. aAux[7]<>0 .Or. ;
+  		   aAux[2]<>0 .Or. aAux[9]<>0 // Foi adicionada mais esta linha em função da inclusao de contadores
+
+			lNivel 	:= .T.
+			
+			SL4->( MsSeek( xFilial("SL4") + SL1->L1_NUM ) )
+
+			aAux := {{},{},{},{},{}}
+			Do While SL4->( ! EoF() .and. L4_NUM == SL1->L1_NUM )
+
+				// Atribui a numeracao de acordo com a forma registrada no SL4
+		    	Do Case			    
+					Case RTrim( SL4->L4_FORMA ) = "CC"		// Cartao de credito: 1a. opcao do array aDDown/aValForma
+						nForma := 1
+        				aContFina[1] += 1               	// Acumulando contador de cartão de crédito
+					Case RTrim( SL4->L4_FORMA ) = "VA"		// Vales: 2a. opcao do array aDDown/aValForma
+						nForma := 2	  
+						aContFina[2] += 1					// Acumulando contador de vales
+					Case RTrim( SL4->L4_FORMA ) = "CO"		// Convenio: 3a. opcao do array aDDown/aValForma
+						nForma := 3					
+						aContFina[3] += 1 			   	// Acumulando contador de convenios
+					Case RTrim( SL4->L4_FORMA ) = "FI"		// Financiado: 4a. opcao do array aDDown/aValForma
+						nForma := 4	  
+						aContFina[4] += 1 								
+					Case RTrim( SL4->L4_FORMA ) = "CD"		// Cartao de Debito: 5a. array opcao do aDDown/aValForma
+						nForma := 5	  
+						aContFina[5] += 1               	// Acumulando contador de cartão de debito
+					Case RTrim( SL4->L4_FORMA ) = "CH"		// Cheque
+						nForma := 0	
+						aContFina[6] += 1 				// Acumulando contador de cheques
+					Case RTrim( SL4->L4_FORMA ) = "CR"		// Credito
+						nForma := 0	
+					Case RTrim( SL4->L4_FORMA ) = "R$"		// Dinheiro
+						nForma := 0							
+					OtherWise       						// Nao eh nenhuma das foram de pagamento que tem administradora
+						nForma := 0	
+						aContFina[7] += 1					// Acumulando contador de outras condições
+				EndCase            
+			
+				// Se pertence a alguma forma de pagamento relacionada a administradora
+				If nForma # 0
+			
+					// Seleciona o codigo da administradora
+					cCodAdm  := Left( SL4->L4_ADMINIS, 3 )
+				
+					SAE->( DBSetOrder( 1 ) )
+					SAE->( MsSeek( xFilial( "SAE" ) + cCodAdm ) )
+				
+			    	cAdmCart := RTrim( Left( SAE->AE_DESC, 20 ) )
+		        
+					nPos := aScan( aAux[ nForma ], { |x| x[1] == cCodAdm } )
+				
+					If nPos # 0
+						aAux[nForma,nPos,3] += SL4->L4_VALOR
+						aAux[nForma,nPos,4] += 1
+					Else
+						AAdd( aAux[ nForma ], { cCodAdm, cAdmCart, SL4->L4_VALOR, 1 } )
+					EndIf
+
+	            EndIf
+
+		        SL4->( dbSkip() )
+
+			End
+
+			If lLJ030TES
+				aRet := ExecBlock("LJ030TES", .F., .F., {aAux, 2})
+				If ValType(aRet) == "A"
+					aAux := aRet
+				EndIf
+			EndIf
+        
+		ElseIf aAux[8] <> 0	      //Verifica se existe vendas com NCC.
+			aAux 	:= {{},{},{},{},{},{},{}}
+			lNivel 	:= .T.
+			//nForma 	:= 7	
+			aContFina[8] += 1
+			AAdd( aAux[7], { "001", OemToAnsi( STR0067 ), L1_CREDITO, 1 } )			
+		Endif
+		
+		If lNivel
+			IncAvalForma(@aAux, @aValForma)
+		EndIf
+
+		dbSelectArea( "SL1" )
+		dbSkip()
+
+	End
+#ENDIF
+
+// Tratamento das notas de credito (NCC)
+
+#IFDEF TOP
+	cQuery := "SELECT SUM(SE1.E1_SALDO) SUM_SALDO, Count(*) QTDE"
+	cQuery += " FROM " + RetSQLName("SE1") + " SE1"
+	If lUsaParam
+		cQuery += " WHERE SE1.E1_FILIAL BETWEEN '" + cDeFilSE1 + "' AND '" + cAteFilSE1 + "'"
+		cQuery += " AND SE1.E1_EMISSAO BETWEEN '" + DToS(MV_PAR01) + "' AND '" + DToS(MV_PAR02) + "'"
+		cQuery += " AND SE1.E1_PORTADO BETWEEN '" + MV_PAR03 + "' AND '" + MV_PAR04 + "'"
+	Else
+		cQuery += " WHERE SE1.E1_FILIAL = '" + xFilial("SE1") + "'"
+		cQuery += " AND SE1.E1_EMISSAO = '" + DToS(dDataMovto) + "'"
+		cQuery += " AND SE1.E1_PORTADO = '" + cCaixa + "'"
+	EndIf
+	cQuery += " AND SE1.E1_SALDO > 0"
+	cQuery += " AND SE1.E1_TIPO = '"+MV_CRNEG+"'"
+	cQuery += " AND SE1.D_E_L_E_T_ = ' '"
+	cQuery := ChangeQuery(cQuery)
+	dbUseArea( .T., "TOPCONN", TCGenQry(,,cQuery), 'SE1TMP', .F., .T.)
+
+	dbSelectArea("SE1TMP")
+	If !EOF() .And. SUM_SALDO > 0
+		aCaixa[P_VEND_CREDITO] 	+= SUM_SALDO
+		//ÚÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ¿
+		//³Adiciona o saldo das NCCs na visualizacao dos Creditos de Vendas³
+		//ÀÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÙ		
+		aAux := {{},{},{},{},{},{},{}}
+		aContFina[8] += QTDE
+		AAdd( aAux[7], { "002", OemToAnsi( STR0068 ), SUM_SALDO, QTDE} )
+		IncAvalForma(@aAux, @aValForma)		
+	EndIf
+	dbCloseArea()
+#ELSE
+	dbSelectArea("SE1")
+	dbSetOrder(6)
+	If lUsaParam
+		MsSeek(cDeFilSE1, .T. )	// Filial
+	Else
+		MsSeek(xFilial() + Dtos(dDataMovto))	// Filial + Data
+	EndIf
+	While !EOF() .And. ;
+		E1_FILIAL  >= cDeFilSE1 .And.;
+		E1_FILIAL  <= cAteFilSE1 .And. If(lUsaParam, .T., E1_EMISSAO == dDataMovto)
+	
+		If lUsaParam .And. !(E1_EMISSAO >= MV_PAR01 .And.;
+			 E1_EMISSAO <= MV_PAR02)
+			dbSkip()
+			Loop
+		EndIf
+
+		If lUsaParam
+			If (SE1->E1_PORTADOR >= MV_PAR03 .And.;
+				 SE1->E1_PORTADOR <= MV_PAR04 .And.;
+				 SE1->E1_SALDO > 0 .and. E1_TIPO == MV_CRNEG)
+				aCaixa[P_VEND_CREDITO] += SE1->E1_SALDO
+				//ÚÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ¿
+				//³Adiciona o saldo das NCCs na visualizacao dos Creditos de Vendas³
+				//ÀÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÙ				
+				aAux := {{},{},{},{},{},{},{}}
+				aContFina[8] += 1
+				AAdd( aAux[7], { "002", OemToAnsi( STR0068 ), E1_SALDO, 1 } )
+				IncAvalForma(@aAux, @aValForma)			
+			EndIf
+		Else
+			If SE1->E1_PORTADOR == cCaixa .and. SE1->E1_SALDO > 0 .and. E1_TIPO == MV_CRNEG
+				aCaixa[P_VEND_CREDITO] += SE1->E1_SALDO
+				//ÚÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ¿
+				//³Adiciona o saldo das NCCs na visualizacao dos Creditos de Vendas³
+				//ÀÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÙ		
+				aAux := {{},{},{},{},{},{},{}}
+				aContFina[8] += 1
+				AAdd( aAux[7], { "002", OemToAnsi( STR0068 ), E1_SALDO, 1 } )
+				IncAvalForma(@aAux, @aValForma)
+			EndIf
+		EndIf
+		dbSkip()
+	End
+#ENDIF    
+
+//
+// Monta array de subitens para o ListBox de vendas a partir do array 
+// de valores por administradora e forma de pagamento.
+//     
+For nJ := 1 to Len( aValForma )
+	For nI := 1 to Len( aValForma[ nJ ] )
+		AAdd( aDDown[ nJ ], { "  " + ;
+		                      aValForma[ nJ, nI, 2 ] + Eval( bTab, aValForma[ nJ, nI, 2 ] ) + ;
+		                      Transform( aValForma[ nJ, nI, 3 ], "@E 9,999,999.99" ) + ;
+		                      " " + ;
+		                      Str(aValForma[ nJ, nI, 4 ] ,5) ,;
+		                      aValForma[ nJ, nI, 3 ] } )
+	Next nI
+Next nJ
+
+//ÚÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ¿
+//³Ponto de entrada LJ030DEV                                                    ³
+//³Parametros:  Nenhum                                                          ³
+//³Retorno:  Array contendo as linhas que deverao ser mostradas no drilldown    ³
+//³do itens devolucoes.                                                         ³
+//³                                                                             ³
+//³Exemplo:  aDev := {{"   DINHEIRO                 1.000,00 ",1000},;          ³
+//³                   {"   CHEQUE                     300,00 ", 300}}           ³
+//³                                                                             ³
+//³Observacoes:  Utilizado para retornar as formas de pagamento e valores       ³
+//³das devolucoes, para que sejam impressos no Resumo de Caixa.                 ³
+//ÀÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÙ
+If lLj030Dev
+	aDev := ExecBlock ("LJ030DEV",.F.,.F.)
+	If ValType(aDev) == "A"
+		nJ := 1
+		For nJ := 1 to Len (aDev)
+			AAdd(aDDown[ 6 ] , aClone(aDev[ nJ ]))
+		Next nJ
+		aCaixa[P_DEVOLUCAO] := 0
+		aEval( aDev, {|x| aCaixa[P_DEVOLUCAO] += x[2] } )
+	Endif
+EndIf
+   
+//ÚÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ¿
+//³Le o SD1 para determinar as devolucoes somente se não existir o ponto de entrada      ³
+//³LJ030DEV. Se existir,o valor da devolucao sera a soma dos valores retornados pelo P.E.³
+//ÀÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÙ
+If !lLj030Dev
+#IFDEF TOP
+	cQuery := "SELECT SUM(SD1.D1_TOTAL + SD1.D1_VALIPI + SD1.D1_ICMSRET - SD1.D1_VALDESC) DEVOLUCAO"
+	cQuery += " FROM " + RetSQLName("SD1") + " SD1"
+	If lUsaParam
+		cQuery += " WHERE SD1.D1_FILIAL BETWEEN '" + cDeFilSD1 + "' AND '" + cAteFilSD1 + "'"
+		cQuery += " AND SD1.D1_EMISSAO BETWEEN '" + DToS(MV_PAR01) + "' AND '" + DToS(MV_PAR02) + "'"
+		If ! (AllTrim(Upper(TCGetDB())) $ "ORACLE_INFORMIX")
+			cQuery += "  AND SUBSTRING(SD1.D1_NUMCQ,1,3) BETWEEN '" + MV_PAR03 + "' AND '" + MV_PAR04 + "'"
+		Else
+			cQuery += "  AND SUBSTR(SD1.D1_NUMCQ,1,3) BETWEEN '" + MV_PAR03 + "' AND '" + MV_PAR04 + "'"
+		EndIf
+	Else
+		cQuery += " WHERE SD1.D1_FILIAL = '" + xFilial("SD1") + "'"
+		cQuery += " AND SD1.D1_EMISSAO = '" + DToS(dDataMovto) + "'"
+		If ! (AllTrim(Upper(TCGetDB())) $ "ORACLE_INFORMIX")
+			cQuery += "  AND SUBSTRING(SD1.D1_NUMCQ,1,3) = '" + cCaixa + "'"
+		Else
+			cQuery += "  AND SUBSTR(SD1.D1_NUMCQ,1,3) = '" + cCaixa + "'"
+		EndIf
+	EndIf
+	cQuery += " AND SD1.D1_TIPO = 'D'"
+	cQuery += " AND SD1.D1_ORIGLAN = 'LO'"
+	cQuery += " AND SD1.D_E_L_E_T_ = ' '"
+	cQuery := ChangeQuery(cQuery)
+	dbUseArea( .T., "TOPCONN", TCGenQry(,,cQuery), 'SD1TMP', .F., .T.)
+
+	aCaixa[P_DEVOLUCAO] += DEVOLUCAO
+	dbCloseArea()
+#ELSE
+	dbSelectArea("SD1")
+	dbSetOrder(3)
+	If lUsaParam
+		MsSeek(cDeFilSD1, .T. )	// Filial
+	Else
+		MsSeek(xFilial()+DToS(dDataMovto))
+	EndIf
+	While !EOF() .And. ;
+		D1_FILIAL  >= cDeFilSD1 .And.;
+		D1_FILIAL  <= cAteFilSD1 .And. If(lUsaParam, .T., D1_EMISSAO == dDataMovto)
+	
+		If lUsaParam .And. !(D1_EMISSAO >= MV_PAR01 .And.;
+			 D1_EMISSAO <= MV_PAR02)
+			dbSkip()
+			Loop
+		EndIf
+
+		If SD1->D1_TIPO == "D" .And. SD1->D1_ORIGLAN == "LO"
+			If If(lUsaParam, Left(SD1->D1_NUMCQ,3) >= MV_PAR03 .And. Left(SD1->D1_NUMCQ,3) <= MV_PAR04,;
+							Substr(SD1->D1_NUMCQ,1,3) == cCaixa)
+							
+				aCaixa[P_DEVOLUCAO] += (SD1->D1_TOTAL + SD1->D1_VALIPI + SD1->D1_ICMSRET - SD1->D1_VALDESC)
+			EndIf
+			dbSkip()
+			Loop
+		EndIf
+		dbSelectArea("SD1")
+		dbSkip()
+		While !Empty(cNumero) .and. cNumero == SD1->D1_SERIORI+SD1->D1_NFORI
+			dbSkip()
+		End
+	End
+#ENDIF
+Endif
+
+dbSelectArea( cAlias )
+
+Return aCaixa
+
+/*/
+ÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜ
+±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±
+±±ÚÄÄÄÄÄÄÄÄÄÄÄÂÄÄÄÄÄÄÄÄÄÄÄÄÂÄÄÄÄÄÄÄÂÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÂÄÄÄÄÄÄÂÄÄÄÄÄÄÄÄÄÄ¿±±
+±±³ Funcao	  ³LJ030Refresh³ Autor ³ Cesar Valadao       ³ Data ³ 28/01/03 ³±±
+±±ÃÄÄÄÄÄÄÄÄÄÄÄÅÄÄÄÄÄÄÄÄÄÄÄÄÁÄÄÄÄÄÄÄÁÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÁÄÄÄÄÄÄÁÄÄÄÄÄÄÄÄÄÄ´±±
+±±³ Descri‡„o ³Executa refresh nos listbox								   ³±±	
+±±ÃÄÄÄÄÄÄÄÄÄÄÄÅÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ´±±
+±±³ Uso		  ³SIGALOJA                                                    ³±±  
+±±ÀÄÄÄÄÄÄÄÄÄÄÄÁÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÙ±±
+±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±
+ßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßß
+/*/
+Function LJ030Refresh(nOpc)
+Local cCaixa := "   "
+Local dDataMovto := dDataBase
+
+#IFNDEF TOP
+	//ÚÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ¿
+	//³ Se a data, caixa e filial forem a mesma, faz uma pesquisa mais rapida. ³
+	//ÀÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÙ
+	If (MV_PAR01 == MV_PAR02) .And. (MV_PAR03 == MV_PAR04) .And. (MV_PAR05 == MV_PAR06)
+		cCaixa     := MV_PAR03
+		dDataMovto := MV_PAR01
+	EndIf
+#ENDIF
+
+aCaixa := MovimCaixa(cCaixa, dDataMovto)
+
+// Alimenta Totalizadores / Arrays aDados...
+Lj030Dados(aCaixa, nOpc)
+
+//ÚÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ¿
+//³ Seta Vetores de Dados de Credito / Debito para ListBox     ³
+//ÀÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÙ
+oMovVen:SetArray(aDadosVen)
+oMovVen:bLine := {|| {	aDadosVen[oMovVen:nAt][1] } }
+oMovVen:Refresh()
+oMovSan:SetArray(aDadosSan)
+oMovSan:bLine := {|| {	OemToAnsi(aDadosSan[oMovSan:nAt][1]) } }
+oMovSan:Refresh()
+
+oTotCre:Refresh()
+oTotDeb:Refresh()
+oSaldFinal:Refresh()
+oTroco:Refresh()    
+If GetNewPar( "MV_LJREST", .F. )
+	oEstac:Refresh()
+	oGorjeta:Refresh()
+Endif
+Return(NIL)
+
+/*/
+ÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜ
+±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±
+±±ÚÄÄÄÄÄÄÄÄÄÄÄÂÄÄÄÄÄÄÄÄÄÄÄÄÂÄÄÄÄÄÄÄÂÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÂÄÄÄÄÄÄÂÄÄÄÄÄÄÄÄÄÄ¿±±
+±±³ Fun‡„o	  ³ LJ030DDown ³ Autor ³ Cesar Valadao       ³ Data ³ 23/01/03 ³±±
+±±ÃÄÄÄÄÄÄÄÄÄÄÄÅÄÄÄÄÄÄÄÄÄÄÄÄÁÄÄÄÄÄÄÄÁÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÁÄÄÄÄÄÄÁÄÄÄÄÄÄÄÄÄÄ´±±
+±±³ Descri‡„o ³ Aumenta ou Diminui o nivel de detalhes nas formas de pagto ³±±	
+±±ÃÄÄÄÄÄÄÄÄÄÄÄÅÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ´±±
+±±³ Uso		  ³SIGALOJA                                                    ³±±
+±±ÀÄÄÄÄÄÄÄÄÄÄÄÁÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÙ±±
+±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±
+ßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßß
+/*/
+Function LJ030DDown(nOpc, nDados)
+					  
+// Alimenta Totalizadores / Arrays aDados...
+Lj030Dados(aCaixa, nOpc, nDados)
+
+//ÚÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ¿
+//³ Seta Vetores de Dados de Credito / Debito para ListBox     ³
+//ÀÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÙ
+oMovVen:SetArray(aDadosVen)
+oMovVen:bLine := {|| { aDadosVen[oMovVen:nAt][1] }}
+oMovVen:Refresh()
+oMovSan:SetArray(aDadosSan)
+oMovSan:bLine := {|| { aDadosSan[oMovSan:nAt][1] }}
+oMovSan:Refresh()
+Return(NIL)
+
+/*/
+ÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜ
+±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±
+±±ÚÄÄÄÄÄÄÄÄÄÄÄÂÄÄÄÄÄÄÄÄÄÄÂÄÄÄÄÄÄÄÂÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÂÄÄÄÄÄÄÂÄÄÄÄÄÄÄÄÄÄ¿±±
+±±³ Funcao	  ³LJ030Dados³ Autor ³ Cesar Valadao         ³ Data ³ 28/01/03 ³±±
+±±ÃÄÄÄÄÄÄÄÄÄÄÄÅÄÄÄÄÄÄÄÄÄÄÁÄÄÄÄÄÄÄÁÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÁÄÄÄÄÄÄÁÄÄÄÄÄÄÄÄÄÄ´±±
+±±³ Descricao ³Fun‡„o que alimenta totalizadores por referˆncia e          ³±±
+±±³           ³vetores de Dados aDadosVen e aDadosSan a partir de 		   ³±±
+±±³           ³aCaixa recebido como parƒmetro.							   ³±±
+±±ÃÄÄÄÄÄÄÄÄÄÄÄÅÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ´±±
+±±³ Uso		  ³SIGALOJA                                                    ³±± 
+±±ÃÄÄÄÄÄÄÄÄÄÄÄÅÄÄÄÄÄÄÄÄÂÄÄÄÄÄÄÄÂÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ´±±
+±±³Analista   ³ Data   | BOPS  ³Manutencao Efetuada                        ³±±
+±±ÃÄÄÄÄÄÄÄÄÄÄÄÅÄÄÄÄÄÄÄÄÂÄÄÄÄÄÄÄÂÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ´±±
+±±³Marcos     ³07/07/05³83694  ³Adicionado visualizacao de vendas e NCC no ³±±
+±±³           ³        ³       ³no total de Credito Cliente.         	   ³±±
+±±³Adrianne   ³18/08/05³85231  ³Implementação da Linha de RECEBIMENTOS como³±±
+±±³           ³        ³       ³tipo Drill Down.						   ³±±
+±±ÀÄÄÄÄÄÄÄÄÄÄÄÁÄÄÄÄÄÄÄÄÁÄÄÄÄÄÄÄÁÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÙ±±
+±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±
+ßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßß
+/*/
+Function Lj030Dados(aCaixa,nOpcao, nDados)
+Local aCaixaStr, nI, bTab, cOpcao, cOpcaoVen
+
+cOpcao := ""
+cOpcaoVen := ""	
+                  
+bTab      := { |x| Space( 21 - Len(x) ) }
+nTroco    := aCaixa[P_TROCO]			// Saldo Inicial
+nEstac	  := aCaixa[P_VEND_ESTACIO]
+nGorjeta  := aCaixa[P_VEND_SERVICO]
+nOpcao    := IIf( nOpcao == NIL, 0, nOpcao )
+
+If nOpcao # 0                     
+	If nDados = 1 
+		cOpcao := aDadosVen[ nOpcao, 1 ]
+	Else
+		cOpcaoVen := aDadosSan[ nOpcao, 1 ]        
+	EndIf
+Else
+	cOpcao := ""
+	cOpcaoVen := ""	
+EndIf	
+
+aCaixaStr := {}     
+aDadosSan := {} 
+aDadosVen := {}       
+
+// Cria vetor com os valores em string para formar a unica coluna
+For nI := 1 to Len( aCaixa )
+	AAdd( aCaixaStr, Transform( aCaixa[ nI ], "@E 9,999,999.99" ) )
+Next
+
+aadd(aDadosSan,{ "  " + STR0007 + Eval(bTab, STR0007) + aCaixaStr[P_SANG_DINHEIRO  ], aCaixa[P_SANG_DINHEIRO  ]})
+aadd(aDadosSan,{ "  " + STR0008 + Eval(bTab, STR0008) + aCaixaStr[P_SANG_CHEQUE    ], aCaixa[P_SANG_CHEQUE    ]})
+aadd(aDadosSan,{ "  " + STR0009 + Eval(bTab, STR0009) + aCaixaStr[P_SANG_CARTAO    ], aCaixa[P_SANG_CARTAO    ]})
+aadd(aDadosSan,{ "  " + STR0015 + Eval(bTab, STR0015) + aCaixaStr[P_SANG_VALE      ], aCaixa[P_SANG_VALE      ]})
+aadd(aDadosSan,{ "  " + STR0010 + Eval(bTab, STR0010) + aCaixaStr[P_SANG_CONVENIO  ], aCaixa[P_SANG_CONVENIO  ]})
+aadd(aDadosSan,{ "  " + STR0012 + Eval(bTab, STR0012) + aCaixaStr[P_SANG_FINANCIADO], aCaixa[P_SANG_FINANCIADO]})
+aadd(aDadosSan,{ "  " + STR0041 + Eval(bTab, STR0041) + aCaixaStr[P_SANG_DEBAUTO   ], aCaixa[P_SANG_DEBAUTO   ]})
+aadd(aDadosSan,{ "  " + STR0013 + Eval(bTab, STR0013) + aCaixaStr[P_SANG_OUTROS    ], aCaixa[P_SANG_OUTROS    ]})
+aadd(aDadosSan,{ "  " + STR0042 + Eval(bTab, STR0042) + aCaixaStr[P_PAGAMENTOS     ], aCaixa[P_PAGAMENTOS     ]})
+aadd(aDadosSan,{ "  " + STR0043 + Eval(bTab, STR0043) + aCaixaStr[P_TRANSF_ORIGEM  ], aCaixa[P_TRANSF_ORIGEM  ]})
+If ExistBlock("LJ030DEV")  
+	TrataNivel( aDadosSan, STR0016, cOpcaoVen , 6, aCaixaStr[P_DEVOLUCAO      ], aCaixa[P_DEVOLUCAO      ] , 0 )
+Else
+	aadd(aDadosSan,{ "  " + STR0016 + Eval(bTab, STR0016) + aCaixaStr[P_DEVOLUCAO      ], aCaixa[P_DEVOLUCAO      ]})
+EndIf
+
+If SL1->(FieldPos("L1_ABTOPCC")) > 0
+	AAdd( aDadosSan,{"  " + STR0062 + Eval(bTab, STR0062) + aCaixaStr[P_SANG_IMPOSTOS], aCaixa[P_SANG_IMPOSTOS]})//"Retenção de Impostos"
+EndIf
+
+nTotDebito := 	aCaixa[P_SANG_DINHEIRO ] + aCaixa[P_SANG_CHEQUE     ] + ;
+				aCaixa[P_SANG_CARTAO   ] + aCaixa[P_SANG_VALE       ] + ;
+				aCaixa[P_SANG_CONVENIO ] + aCaixa[P_SANG_FINANCIADO ] + ;
+				aCaixa[P_SANG_DEBAUTO  ] + aCaixa[P_PAGAMENTOS      ] + ;
+				aCaixa[P_TRANSF_ORIGEM ] + aCaixa[P_DEVOLUCAO       ] + ;
+				aCaixa[P_SANG_OUTROS   ] + aCaixa[P_SANG_IMPOSTOS   ]
+
+aadd(aDadosVen,{ "  " + STR0007 + Eval( bTab, STR0007 ) + aCaixaStr[P_VEND_DINHEIRO ] + " " + Space(05) 	   		, aCaixa[P_VEND_DINHEIRO] })
+aadd(aDadosVen,{ "  " + STR0008 + Eval( bTab, STR0008 ) + aCaixaStr[P_VEND_CHEQUE   ] + " " + Str(aContFina[6],5)	, aCaixa[P_VEND_CHEQUE]   })
+
+TrataNivel( aDadosVen, STR0009, cOpcao, 1, aCaixaStr[P_VEND_CARTAO    ], aCaixa[P_VEND_CARTAO] 	, aContFina[1] )
+TrataNivel( aDadosVen, STR0011, cOpcao, 2, aCaixaStr[P_VEND_VALE      ], aCaixa[P_VEND_VALE]      	, aContFina[2] )
+TrataNivel( aDadosVen, STR0010, cOpcao, 3, aCaixaStr[P_VEND_CONVENIO  ], aCaixa[P_VEND_CONVENIO]  	, aContFina[3] ) 
+TrataNivel( aDadosVen, STR0012, cOpcao, 4, aCaixaStr[P_VEND_FINANCIADO], aCaixa[P_VEND_FINANCIADO]	, aContFina[4] )
+TrataNivel( aDadosVen, STR0041, cOpcao, 5, aCaixaStr[P_VEND_DEBAUTO   ], aCaixa[P_VEND_DEBAUTO]   	, aContFina[5] )
+
+aadd(aDadosVen,{ "  " + STR0013 + Eval( bTab, STR0013 ) + aCaixaStr[P_VEND_OUTROS   ] + " " + Str(aContFina[7],5)	, aCaixa[P_VEND_OUTROS]   })
+
+//ÚÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ¿
+//³Adicionado a visualizacao  total de creditos aos clientes gerados pelas devolucoes e tambem pelas vendas ³
+//ÀÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÙ
+TrataNivel( aDadosVen, STR0045, cOpcao, 7, aCaixaStr[P_VEND_CREDITO  ], aCaixa[P_VEND_CREDITO  ]   , aContFina[8] )
+
+aadd(aDadosVen,{ "  " + STR0043 + Eval( bTab, STR0043 ) + aCaixaStr[P_TRANSF_DESTINO] + " " + Space(05)		   	, aCaixa[P_TRANSF_DESTINO]})
+
+TrataNivel( aDadosVen, STR0044, cOpcao, 8, aCaixaStr[P_RECEBIMENTOS  ], aCaixa[P_RECEBIMENTOS  ]   , aContFina[9] )
+
+nTotCredito :=	aCaixa[P_VEND_DINHEIRO ] + aCaixa[P_VEND_CHEQUE     ] + ;
+				aCaixa[P_VEND_CARTAO   ] + aCaixa[P_VEND_VALE       ] + ;
+				aCaixa[P_VEND_CONVENIO ] + aCaixa[P_VEND_FINANCIADO ] + ;
+				aCaixa[P_VEND_DEBAUTO  ] + aCaixa[P_VEND_CREDITO    ] + ;
+				aCaixa[P_VEND_OUTROS   ] + aCaixa[P_TRANSF_DESTINO  ] + ;
+				aCaixa[P_RECEBIMENTOS  ]
+       
+nSaldFinal := nTroco + nTotCredito - nTotDebito
+Return(NIL)
+
+/*
+±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±
+±±ÚÄÄÄÄÄÄÄÄÄÄÂÄÄÄÄÄÄÄÄÄÄÂÄÄÄÄÄÄÄÂÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÂÄÄÄÄÄÄÂÄÄÄÄÄÄÄÄÄÄ¿±±
+±±³Funcao    ³TrataNivel³ Autor ³ Gustavo Henrique      ³ Data ³ 26/06/01 ³±±
+±±ÃÄÄÄÄÄÄÄÄÄÄÅÄÄÄÄÄÄÄÄÄÄÁÄÄÄÄÄÄÄÁÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÁÄÄÄÄÄÄÁÄÄÄÄÄÄÄÄÄÄ´±±
+±±³Descri‡…o ³ Funcao para tratar opcoes disponiveis para Drill-Down      ³±±
+±±ÃÄÄÄÄÄÄÄÄÄÄÅÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ´±±
+±±³Sintaxe   ³ TrataNivel(ExpC0, ExpC1,ExpC2,ExpN3,ExpC4)                 ³±±
+±±ÃÄÄÄÄÄÄÄÄÄÄÅÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ´±±
+±±³Parametros³ ExpC0 = Array que irá receber valores                      ³±±
+±±³          ³ ExpC1 = String a ser exibida no ListBox                    ³±±
+±±³          ³ ExpC2 = Opcao selecionada com clique duplo                 ³±±
+±±³          ³ ExpN3 = Opcao do drill down a ser tratada                  ³±±
+±±³          ³ ExpC4 = String com o Valor atualizado da linha do listbox  ³±±
+±±³          ³ ExpN5 = Valor atualizado da linha do listbox 			   ³±±
+±±ÃÄÄÄÄÄÄÄÄÄÄÅÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ´±±
+±±³Observacao³ Vetores:                                                   ³±±
+±±³          ³ aSinal - Vetor declarado na funcao principal que           ³±±
+±±³          ³          armazena os sinais de "+" e "-" dos itens que     ³±±
+±±³          ³          podem ter subitens. Este varia de acordo com o    ³±±
+±±³          ³          estado do item: aberto ou fechado.                ³±±
+±±³          ³ aDDown - Vetor declarado na funcao principal que           ³±±
+±±³          ³          armazenao os subitens dos itens do LisBox que     ³±±
+±±³          ³          podem ter variacao de estado: aberto ou fechado.  ³±±
+±±ÃÄÄÄÄÄÄÄÄÄÄÅÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ´±±
+±±³Uso       ³ LOJC030                                                    ³±±
+±±ÀÄÄÄÄÄÄÄÄÄÄÁÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÙ±±
+±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±
+ßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßß
+*/
+Static Function TrataNivel( aArr, cString, cDblClick, nOpDrill, cValor, nValor , nQtde )
+
+Local nI, bTab, cQtde
+Default nQtde := 0   
+cQtde := Str(nQtde,5)
+
+// Espacos para alinhar a direita o valor no ListBox
+bTab := { |x| Space( 21 - Len(x) ) }
+                                                    
+// Se a string passada estiver contida na opcao que foi selecionada com DblClick no ListBox
+If cString $ cDblClick
+	// Abre os subitens do item do ListBox se houverem
+	If aSinal[nOpDrill] == "+" .and. Len( aDDown[nOpDrill] ) > 0
+		aSinal[nOpDrill] := "-"
+		AAdd( aArr, { aSinal[nOpDrill] + " " + cString + Eval( bTab, cString ), nValor } )
+		For nI := 1 to Len( aDDown[nOpDrill] )
+			AAdd( aArr, aDDown[nOpDrill, nI] )
+		Next nI	
+	Else                                              
+		// Se nao houverem subitens, reapresenta o item e muda apenas o sinal.
+		aSinal[nOpDrill] := IIf( aSinal[nOpDrill] == "+", "-", "+" )
+		AAdd( aArr, { aSinal[nOpDrill] + " " + cString + Eval( bTab, cString ) + cValor + " " + cQtde , nValor } )
+	EndIf
+Else                                               
+	// Se estiver aberto, reimprime os subitens
+	If aSinal[nOpDrill] == "-" .and. Len( aDDown[nOpDrill] ) > 0
+		// Apenas mantem o que estava anteriormente no ListBox
+		AAdd( aArr, { aSinal[nOpDrill] + " " + cString + Eval( bTab, cString ), nValor  } )
+		For nI := 1 to Len( aDDown[nOpDrill] )
+			AAdd( aArr, aDDown[nOpDrill, nI] )
+		Next nI	
+	Else	
+		// Apenas mantem o que estava anteriormente no ListBox
+		AAdd( aArr, { aSinal[nOpDrill] + " " + cString + Eval( bTab, cString ) + cValor + " " + cQtde , nValor } )
+	EndIf
+EndIf
+
+Return( NIL )       
+
+
+
+Static Function IncAvalForma(aAux, aValForma)
+Local i 	:= 0
+Local z 	:= 0
+Local nPos	:= 0
+    
+For i := 1 To Len(aAux)
+	If Len(aAux[i])>0
+		For z := 1 To Len(aAux[i])
+			nPos := aScan( aValForma[i], { |x| x[1] == aAux[i][z][1] } )
+			If nPos<>0
+				aValForma[i,nPos,3] += aAux[i][z][3]
+				aValForma[i,nPos,4] += aAux[i][z][4]
+			Else
+				AAdd( aValForma[i], AClone(aAux[i][z]) )
+			EndIf						
+		Next
+	EndIf
+Next
+	
+Return .T.

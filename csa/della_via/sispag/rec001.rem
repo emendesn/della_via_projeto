@@ -1,0 +1,63 @@
+Codigo Registro00100100                                                           
+Codigo Remessa 00200201                                                           
+Literal Remessa0030090'REMESSA'                                                   
+Codigo Servico 010011001                                                          
+Literal Servico0120190'COBRANCA'                                                  
+Brancos        0200260                                                            
+Agencia        0270310SEE->EE_AGENCIA                                             
+Conta          0320400STRZERO(VAL(SEE->EE_CONTA),9)                               
+Codigo Empresa 0410460SEE->EE_CODEMP                                              
+Nome da Empresa0470760SUBSTR(SM0->M0_NOMECOM,1,30)                                
+Codigo do Banco0770790001                                                         
+Nome do Banco  0800940'BANCO DO BRASIL'                                           
+Data Gravacao  0951000Gravadata(dDatabase,.F.)                                    
+Sequencial     10110700000000                                                     
+Numero Sequenc.1083940                                                            
+Numero Sequenci3954000000001                                                      
+Codigo Registro00100101                                                           
+Codigo Inscr   002003002                                                          
+Numero CGC     0040170SM0->M0_CGC                                                 
+Agencia        0180220SEE->EE_AGENCIA                                             
+Conta          0230310STRZERO(VAL(SEE->EE_CONTA),9)                               
+Codigo Empresa 0320370SEE->EE_CODEMP                                              
+Numero Titulo  0380620SE1->E1_IDCNAB                                              
+Nosso Numero   0630740STRZERO(VAL(SE1->E1_NUMBCO),12)                             
+ZEROS          075076000                                                          
+ZEROS          077078000                                                          
+Brancos        0790820                                                            
+Seu Numero     0830850"AI "                                                       
+Varicao        0860880"019"                                                       
+Varicao2       0891010"0000000000000"                                             
+Varicao3       1021060"     "                                                     
+Carteira       107108011                                                          
+Registro titulo1091100SE1->E1_OCORREN                                             
+Numero Titulo  1111200SE1->E1_PREFIXO+SE1->E1_NUM+SE1->E1_PARCELA                 
+Vencimento     1211260Gravadata(SE1->E1_VENCTO,.F.)                               
+Valor Titulo   1271390STRZERO(INT(SE1->E1_VALOR*100),13)                          
+Banco          1401420'001'                                                       
+AG. Cobradora  143147000000                                                       
+Especie Titulo 1481490TABELA("17",SUBS(SE1->E1_TIPO,1,2))                         
+Aceite         1501500"N"                                                         
+Emissao Titulo 1511560Gravadata(se1->e1_emissao,.F.)                              
+Inst. Codfi. 011571580IF(!EMPTY(SE1->E1_INSTR1),SE1->E1_INSTR1,SEE->EE_INSTPRI)   
+Inst. Codfi. 021591600IF(!EMPTY(SE1->E1_INSTR2),SE1->E1_INSTR2,SEE->EE_INSTSEC)   
+Juros Mora Dia 1611730STRZERO(SE1->E1_SALDO*SEE->EE_JUROS,13)                     
+Data Descontos 1741790000000                                                      
+Valor Descontos1801922strzero(0,13)                                               
+Valor IOF      1932052strzero(0,13)                                               
+Valor Abatiment2062180STRZERO(SE1->E1_DESCONT*100,13)                             
+Tipo CGC / CPF 2192200if(right(sa1->a1_cgc,2)= '  ',01,02)                        
+CGC Do Cliente 2212340SA1->A1_cgc                                                 
+Nome Cliente   2352710Substr(SA1->A1_nome,1,37)                                   
+brancos        2722740                                                            
+Endereco Sacado2753110IF(EMPTY(SA1->A1_ENDCOB),SA1->A1_END,SA1->A1_ENDCOB)        
+Brancos        3123260                                                            
+cep            3273340IF(EMPTY(SA1->A1_ENDCOB),SA1->A1_CEP,SA1->A1_CEPC)          
+Municipio      3353490IF(EMPTY(SA1->A1_ENDCOB),SA1->A1_MUN,SA1->A1_MUNC)          
+Estado         3503510IF(EMPTY(SA1->A1_ENDCOB),SA1->A1_EST,SA1->A1_ESTC)          
+Observacoes    3523910"SR.CAIXA COBRAR R$ 1,05 RF TARIFA BOLETO"                  
+Brancos        3923940                                                            
+Numero Seq.    3954000IncRementa()                                                
+Codigo Registro00100109                                                           
+Brancos        0023940                                                            
+Numero Sequenc 3954000Incrementa()                                                

@@ -1,0 +1,65 @@
+Group Programas Antigos - Tirar
+   Version=7.0
+   VSSDB=
+   HasProperties=1
+   Properties
+      BeforeApply=
+      AfterApply=
+      Icon=
+      ID=
+      Version=
+      PalmName=
+      OutPut=
+   End
+   ProjectsCount=1
+   Project Antigos
+      FoldersCount=2
+      Folder Fontes
+         VSSPath=Fontes
+         FilesCount=13
+         File \my projects\Durapol\SF1100I.prw
+             Type=T
+         End
+         File \my projects\Durapol\SD3250E.PRW
+             Type=T
+         End
+         File \my projects\Durapol\SD3250I.PRW
+             Type=T
+         End
+         File \my projects\Durapol\MA650Fil.prw
+             Type=T
+         End
+         File \my projects\Durapol\A260Loc.prw
+             Type=T
+         End
+         File \my projects\Durapol\A261Loc.prw
+             Type=T
+         End
+         File \my projects\Durapol\A175CQ.prw
+             Type=T
+         End
+         File \my projects\Durapol\Ma650Grpv.prw
+             Type=T
+         End
+         File \my projects\Durapol\DESTA01.PRW
+             Type=T
+         End
+         File \my projects\Durapol\DFATR01.PRW
+             Type=T
+         End
+         File \my projects\Durapol\SX5NOTA.prw
+             Type=T
+         End
+         File \my projects\Durapol\M030INC.prw
+             Type=T
+         End
+         File \my projects\Durapol\DCOMG01.prw
+             Type=T
+         End
+      End
+      Folder Definições
+         VSSPath=Definições
+         FilesCount=0
+      End
+   End
+End

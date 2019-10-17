@@ -1,0 +1,975 @@
+#INCLUDE "MATR440.CH"
+#INCLUDE "PROTHEUS.CH"
+
+/*
+ÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜ
+±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±
+±±ÚÄÄÄÄÄÄÄÄÄÄÂÄÄÄÄÄÄÄÄÄÄÂÄÄÄÄÄÄÄÂÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÂÄÄÄÄÄÄÂÄÄÄÄÄÄÄÄÄÄ¿±±
+±±³Fun‡…o    ³ FMATR440 ³ Autor ³ Alexandre Martim      ³ Data ³ 02/02/06 ³±±
+±±ÃÄÄÄÄÄÄÄÄÄÄÅÄÄÄÄÄÄÄÄÄÄÁÄÄÄÄÄÄÄÁÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÁÄÄÄÄÄÄÁÄÄÄÄÄÄÄÄÄÄ´±±
+±±³Descri‡…o ³ Lista os itens que atingiram o ponto de pedido             ³±±
+±±ÃÄÄÄÄÄÄÄÄÄÄÅÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ´±±
+±±³ Uso      ³ Personalizado Dellavia                                     ³±±
+±±ÀÄÄÄÄÄÄÄÄÄÄÁÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÙ±±
+±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±
+ßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßß
+*/
+User Function FMatr440
+	/*
+	ÚÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ¿
+	³ Define Variaveis                                             ³
+	ÀÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÙ
+	*/
+	Local wnrel    := ""
+	Local Tamanho  := "G"
+	Local cDesc1   := STR0001	//"Emite uma relacao com os itens em estoque que atingiram o Ponto de"
+	Local cDesc2   := STR0002	//"Pedido ,sugerimdo a quantidade a comprar."
+	Local cDesc3   := ""
+
+	/*
+	ÚÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ¿
+	³ Variaveis tipo Private padrao de todos os relatorios         ³
+	ÀÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÙ
+	*/
+	Private nomeprog := "FMATR440"
+	Private cString  := "SB1"
+	Private aReturn  := { OemToAnsi(STR0003), 1,OemToAnsi(STR0004), 1, 2, 1, "",1 }		//"Zebrado"###"Administracao"
+	Private nLastKey := 0 
+	Private cPerg    := "MTR440"
+	Private titulo   := "Itens em Ponto de Pedido"
+
+	/*
+	ÚÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ¿
+	³ Contadores de linha e pagina                                 ³
+	ÀÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÙ
+	*/
+	Private li         := 80 
+	Private m_pag      := 1
+	Private _aTotGrupo := {}
+	Private cAliasTmp  := ""
+	Private cArqTmp1   := ""
+	Private cArqTmp2   := ""
+
+	/*
+	ÚÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ¿
+	³ Funcao utilizada para verificar a ultima versao dos fontes      ³
+	³ SIGACUS.PRW, SIGACUSA.PRX e SIGACUSB.PRX, aplicados no rpo do   ³
+	³ cliente, assim verificando a necessidade de uma atualizacao     ³
+	³ nestes fontes. NAO REMOVER !!!                                  ³
+	ÀÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÙ
+	*/
+	IF !(FindFunction("SIGACUS_V") .and. SIGACUS_V() >= 20050512)
+		Aviso("Atencao","Atualizar patch do programa SIGACUS.PRW !!!",{"Ok"})
+		Return
+	EndIf
+	IF !(FindFunction("SIGACUSA_V") .and. SIGACUSA_V() >= 20050512)
+		Aviso("Atencao","Atualizar patch do programa SIGACUSA.PRX !!!",{"Ok"})
+		Return
+	EndIf
+	IF !(FindFunction("SIGACUSB_V") .and. SIGACUSB_V() >= 20050512)
+		Aviso("Atencao","Atualizar patch do programa SIGACUSB.PRX !!!",{"Ok"})
+		Return
+	EndIf
+
+	/*
+	ÚÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ¿
+	³ Verifica as perguntas selecionadas                           ³
+	³ÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ³
+	³ Variaveis utilizadas para parametros                         ³
+	³ mv_par01             // Produto de                           ³
+	³ mv_par02             // Produto ate                          ³
+	³ mv_par03             // Grupo de                             ³
+	³ mv_par04             // Grupo ate                            ³
+	³ mv_par05             // Tipo de                              ³
+	³ mv_par06             // Tipo ate                             ³
+	³ mv_par07             // Local de                             ³
+	³ mv_par08             // Local ate                            ³
+	³ mv_par09             // Considera Necess Bruta   1 - Sim     ³ Pto Pedido
+	³ mv_par10             // Saldo Neg Considera      1 - Sim     ³ Lote Economico
+	³ mv_par11             // Considera C.Q.           1 - Sim     ³
+	³ mv_par12             // Cons.Qtd. De 3os.? Sim / Nao         ³
+	³ mv_par13             // Cons.Qtd. Em 3os.? Sim / Nao         ³
+	³ mv_par14             // Qtd. PV nao Liberado ?" Subtr/Ignora ³
+	³ mv_par15             // Descricao completa do produto?       ³
+	³ mv_par16             // Considera Saldo Armazem de           ³
+	³ mv_par17             // Considera Saldo Armazem ate          ³
+	³ÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ³
+	³ Parametros Personalizados                                    ³
+	³ÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ³
+	³ mv_par18             // Porcentagem classificacao A          ³
+	³ mv_par19             // Porcentagem classificacao B          ³
+	³ mv_par20             // Porcentagem classificacao C          ³
+	³ mv_par21             // Nao imprimir grupos                  ³
+	³ mv_par22             // Da Filial                            ³
+	³ mv_par23             // Ate a Filial                         ³
+	ÀÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÙ
+	*/
+	AjustaSX1()
+	Pergunte(cPerg,.F.)
+	dbSelectArea("SX1")
+	//dbSetFilterTo( {|| !(X1_ORDEM $ "18*19*20") } , "!(X1_ORDEM $ '18*19*20')")
+
+	/*
+	ÚÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ¿
+	³ Envia controle para a funcao SETPRINT                        ³
+	ÀÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÙ
+	*/
+	wnrel := SetPrint(cString,NomeProg,cPerg,@titulo,cDesc1,cDesc2,cDesc3,.F.,"",.F.,Tamanho)
+
+	/*
+	ÚÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ¿
+	³ Limpa o Filto dos parametros                                 ³
+	ÀÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÙ
+	*/
+	dbSelectArea("SX1")
+	//dbClearFilter()
+	pergunte(cPerg,.F.)
+
+	/*
+	ÚÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ¿
+	³ Busca Paramentros SX6                                        ³
+	ÀÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÙ
+	*/
+	mv_par18 := Getmv("DV_CURVA_A",,mv_par18)
+	mv_par19 := Getmv("DV_CURVA_B",,mv_par19)
+	mv_par20 := Getmv("DV_CURVA_C",,mv_par20)
+
+	If nLastKey = 27
+		Return
+	Endif
+
+	SetDefault(aReturn,cString)
+
+	If nLastKey = 27
+		Return
+	Endif
+
+	/*
+	ÚÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ¿
+	³ Busca Filiais do usuário                                     ³
+	ÀÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÙ
+	*/
+	PswOrder(1)
+	PswSeek(__cUserId,.T.)
+	aUsuario := PswRet()
+	cFil_User := ""
+	aFil_User := {}
+	For k=1 to Len(aUsuario[2,6])
+		cFil_User += "*"+Substr(aUsuario[2,6,k],3,2)
+	Next
+
+	dbselectarea("SM0")
+	nRec    := Recno()
+	cEmpAtu := M0_CODIGO
+	dbGoTop()
+	Do while !eof() .AND. M0_CODIGO = cEmpAtu
+		If M0_CODFIL >= mv_par22 .AND. M0_CODFIL <= mv_par23
+			If M0_CODFIL $ cFil_User .OR. cFil_User = "*@@"
+				aAdd(aFil_User,M0_CODFIL)
+			Endif
+		Endif
+		dbSkip()
+	Enddo
+	dbGoTo(nRec)
+
+	/*
+	ÚÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ¿
+	³ Busca Filiais do usuário                                     ³
+	ÀÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÙ
+	*/
+	aCampos := {}
+	aadd(aCampos,{"FILIAL"  , "C" , 02,0})
+	aadd(aCampos,{"GRUPO"   , "C" , 04,0})
+	aadd(aCampos,{"MEDIA"   , "N" , 12,2})
+	aadd(aCampos,{"PRODUTO" , "C" , 15,0})
+	aadd(aCampos,{"RECNO_"  , "N" , 12,0})
+	aadd(aCampos,{"CLASSE"  , "C" , 01,0})
+
+	cArqTmp1 := CriaTrab(aCampos,.T.)
+	dbUseArea(.T.,__LocalDriver,cArqTmp1,"cArqTmp1",.T.)
+	IndRegua ( "cArqTmp1",cArqTmp1,"FILIAL+GRUPO+PRODUTO",,,"Selecionando Registros...")
+
+
+	/*
+	ÚÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ¿
+	³ Busca Filiais do usuário                                     ³
+	ÀÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÙ
+	*/
+	aCampos := {}
+	aadd(aCampos,{"FILIAL"   , "C" , 02,0})
+	aadd(aCampos,{"COD"      , "C" , 15,0})
+	aadd(aCampos,{"DESC"     , "C" , 20,0})
+	aadd(aCampos,{"GRUPO"    , "C" , 04,0})
+	aadd(aCampos,{"UM"       , "C" , 02,0})
+	aadd(aCampos,{"CLASSE"   , "C" , 01,0})
+	aadd(aCampos,{"SALDO"    , "N" , 12,2})
+	aadd(aCampos,{"SALDOMAT" , "N" , 12,2})
+	aadd(aCampos,{"ANTPENUL" , "N" , 12,2})
+	aadd(aCampos,{"PENUL"    , "N" , 12,2})
+	aadd(aCampos,{"ULTIMO"   , "N" , 12,2})
+	aadd(aCampos,{"ATUAL"    , "N" , 12,2})
+	aadd(aCampos,{"PONTOPED" , "N" , 12,2})
+	aadd(aCampos,{"QTDEMB"   , "N" , 12,2})
+	aadd(aCampos,{"MEDCONS"  , "N" , 12,2})
+	aadd(aCampos,{"PREVIS"   , "N" , 12,2})
+	aadd(aCampos,{"QUANT"    , "N" , 12,2})
+
+	cArqTmp2 := CriaTrab(aCampos,.T.)
+	dbUseArea(.T.,__LocalDriver,cArqTmp2,"cArqTmp2",.T.)
+	IndRegua ( "cArqTmp2",cArqTmp2,"FILIAL+CLASSE+GRUPO+COD",,,"Selecionando Registros...")
+
+	/*
+	Prepara um arquivo temporario ordenado por Grupo + Consumo com classificacao ABC
+	conforme orientacao do cliente (Sonsini), ou seja, curva ABC de consumo medio dentro 
+	do grupo.
+	*/
+
+	Processa( {|| FMTR440ABC() }, "Calculo da curva ABC, processando..." )
+
+	Processa( {|| FMTR440Tmp() }, "Montando arquivo temporario, processando..." )
+
+	RptStatus({|lEnd| FR440Imp(@lEnd,tamanho,wnrel,cString)},Titulo)
+Return .T.
+
+/*
+ÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜ
+±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±
+±±ÚÄÄÄÄÄÄÄÄÄÄÂÄÄÄÄÄÄÄÄÄÄÂÄÄÄÄÄÄÄÂÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÂÄÄÄÄÄÄÂÄÄÄÄÄÄÄÄÄÄ¿±±
+±±³Fun‡…o    ³ R440IMP  ³ Autor ³ Cristina M. Ogura     ³ Data ³ 09.11.95 ³±±
+±±ÃÄÄÄÄÄÄÄÄÄÄÅÄÄÄÄÄÄÄÄÄÄÁÄÄÄÄÄÄÄÁÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÁÄÄÄÄÄÄÁÄÄÄÄÄÄÄÄÄÄ´±±
+±±³Descri‡…o ³ Chamada do Relatorio                                       ³±±
+±±ÃÄÄÄÄÄÄÄÄÄÄÅÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ´±±
+±±³ Uso      ³ MATR440			                                          ³±±
+±±ÀÄÄÄÄÄÄÄÄÄÄÁÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÙ±±
+±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±
+ßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßß
+*/
+Static Function FR440Imp(lEnd,tamanho,wnrel,cString)
+	Local nCntImpr := 0
+	Local cRodaTxt := STR0006	//"PRODUTO(S)"
+	Local nTipo    := IIF(aReturn[4]==1,15,18)
+	Local cabec1   := ""
+	Local cabec2   := ""
+	Local _cClasse := ""
+
+	titulo_ori   := "Itens em Ponto de Pedido - Filial "
+	/*
+	ÚÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ¿
+	³ Monta os Cabecalhos                                          ³
+	ÀÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÙ
+
+	cabec1 := "CODIGO  DESCRICAO              GRP UM  Curva   SALDO ATUAL  SLD MATRIZ     ____Consumos Medios____     Consumo Atual   PONTO DE    QUANTIDADE  MEDIA         ENTRADA      QUANTIDADE   ANALISE"
+	cabec2 := "                                        ABC                                333       222       111       Mes 444        PEDIDO     POR EMBAL.  SUGERIDA      PREVISTA     A COMPRAR           "
+	*/
+	cabec1 := "CODIGO  DESCRICAO              GRP UM  Curva   SALDO ATUAL  SLD MATRIZ     ____Consumos Medios____     Consumo Atual   PONTO DE    QUANTIDADE    QUANTIDADE   ANALISE"
+	cabec2 := "                                        ABC                                333       222       111       Mes 444        PEDIDO     POR EMBAL.     A COMPRAR           "
+	*          123456  123456789012345678901 1234  12   X   9.999.999,99 9.999.999,99 99.999,99 99.999,99 99.999,99    99.999,99   9.999.999,99   9.999,99       9.999.999   ________
+	*          0         1         2         3         4         5         6         7         8         9        10        11        12        13        14        15        16        17        18        19        20        21
+	*          0123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123
+
+	If mv_par15 <> 1
+		cabec2 := "DESCRICAO                               ABC                                333       222       111       Mes 444        PEDIDO     POR EMBAL.     A COMPRAR           "
+	Endif
+
+
+	/*
+	ÚÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ¿
+	³ Escreve nome dos meses                                       ³
+	ÀÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÙ
+	*/
+	_cUltimoMes        := ""
+	_cPenultimoMes     := ""
+	_cAntePenultimoMes := ""
+	_nMes              := Month(dDatabase)
+	_nVar              := 3
+
+	Do While _nVar>0
+		_nMes := Iif((_nMes-1)<=0,_nMes+11,_nMes-1)
+
+		If _nVar==3
+			_cUltimoMes := Left(MesExtenso(ctod("01/"+StrZero(_nMes,2)+"/05")),3)
+		Elseif _nVar==2
+			_cPenultimoMes := Left(MesExtenso(ctod("01/"+StrZero(_nMes,2)+"/05")),3)
+		Elseif _nVar==1
+			_cAntePenultimoMes := Left(MesExtenso(ctod("01/"+StrZero(_nMes,2)+"/05")),3)
+		Endif
+		_nVar-=1   
+	Enddo
+
+	/*
+	ÚÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ¿
+	³ Substitui nome dos meses no cabeçalho                        ³
+	ÀÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÙ
+	*/
+	cabec2  := StrTran(cabec2,"111",_cUltimoMes)
+	cabec2  := StrTran(cabec2,"222",_cPenultimoMes)
+	cabec2  := StrTran(cabec2,"333",_cAntePenultimoMes)
+	cabec2  := StrTran(cabec2,"444",Left(MesExtenso(ctod("01/"+StrZero(Month(dDatabase),2)+"/05")),3))
+
+	dbSelectArea("SM0")
+	cNumEmp := M0_CODIGO
+	nRecno := Recno()
+
+	dbSelectArea("cArqTmp2")
+	DbGoTop()
+	SetRegua(RecCount())
+
+	Do While !Eof()
+		cFil := Filial
+
+		SM0->(dbSeek(cNumEmp+cFil))
+		titulo := titulo_ori + SM0->(M0_NOME)
+
+		Cabec(titulo,cabec1,cabec2,nomeprog,Tamanho,nTipo)
+		_cClasse:=cArqTmp2->CLASSE
+
+		Do While !eof() .and. cFil = FILIAL
+		
+			If lEnd
+				@PROW()+1,001 PSAY STR0009		//"CANCELADO PELO OPERADOR"
+				Exit
+			Endif
+	
+			IncRegua()
+	
+			if ( Round((((((cArqTmp2->ANTPENUL+cArqTmp2->PENUL+cArqTmp2->ULTIMO)/3)/30)*15) - cArqTmp2->SALDO),0)*cArqTmp2->QTDEMB ) <= 0
+				dbSkip()
+				Loop
+			Endif
+
+
+			If li > 55
+				Cabec(titulo,cabec1,cabec2,nomeprog,Tamanho,nTipo)
+			EndIf
+		
+			/*
+			ÚÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ¿
+			³ Adiciona 1 ao contador de registros impressos         ³
+			ÀÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÙ
+			*/
+			nCntImpr++
+		
+			@ li,000 PSAY Substr(Alltrim(cArqTmp2->COD),1,6)
+			If mv_par15 == 1
+				@ li,008 PSAY SubStr(cArqTmp2->DESC,1,20)
+			Else
+				li++
+				@ li,000 PSAY SubStr(cArqTmp2->DESC,1,30)			
+			Endif	
+			@ li,030 PSAY cArqTmp2->GRUPO
+			@ li,035 PSAY cArqTmp2->UM
+			@ li,040 PSAY cArqTmp2->CLASSE
+			@ li,044 PSAY cArqTmp2->SALDO     Picture "@E 9,999,999.99"
+			@ li,057 PSAY cArqTmp2->SALDOMAT  Picture "@E 9,999,999.99"
+			@ li,070 PSAY cArqTmp2->ANTPENUL  Picture "@E 99,999.99"
+			@ li,080 PSAY cArqTmp2->PENUL     Picture "@E 99,999.99"
+			@ li,090 PSAY cArqTmp2->ULTIMO    Picture "@E 99,999.99"
+			@ li,104 PSAY cArqTmp2->ATUAL     Picture "@E 99,999.99"
+			//@ li,116 PSAY cArqTmp2->PONTOPED  Picture "@E 9,999,999.99"
+			@ li,116 PSAY (((cArqTmp2->ANTPENUL+cArqTmp2->PENUL+cArqTmp2->ULTIMO)/3)/30)*15 Picture "@E 9,999,999.99"
+			@ li,131 PSAY cArqTmp2->QTDEMB    Picture "@E 9,999.99"
+			//@ li,142 PSAY cArqTmp2->MEDCONS   Picture "@E 999,999.99"
+			//@ li,154 PSAY cArqTmp2->PREVIS    Picture "@E 9,999,999.99"
+			//@ li,168 PSAY cArqTmp2->QUANT     Picture "@E 9,999,999.99"
+			//@ li,182 PSAY "__________"
+			//@ li,154 PSAY cArqTmp2->QUANT     Picture "@E 9,999,999.99"
+			@ li,146 PSAY Round((((((cArqTmp2->ANTPENUL+cArqTmp2->PENUL+cArqTmp2->ULTIMO)/3)/30)*15) - cArqTmp2->SALDO),0)*cArqTmp2->QTDEMB Picture "@E 9,999,999"
+			@ li,158 PSAY "__________"
+			li++
+
+		    dbSelectArea("cArqTmp2")
+			DbSkip()
+	
+			If _cClasse<>cArqTmp2->CLASSE
+				li++
+				_cClasse:=cArqTmp2->CLASSE
+			Endif
+		Enddo
+	EndDo
+	
+	dbSelectArea("SM0")
+	dbgoTo(nRecno)
+
+	If li != 80
+		Roda(nCntImpr,cRodaTxt,Tamanho)
+	EndIf
+
+	/*
+	ÚÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ¿
+	³ Apaga arquivos temporários  ³
+	ÀÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÙ
+	*/
+	dbSelectarea("cArqTmp1")
+	cArqTmp1->( dbCloseArea() )
+	FErase(cArqTmp1+OrdBagExt())
+	FErase(cArqTmp1+GetDBExtension())
+
+	dbSelectarea("cArqTmp2")
+	cArqTmp2->( dbCloseArea() )
+	FErase(cArqTmp2+OrdBagExt())
+	FErase(cArqTmp2+GetDBExtension())
+
+	If aReturn[5] = 1
+		Set Printer To
+		dbCommitAll()
+		OurSpool(wnrel)
+	Endif
+
+	MS_FLUSH()
+Return nil
+
+/*
+ÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜ
+±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±
+±±ÚÄÄÄÄÄÄÄÄÄÄÂÄÄÄÄÄÄÄÄÄÄÄÂÄÄÄÄÄÄÄÂÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÂÄÄÄÄÄÄÂÄÄÄÄÄÄÄÄÄÄÄÄÄ¿±±
+±±³Funcao    ³FMTR440ABC ³Autor  ³Alexandre Martim    ³ Data ³  25/01/06   ³±±
+±±ÃÄÄÄÄÄÄÄÄÄÄÅÄÄÄÄÄÄÄÄÄÄÄÁÄÄÄÄÄÄÄÁÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÁÄÄÄÄÄÄÁÄÄÄÄÄÄÄÄÄÄÄÄÄ´±±
+±±³Desc.     ³ Gera dados de consumo por grupo de produtos                 ³±±
+±±ÃÄÄÄÄÄÄÄÄÄÄÅÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ´±±
+±±³Uso       ³                                                             ³±±
+±±ÀÄÄÄÄÄÄÄÄÄÄÁÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÙ±±
+±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±
+ßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßß
+*/
+Static Function FMTR440ABC()
+	Local cQuery      := ""
+	Local _cGrupo     := ""
+	Local _nAcumulado := ""
+	Local cFiltroFil  := ""
+	
+
+
+	_nMes := Month(dDatabase)
+	_nVar := 3
+
+	Do While _nVar>0
+		_nMes := Iif((_nMes-1)<=0,_nMes+11,_nMes-1)
+		If _nVar==3
+			cMes01 := "B3_Q"+StrZero(_nMes,2)
+		Elseif _nVar==2
+			cMes02 := "B3_Q"+StrZero(_nMes,2)
+		Elseif _nVar==1
+			cMes03 := "B3_Q"+StrZero(_nMes,2)
+		Endif
+		_nVar-=1   
+	Enddo
+
+
+
+	For k=1 to Len(aFil_User)
+		cFiltroFil += "'"+aFil_User[k]+"',"
+	Next
+	If Len(aFil_User) > 0
+		cFiltroFil := Substr(cFiltroFil,1,Len(cFiltroFil)-1)
+	Endif
+
+	cQuery := "SELECT B3_FILIAL,B1_GRUPO,("+cMes01+"+"+cMes02+"+"+cMes03+")/3 AS B3_MEDIA,B1_COD,B1.R_E_C_N_O_,B3_CLASSE"
+	cQuery += " FROM "+RetSqlName("SB1")+" B1,"+RetSqlName("SB3")+" B3"
+	cQuery += " WHERE B1.D_E_L_E_T_ = ''"
+	cQuery += " AND   B3.D_E_L_E_T_ = ''"
+	cQuery += " AND   B1_FILIAL = '"+xFilial("SB1")+"'"
+	cQuery += " AND   B1_GRUPO BETWEEN '"+mv_par03+"' AND '"+mv_par04+"'"
+	cQuery += " AND   B3_FILIAL BETWEEN '"+mv_par22+"' AND '"+mv_par23+"'"
+	if Len(aFil_User) > 0
+		cQuery += " AND B3_FILIAL IN("+cFiltroFil+")"
+	Endif
+	cQuery += " AND   B1_GRUPO NOT IN ("+FAjustapar(mv_par21)+")"
+	cQuery += " AND   B1_COD = B3_COD"
+	cQuery += " ORDER BY B3_FILIAL,B1_GRUPO,B3_MEDIA DESC,B1_COD"
+
+	cQuery := ChangeQuery(cQuery)
+	dbUseArea(.T.,"TOPCONN",TcGenQry(,,cQuery),"FMTR440",.T.,.T.)
+	TcSetField("FMTR440","B3_MEDIA","N",TamSx3("B3_MEDIA")[1], TamSx3("B3_MEDIA")[2] )
+
+	dbSelectArea("FMTR440")
+	DbGoTop()
+
+	ProcRegua(0)
+	Do While !Eof()
+		IncProc("1 - Grupo: " + B1_GRUPO)
+		_nPos := aScan(_aTotGrupo, {|x| x[1] == B3_FILIAL+B1_GRUPO } )
+		If !(_nPos > 0)
+			aadd(_aTotGrupo, { B3_FILIAL+B1_GRUPO, B3_MEDIA,0,0,0} )
+			_nPos := Len(_aTotGrupo)
+		Else
+			_aTotGrupo[_nPos, 2] += B3_MEDIA
+		Endif
+		_aTotGrupo[_nPos, 3] := _aTotGrupo[_nPos, 2] * (mv_par18 / 100)              // Classificacao A
+		_aTotGrupo[_nPos, 4] := _aTotGrupo[_nPos, 2] * ((mv_par19 + mv_par18) / 100) // Classificacao B
+		_aTotGrupo[_nPOs, 5] := _aTotGrupo[_nPos, 2]                                 // Classificacao C
+
+		dbSelectArea("cArqTmp1")
+		If RecLock("cArqTmp1",.T.)
+			cArqTmp1->FILIAL  := FMTR440->B3_FILIAL
+			cArqTmp1->GRUPO   := FMTR440->B1_GRUPO
+			cArqTmp1->MEDIA   := FMTR440->B3_MEDIA
+			cArqTmp1->PRODUTO := FMTR440->B1_COD
+			cArqTmp1->RECNO_  := FMTR440->R_E_C_N_O_
+			msUnlock()
+		Endif
+
+		dbSelectArea("FMTR440")
+		dbSkip()
+	Enddo
+
+	dbSelectArea("FMTR440")
+	dbGoTop()
+	ProcRegua(0)
+	Do While !Eof()
+		_cGrupo     := B3_FILIAL+B1_GRUPO
+		_nAcumulado := B3_MEDIA
+		_cFaixa     := "A"
+		_nFaixa     := 3
+
+		Do While !Eof() .and. B3_FILIAL+B1_GRUPO == _cGrupo
+			IncProc("2 - Grupo: " + B1_GRUPO)
+			_nPos := aScan(_aTotGrupo, {|x| x[1]== B3_FILIAL+B1_GRUPO } )
+			If _nPos > 0
+				If _cFaixa $ "ABC"
+					dbSelectArea("cArqTmp1")
+					If dbSeek(FMTR440->B3_FILIAL + FMTR440->B1_GRUPO + FMTR440->B1_COD,.F.)
+						If RecLock("cArqTmp1",.F.)
+							cArqTmp1->CLASSE := _cFaixa
+							MsUnlock()
+						Endif
+					Endif
+				Endif
+
+				If _nFaixa <= 5
+					dbSelectArea("FMTR440")
+					If _nAcumulado >= _aTotGrupo[_nPos, _nFaixa]
+						_cFaixa := Iif(_cFaixa=="C",_cFaixa,chr(asc(_cFaixa)+1))
+						_nFaixa += 1
+					Endif
+				Endif
+
+				_nAcumulado += FMTR440->B3_MEDIA
+			Endif
+			dbSelectArea("FMTR440")
+			dbSkip()
+		Enddo
+	Enddo
+
+	/*
+	ÚÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ¿
+	³ Fecha arquivo temporario                                     ³
+	ÀÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÙ
+	*/
+	dbSelectArea("FMTR440")
+	dbCloseArea()
+Return
+
+/*
+ÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜ
+±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±
+±±ÚÄÄÄÄÄÄÄÄÄÄÂÄÄÄÄÄÄÄÄÄÄÄÂÄÄÄÄÄÄÄÂÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÂÄÄÄÄÄÄÂÄÄÄÄÄÄÄÄÄÄÄÄÄ¿±±
+±±³Funcao    ³FMTR440Tmp ³Autor  ³Alexandre Martim    ³ Data ³  25/01/06   ³±±
+±±ÃÄÄÄÄÄÄÄÄÄÄÅÄÄÄÄÄÄÄÄÄÄÄÁÄÄÄÄÄÄÄÁÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÁÄÄÄÄÄÄÁÄÄÄÄÄÄÄÄÄÄÄÄÄ´±±
+±±³Desc.     ³ Gera dados temporarios para impressao                       ³±±
+±±ÃÄÄÄÄÄÄÄÄÄÄÅÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ´±±
+±±³Uso       ³                                                             ³±±
+±±ÀÄÄÄÄÄÄÄÄÄÄÁÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÙ±±
+±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±
+ßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßß
+*/
+Static Function FMTR440Tmp()
+	Local nQuant       := 0
+	Local nSaldo       := 0
+	Local nSaldoMatriz := 0 
+	Local nValUnit     := 0
+	Local nValor       := 0
+	Local cTipoVal     := ""
+	Local nPrazo       := 0
+	Local nToler       := 0
+	Local nEstSeg      := 0
+	Local nNeces       := 0
+	Local cLocCQ	   := GetMV("MV_CQ")
+	Local nAuxQuant    := 0
+	Local lMR440QTD    := ExistBlock( "MR440QTD" )
+	Local nX           := 0
+	Local nPrevis      := 0
+
+	cFilSystem := cFilAnt
+
+	For jj=1 to Len(aFil_User)
+		cFilAnt := aFil_User[jj]
+
+		dbSelectArea("SB1")
+		ProcRegua(LastRec())
+		dbGotop()
+		dbSeek(xFilial("SB1")+mv_par01,.T.)
+
+		While !Eof() .And. B1_FILIAL+B1_COD <= xFilial("SB1")+mv_par02
+			IncProc("Produto: "+Alltrim(SB1->B1_COD))
+
+			/*
+			ÚÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ¿
+			³ Filtra grupos e tipos nao selecionados e tambem se for MOD³
+			ÀÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÙ
+			*/
+			If B1_GRUPO < mv_par03;
+					.Or. B1_GRUPO > mv_par04;
+					.Or. B1_GRUPO $ mv_par21;
+					.Or. B1_TIPO  < mv_par05;
+					.Or. B1_TIPO  > mv_par06;
+					.Or. SubStr(B1_COD,1,3) == "MOD";
+					.Or. B1_TIPO == "BN";
+					.Or. B1_CONTRAT == "S";
+					.Or. B1_CONTRAT == "A"
+				dbSkip()
+				Loop
+			EndIf
+
+			/*
+			ÚÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ¿
+			³ Filtra armazem padão SB1 ³
+			ÀÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÙ
+			*/
+			If B1_LOCPAD < mv_par07 .Or. B1_LOCPAD > mv_par08
+				dbSkip()
+				Loop
+			EndIf
+
+			/*
+			ÚÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ¿
+			³ Caso o produto esteja bloqueado, nao mostra no relatorio ³
+			³ solicitacao feita em 08/12/2005 pelo Sr. Rodrigo Martins ³
+			ÀÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÙ
+			*/
+			If B1_MSBLQL == "1"
+				dbSkip()
+				Loop
+			EndIf
+
+			/*
+			ÚÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ¿
+			³ Calcula o saldo atual da Matriz Conforme solicitacao de 28/10/05 ³
+			ÀÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÙ
+			*/
+			dbSelectArea("SB2")
+			dbSeek("01"+SB1->B1_COD)
+			While !Eof() .And. B2_FILIAL+B2_COD == "01"+SB1->B1_COD
+				If B2_LOCAL < mv_par16 .OR. B2_LOCAL > mv_par17
+					dbSkip()
+					Loop
+				EndIf
+
+				/*
+				ÚÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ¿
+				³ inclui os produtos que estao no C.Q.      ³
+				ÀÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÙ
+				*/
+				If B2_LOCAL == cLocCQ .And. mv_par11 == 2
+					dbSkip()
+					Loop
+				Endif
+
+				nSaldoMatriz += SB2->B2_QATU - SB2->B2_RESERVA
+				//nSaldoMatriz += (SaldoSB2(NIL,NIL,NIL,mv_par12==1,mv_par13==1)+B2_SALPEDI+B2_QACLASS)
+
+				If mv_par14 == 1
+					nSaldoMatriz -= SB2->B2_QPEDVEN
+				EndIf
+				dbSkip()
+			EndDo
+
+			//nEstSeg := CalcEstSeg( RetFldProd(SB1->B1_COD,"B1_ESTFOR") )
+			//nSaldo -= nEstSeg
+
+			/*
+			Solicitacao feita pelo Cliente em 08/12/2005 para trazer os consumos medios dos meses anteriores
+			conforme a database do sistema.
+			*/
+			_nUltimoMes        := 0
+			_nPenultimoMes     := 0
+			_nAntePenultimoMes := 0
+			_nMediaConsumo     := 0
+			_nAtual            := 0
+
+			dbSelectArea("SB3")
+			If dbSeek(aFil_User[jj]+SB1->B1_COD,.F.)
+				_nMediaConsumo := SB3->B3_MEDIA
+				_nMes := Month(dDatabase)
+				_nVar := 3
+
+				Do While _nVar>0
+					_nMes := Iif((_nMes-1)<=0,_nMes+11,_nMes-1)
+					If _nVar==3
+						_nUltimoMes := &("SB3->B3_Q"+StrZero(_nMes,2))
+					Elseif _nVar==2
+						_nPenultimoMes := &("SB3->B3_Q"+StrZero(_nMes,2))
+					Elseif _nVar==1
+						_nAntePenultimoMes := &("SB3->B3_Q"+StrZero(_nMes,2))
+					Endif
+					_nVar-=1   
+				Enddo
+				_nAtual := &("SB3->B3_Q"+StrZero(Month(dDatabase),2))
+			Endif
+
+			/*
+			ÚÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ¿
+			³ Calcula o saldo atual de todos os almoxarifados ³
+			ÀÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÙ
+			*/
+			dbSelectArea("SB2")
+			dbSeek(aFil_User[jj]+SB1->B1_COD)
+			While !Eof() .And. B2_FILIAL+B2_COD == aFil_User[jj]+SB1->B1_COD
+				If B2_LOCAL < mv_par16 .OR. B2_LOCAL > mv_par17
+					dbSkip()
+					Loop
+				EndIf
+
+				/*
+				ÚÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ¿
+				³ inclui os produtos que estao no C.Q.      ³
+				ÀÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÙ
+				*/
+				If B2_LOCAL == cLocCQ .And. mv_par11 == 2
+					dbSkip()
+					Loop
+				Endif
+				//nSaldo += (SaldoSB2(NIL,NIL,NIL,mv_par12==1,mv_par13==1)+B2_SALPEDI+B2_QACLASS)
+
+				// A pedido do Sr. Sonsini o saldo ira desconsiderar as entradas previstas. (30/01/06)
+				nSaldo += SaldoSB2(NIL,NIL,NIL,mv_par12==1,mv_par13==1)
+				If mv_par14 == 1
+					nSaldo -= B2_QPEDVEN
+				EndIf
+				nPrevis += B2_SALPEDI
+				dbSkip()
+			EndDo
+
+			nEstSeg := CalcEstSeg( RetFldProd(SB1->B1_COD,"B1_ESTFOR") )
+			nSaldo -= nEstSeg
+
+			If Round(nSaldo,4) # 0 .Or. mv_par09 == 1
+				Do Case
+					Case RetFldProd(SB1->B1_COD,"B1_EMIN") != 0 .And. MV_PAR09 == 1
+						If MV_PAR10 == 2 .And. nSaldo < 0
+							nSaldo -= RetFldProd(SB1->B1_COD,"B1_LE")
+						EndIf
+						nNeces := If((nSaldo < 0),Abs(nSaldo)+RetFldProd(SB1->B1_COD,"B1_EMIN"),(RetFldProd(SB1->B1_COD,"B1_EMIN")-nSaldo))
+
+					Case RetFldProd(SB1->B1_COD,"B1_EMIN") != 0 .And. MV_PAR09 == 2
+						If mv_par10 == 2 .And. nSaldo < 0
+							nSaldo -= RetFldProd(SB1->B1_COD,"B1_LE")
+						EndIf
+						nNeces := If((nSaldo < 0),Abs(nSaldo),(RetFldProd(SB1->B1_COD,"B1_EMIN")-nSaldo))
+
+					Case RetFldProd(SB1->B1_COD,"B1_LE") != 0 .And. (nSaldo < 0  .or. mv_par09 == 2)
+						If ( MV_PAR10 == 2 .And. nSaldo < 0 )
+							nNeces := Abs(nSaldo)+RetFldProd(SB1->B1_COD,"B1_LE")
+						Else
+							nNeces := If( Abs(nSaldo)<RetFldProd(SB1->B1_COD,"B1_LE"),RetFldProd(SB1->B1_COD,"B1_LE"),if(nSaldo<0,Abs(nSaldo),0))
+						EndIf
+
+					OtherWise
+						nNeces := IF(mv_par09 == 1,IIf(nSaldo<0,Abs(nSaldo),0),0)
+				EndCase
+			Else
+				If RetFldProd(SB1->B1_COD,"B1_EMIN") != 0
+					nNeces := ( RetFldProd(SB1->B1_COD,"B1_EMIN") )
+				Else
+					nNeces := 0
+				Endif
+			EndIf
+
+			If nNeces > 0
+				/*
+				ÚÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ¿
+				³ Verifica se o produto tem estrutura                       ³
+				ÀÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÙ
+				*/
+				dbSelectArea("SG1")
+				If dbSeek( xFilial()+SB1->B1_COD )
+					aQtdes := CalcLote(SB1->B1_COD,nNeces,"F")
+				Else
+					aQtdes := CalcLote(SB1->B1_COD,nNeces,"C")
+				Endif
+				For nX := 1 to Len(aQtdes)
+					nQuant += aQtdes[nX]
+				Next
+			EndIf
+
+			dbSelectArea("SB1")
+
+			If lMR440QTD
+				nAuxQuant := Execblock("MR440QTD",.f.,.f.,NQUANT)
+				if ValType(nAuxQuant) == "N"
+					nQuant := nAuxQuant
+				EndIf
+			EndiF
+
+			If nQuant > 0
+				/*
+				ÚÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ¿
+				³ Pega o prazo de entrega do material         ³
+				ÀÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÙ
+				*/
+				nPrazo := CalcPrazo(SB1->B1_COD,nQuant)
+				dbSelectArea("SB1")
+
+				/*
+				ÚÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ¿
+				³ Calcula a tolerancia do item                ³
+				ÀÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÙ
+				*/
+				nToler   := (RetFldProd(SB1->B1_COD,"B1_LE") * RetFldProd(SB1->B1_COD,"B1_TOLER"))/100
+
+				/*
+				ÚÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ¿
+				³ Verifica qual dos precos e' mais recente servir de base ³
+				ÀÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÙ
+				*/
+				If RetFldProd(SB1->B1_COD,"B1_UCOM") < B1_DATREF
+					cTipoVal := "STD"
+					dData    := B1_DATREF
+					nValUnit := RetFldProd(SB1->B1_COD,"B1_CUSTD")
+				Else
+					cTipoVal := "U.CO"
+					dData    := RetFldProd(SB1->B1_COD,"B1_UCOM")
+					nValUnit := RetFldProd(SB1->B1_COD,"B1_UPRC")
+				EndIf
+
+				nValor := nQuant * nValUnit
+
+				dbSelectArea("cArqTmp1")
+				dbseek(aFil_User[jj]+SB1->B1_GRUPO+SB1->B1_COD,.F.)
+				dbSelectArea("SB1")
+
+				dbSelectArea("cArqTmp2")
+				If RecLock("cArqTmp2",.T.)
+					cArqTmp2->FILIAL    := aFil_User[jj]
+					cArqTmp2->COD       := SB1->B1_COD
+					cArqTmp2->DESC      := SB1->B1_DESC
+					cArqTmp2->GRUPO     := SB1->B1_GRUPO
+					cArqTmp2->CLASSE    := Iif(!cArqTmp1->(Eof()),cArqTmp1->CLASSE,"C")
+					cArqTmp2->SALDO     := nSaldo
+					cArqTmp2->SALDOMAT  := nSaldoMatriz
+					cArqTmp2->ANTPENUL  := _nAntepenultimoMes
+					cArqTmp2->PENUL     := _nPenultimoMes
+					cArqTmp2->ULTIMO    := _nUltimoMes
+					cArqTmp2->ATUAL     := _nAtual
+					cArqTmp2->PONTOPED  := RetFldProd(SB1->B1_COD,"B1_EMIN")
+					cArqTmp2->QTDEMB    := RetFldProd(SB1->B1_COD,"B1_QE")
+					cArqTmp2->PREVIS    := nPrevis
+					cArqTmp2->MEDCONS   := _nMediaConsumo
+					cArqTmp2->QUANT     := nQuant
+					msUnlock()
+				Endif
+			Endif
+
+			nSaldo := 0
+			nQuant := 0
+			nPrevis:= 0
+			nSaldoMatriz := 0
+
+		    dbSelectArea("SB1")
+			dbSkip()
+		EndDo
+	Next jj
+	cFilAnt := cFilSystem
+Return
+
+Static Function FAjustapar(_cPar)
+	Local _cRet:="", _lOk:=.f., _lAspas:=.t.
+
+	If Len(_cPar) > 1
+		For _n:=1 to len(_cPar)
+			If IsDigit(Substr(_cPar,_n,1))
+				_lOk:=.t.
+				_cRet+=Iif(_lAspas,"'","")+Substr(_cPar,_n,1)
+				_lAspas:=.f.
+			Else
+				_cRet += Iif(_lOk,"','","")
+				_lOk:=.f.
+			Endif  
+		Next
+	Endif
+	_cRet := Iif(Right(_cRet,1)<>"'",_cRet+"'",Left(_cRet,Len(_cRet)-2))
+Return Iif(Empty(_cRet).or._cRet=="'","'$#$'",_cRet)
+
+/*
+ÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜ
+±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±
+±±ÚÄÄÄÄÄÄÄÄÄÄÂÄÄÄÄÄÄÄÄÄÄÂÄÄÄÄÄÄÄÂÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÂÄÄÄÄÄÄÂÄÄÄÄÄÄÄÄÄÄ¿±±
+±±³Funcao    ³AjustaSX1 ³ Autor ³ Nereu Humberto Jr     ³ Data ³01.08.2005³±±
+±±ÃÄÄÄÄÄÄÄÄÄÄÅÄÄÄÄÄÄÄÄÄÄÁÄÄÄÄÄÄÄÁÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÁÄÄÄÄÄÄÁÄÄÄÄÄÄÄÄÄÄ´±±
+±±³Descri‡…o ³Cria as perguntas necesarias para o programa                ³±±
+±±ÃÄÄÄÄÄÄÄÄÄÄÅÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ´±±
+±±³Retorno   ³Nenhum                                                      ³±±
+±±ÃÄÄÄÄÄÄÄÄÄÄÅÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ´±±
+±±³Parametros³Nenhum                                                      ³±±
+±±³          ³                                                            ³±±
+±±ÃÄÄÄÄÄÄÄÄÄÄÅÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÂÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ´±±
+±±³   DATA   ³ Programador   ³Manutencao Efetuada                         ³±±
+±±ÃÄÄÄÄÄÄÄÄÄÄÅÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÅÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ´±±
+±±³          ³               ³                                            ³±±
+±±ÀÄÄÄÄÄÄÄÄÄÄÁÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÁÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÙ±±
+±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±
+ßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßß
+*/
+Static Function AjustaSX1()
+	Local aHelpPor :={ }
+	Local aHelpEng :={ }
+	Local aHelpSpa :={ }
+
+	PutSX1("MTR440","14","Qtd. PV nao Liberado ?","Ctd. PV no Liberado ?","Qt So Not Relesead ?","mv_che","N",01,0,1,"C","","","","","mv_par14","Subtrae","Resta","Subtract","","Ignora","Ignora","Ignore","","","","","","","","","")
+
+	Aadd( aHelpPor, "Informar se a impressao da descricao do " )
+	Aadd( aHelpPor, "produto sera reduzida ou completa.      " )
+	PutSx1( "MTR440","15","Descricao completa do produto?","Descricao completa do produto?","Descricao completa do produto?","mv_chf","N",1,0,1,"C","","","","","mv_par15","Nao","Nao","Nao","","Sim","Sim","Sim","","","","","","","","","")
+	PutSX1Help("P.MTR44015.",aHelpPor,aHelpEng,aHelpSpa)
+
+	aHelpPor :={ }
+	aHelpEng :={ }
+	aHelpSpa :={ }
+	aAdd( aHelpPor, "Armazem inicial a ser considerado na    " )
+	aAdd( aHelpPor, "filtragem do Cadastro de Saldos (SB2).  " )
+	PutSX1("MTR440","16","Considera Saldo Armazem de", "Consd. Deposito de","Cons. Warehouse from","mv_chg","C",2,0,1,"G","","","","","mv_par16","","","","","","","","","","","","","","","","")
+	PutSX1Help("P.MTR44016.",aHelpPor,aHelpEng,aHelpSpa)
+
+	aHelpPor :={ }
+	aHelpEng :={ }
+	aHelpSpa :={ }
+	aAdd( aHelpPor, "Armazem final a ser considerado na      " )
+	aAdd( aHelpPor, "filtragem do Cadastro de Saldos (SB2).  " )
+	PutSX1("MTR440","17","Considera Saldo Armazem ate","Consd. Deposito a", "Cons. Warehouse to","mv_chh","C",2,0,1,"G","","","","","mv_par17","","","","ZZ","","","","","","","","","","","","")
+	PutSX1Help("P.MTR44017.",aHelpPor,aHelpEng,aHelpSpa)
+
+	aHelpPor :={ }
+	aHelpEng :={ }
+	aHelpSpa :={ }
+	aAdd( aHelpPor, "Porcentagem referente a classificacao A " )
+	aAdd( aHelpPor, "dos produtos que mais consomem no grupo." )
+	PutSX1("MTR440","18","Porcentagem classificacao A","", "","mv_chi","N",5,2,1,"G","","","","","mv_par18","","","","30","","","","","","","","","","","","")
+	PutSX1Help("P.MTR44018.",aHelpPor,aHelpEng,aHelpSpa)
+
+	aHelpPor :={ }
+	aHelpEng :={ }
+	aHelpSpa :={ }
+	aAdd( aHelpPor, "Porcentagem referente a classificacao B " )
+	aAdd( aHelpPor, "dos produtos com consumo medio no grupo." )
+	PutSX1("MTR440","19","Porcentagem classificacao B","", "","mv_chj","N",5,2,1,"G","","","","","mv_par19","","","","30","","","","","","","","","","","","")
+	PutSX1Help("P.MTR44019.",aHelpPor,aHelpEng,aHelpSpa)
+
+	aHelpPor :={ }
+	aHelpEng :={ }
+	aHelpSpa :={ }
+	aAdd( aHelpPor, "Porcentagem referente a classificacao C " )
+	aAdd( aHelpPor, "dos produtos com consumo baixo no grupo." )
+	PutSX1("MTR440","20","Porcentagem classificacao C","", "","mv_chk","N",5,2,1,"G","","","","","mv_par20","","","","40","","","","","","","","","","","","")
+	PutSX1Help("P.MTR44020.",aHelpPor,aHelpEng,aHelpSpa)
+
+	aHelpPor :={ }
+	aHelpEng :={ }
+	aHelpSpa :={ }
+	aAdd( aHelpPor, "Nao imprimir grupos que constam neste   " )
+	aAdd( aHelpPor, "parametro. Ex: 0001/0002/0003/          " )
+	aAdd( aHelpPor, "Obs.: Separar os grupos por barras.     " )
+	PutSX1("MTR440","21","Nao imprimir grupos        ","", "","mv_chl","C",30,0,1,"G","","","","","mv_par21","","","","XXXX/YYYY","","","","","","","","","","","","")
+	PutSX1Help("P.MTR44021.",aHelpPor,aHelpEng,aHelpSpa)
+
+	PutSX1("MTR440","22","Da Filial                  ","", "","mv_chm","C",02,0,1,"G","","","","","mv_par22","","","","","","","","","","","","","","","","")
+	PutSX1("MTR440","23","Ate a Filial               ","", "","mv_chn","C",02,0,1,"G","","","","","mv_par23","","","","","","","","","","","","","","","","")
+Return

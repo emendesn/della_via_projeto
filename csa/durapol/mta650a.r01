@@ -1,0 +1,133 @@
+
+/*
+ÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜ
+±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±
+±±ÉÍÍÍÍÍÍÍÍÍÍÑÍÍÍÍÍÍÍÍÍÍËÍÍÍÍÍÍÍÑÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍËÍÍÍÍÍÍÑÍÍÍÍÍÍÍÍÍÍÍÍÍ»±±
+±±ºPrograma  ³ MTA650A  º Autor ³ Jader              º Data ³  23/08/05   º±±
+±±ÌÍÍÍÍÍÍÍÍÍÍØÍÍÍÍÍÍÍÍÍÍÊÍÍÍÍÍÍÍÏÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÊÍÍÍÍÍÍÏÍÍÍÍÍÍÍÍÍÍÍÍÍ¹±±
+±±ºDesc.     ³ Ponto de entrada na confirmacao da alteracao da OP.        º±±
+±±º          ³ Usado para disparar o Job de envio de aprovacao de SEPU    º±±
+±±º          ³                                                            º±±
+±±ÌÍÍÍÍÍÍÍÍÍÍØÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍ¹±±
+±±ºUso       ³ Durapol - Alterado contemplar Programacao da Producao      º±±
+±±ÈÍÍÍÍÍÍÍÍÍÍÏÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍ¼±±
+±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±
+ßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßß
+*/
+
+User Function MTA650A()
+
+Local _aAliasAnt := GetArea()
+Local _cObs1,_cObs2,_cObs3,_lOk
+
+If SM0->M0_CODIGO == "03"   // So executa para Durapol
+
+    //-- grava campos memos especificos
+	_cObs1 := M->C2_XOBS1
+	MSMM(SC2->C2_XCOBS1,80,,_cObs1,1,,,"SC2","C2_XCOBS1")
+
+	_cObs2 := M->C2_XOBS2
+	MSMM(SC2->C2_XCOBS2,80,,_cObs2,1,,,"SC2","C2_XCOBS2")
+
+	_cObs3 := M->C2_XOBS3
+	MSMM(SC2->C2_XCOBS3,80,,_cObs3,1,,,"SC2","C2_XCOBS3")
+
+	//-- verifica se a profundidade aferida esta preenchida
+	If SC2->C2_XPROFAF > 0
+
+    	//-- verifica se ja foi enviado 
+		If SC2->C2_XWFSEPU == "S"
+			_lOk := MsgYesNo("E-mail para aprovacao do SEPU ja enviado. Deseja enviar novamente e reiniciar o processo?","Confirmacao")
+		Else
+			_lOk := .T.
+		Endif		
+
+		//-- faz chamada do job para envio do e-mail para aprovacao do SEPU   
+		If _lOk
+			//U_WSEPU01(	SC2->(C2_NUM+C2_ITEM+C2_SEQUEN) )
+			U_WSEPU01()
+        Endif
+
+        //-- atualiza que foi enviado o e-mail de aprovacao de SEPU
+		dbSelectArea("SC2")
+		RecLock("SC2",.F.)
+			SC2->C2_XWFSEPU := "S"	
+		MsUnlock()		        
+	Endif
+	
+	IF Select("TMP") > 0
+		TMP->( dbCloseArea("TMP") )		
+	EndIF
+	
+	_cQry := "SELECT MAX(ZH_NUMLOTE) LOTEMAX " 	  
+	_cQry += " FROM " + RetSqlName("SZH") + " SZH "
+	_cQry += " WHERE ZH_FILIAL = '" + xFilial("SZH")+"' AND SZH.D_E_L_E_T_ = '' "
+	_cQry := ChangeQuery(_cQry)
+	
+	dbUseArea(.T.,"TOPCONN",TCGenQry(,,_cQry),"TMP",.F.,.T.)
+	
+	dbSelectArea("TMP")
+	dbGotop()
+	
+	While !Eof()
+		cLote := TMP->LOTEMAX
+		Exit
+	EndDo
+	
+	SZH->( dbSetOrder(1) )
+	IF SZH->( dbSeek(xFilial("SZH") + cLote ) )
+		IF ! M->C2_X_STATU $ '7/9' //OP em Terceiro / OP Rejeitada
+			IF SZH->ZH_QTDLOTE < 22 .And. Empty(SZH->ZH_STATUS) //Qtd. Max. do Lote
+				Reclock("SZH")
+					IF SZH->ZH_QTDLOTE + 1 == 22
+						SZH->ZH_STATUS := "E" //Encerrado pela sua totalidade, P=Parcialmente fechado autoclave
+					EndIF
+					SZH->ZH_QTDLOTE := SZH->ZH_QTDLOTE + 1
+				MsUnlock()
+			Else
+				cLotePro := GetSXENUM("SZG","ZG_NUMLOTE")
+				
+				Reclock("SZH",.T.)
+					SZH->ZH_FILIAL := xFilial("SZH")
+					SZH->ZH_NUMLOTE:= cLotePro
+					SZH->ZH_QTDLOTE:= 1
+				MsUnlock()
+		
+				cOrdem := Trim(Str(SZH->ZH_QTDLOTE,2))
+			
+				dbSelectArea("SC2")
+				Reclock("SC2")
+					SC2->C2_XNUMLOT := cLotePro
+					SC2->C2_X_ORDEM := cOrdem
+				MsUnlock()	
+				//MsgAlert("Esta Ordem de Producao devera ser excluida deste lote, pois este ja se encontra encerrado")	
+			EndIF
+		Else
+			MsgAlert("Esta Ordem de producao nao ira compor o saldo do lote " + SC2->C2_XNUMLOT +",pois encontra-se Rejeitada ou em Terceiro")	
+			M->C2_X_STATU := "1" 
+		EndIF
+	Else
+		cLotePro := GetSXENUM("SZG","ZG_NUMLOTE")
+		msgInfo("Criando lote de producao " + cLotePro + " ")
+		
+		Reclock("SZH",.T.)
+			SZH->ZH_FILIAL := xFilial("SZH")
+			SZH->ZH_NUMLOTE:= cLotePro
+			SZH->ZH_QTDLOTE:= 1
+		MsUnlock()
+		
+		cOrdem := Trim(Str(SZH->ZH_QTDLOTE,2))
+		
+		dbSelectArea("SC2")
+		Reclock("SC2")
+			SC2->C2_XNUMLOT := cLotePro
+			SC2->C2_X_ORDEM := cOrdem
+		MsUnlock()
+		
+	EndIF
+	
+Endif
+
+RestArea(_aAliasAnt)
+
+Return(NIL)

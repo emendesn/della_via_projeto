@@ -1,0 +1,783 @@
+#Include "MATA650.CH"
+#INCLUDE "FIVEWIN.CH"
+/*
+ÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜ
+±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±
+±±ÚÄÄÄÄÄÄÄÄÄÄÂÄÄÄÄÄÄÄÄÄÄÂÄÄÄÄÄÂÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÂÄÄÄÄÄÄÂÄÄÄÄÄÄÄÄÄÄ¿±±
+±±³Fun‡„o    ³A650Alert2³Autor³Rodrigo de A. Sartorio ³ Data ³ 01/10/97 ³±±
+±±ÃÄÄÄÄÄÄÄÄÄÄÅÄÄÄÄÄÄÄÄÄÄÁÄÄÄÄÄÁÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÁÄÄÄÄÄÄÁÄÄÄÄÄÄÄÄÄÄ´±±
+±±³Descri‡„o ³ Aviso de que a OP a ser incluida deveria ter comecado    ³±±
+±±³          ³ antes                                                    ³±±
+±±ÃÄÄÄÄÄÄÄÄÄÄÅÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ´±±
+±±³ Uso      ³ MATA650                                                  ³±±
+±±ÀÄÄÄÄÄÄÄÄÄÄÁÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÙ±±
+±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±
+ßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßß
+*/
+Function A650Alert2(cNumOp,nDias,cProduto)
+LOCAL lRet := .F.
+LOCAL cLinha1:= STR0041+cNumOp+STR0042	//"A OP "###" poder  gerar OPs Intermedi rias / SCs "
+LOCAL cLinha2:= STR0043	//"com datas previstas anteriores a database, j  que o Prazo de "
+LOCAL cLinha3:= STR0044+StrZero(nDias,3,0)+STR0045	//"Entrega de seus componentes chega a "###" dias. "
+LOCAL cLinha4:= STR0046	//"Confirma a inclus„o da OP ?"
+TONE(3500,1)
+If Type("l650Auto") == "L" .and. l650Auto
+	lRet := .t.
+Else
+	lRet := (MsgYesNo(OemToAnsi(cLinha1+cLinha2+cLinha3+cLinha4),OemToAnsi(STR0024+" - ")+cProduto))	//"Aten‡„o"
+EndIF 
+Return lRet
+
+/*
+±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±
+±±ÚÄÄÄÄÄÄÄÄÄÄÂÄÄÄÄÄÄÄÄÄÄÂÄÄÄÄÄÄÄÂÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÂÄÄÄÄÄÄÂÄÄÄÄÄÄÄÄÄÄ¿±±
+±±³Fun‡…o    ³A650Quant ³ Autor ³ Marcelo Pimentel      ³ Data ³          ³±±
+±±ÃÄÄÄÄÄÄÄÄÄÄÅÄÄÄÄÄÄÄÄÄÄÁÄÄÄÄÄÄÄÁÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÁÄÄÄÄÄÄÁÄÄÄÄÄÄÄÄÄÄ´±±
+±±³Descri‡…o ³ Rotina que calcula a 2a unidade medida quanto exitir       ³±±
+±±ÃÄÄÄÄÄÄÄÄÄÄÅÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ´±±
+±±³ Uso      ³ MATA650                                                    ³±±
+±±ÀÄÄÄÄÄÄÄÄÄÄÁÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÙ±±
+±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±
+ßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßß
+*/
+Function A650Quant()
+Local nQuant := M->C2_QUANT
+
+If Empty(nQuant)
+	Return .T.
+Endif
+
+M->C2_QTSEGUM := ConvUm(M->C2_PRODUTO,nQuant,M->C2_QTSEGUM,2)
+nEndereco := Ascan(aGets,{ |x| Subs(x,9,10) == "C2_QTSEGUM" })
+If nEndereco > 0
+	aTela[Val(Subs(aGets[nEndereco],1,2))][Val(Subs(aGets[nEndereco],3,1))*2] := Transform(M->C2_QTSEGUM,PesqPictQT("C2_QTSEGUM"))
+EndIf
+Return .T.
+/*
+±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±
+±±ÚÄÄÄÄÄÄÄÄÄÄÂÄÄÄÄÄÄÄÄÄÄÂÄÄÄÄÄÄÄÂÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÂÄÄÄÄÄÄÂÄÄÄÄÄÄÄÄÄÄ¿±±
+±±³Fun‡…o    ³A650QtSeg ³ Autor ³ Marcelo Pimentel      ³ Data ³          ³±±
+±±ÃÄÄÄÄÄÄÄÄÄÄÅÄÄÄÄÄÄÄÄÄÄÁÄÄÄÄÄÄÄÁÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÁÄÄÄÄÄÄÁÄÄÄÄÄÄÄÄÄÄ´±±
+±±³Descri‡…o ³ Rotina que calcula a primeira unidade de medida.           ³±±
+±±ÃÄÄÄÄÄÄÄÄÄÄÅÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ´±±
+±±³ Uso      ³ MATA650                                                    ³±±
+±±ÀÄÄÄÄÄÄÄÄÄÄÁÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÙ±±
+±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±
+ßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßß
+*/
+Function A650QtSeg()
+Local nQtSegUm := M->C2_QTSEGUM
+Local cProduto := M->C2_PRODUTO
+Local lGrade   := GetMv("MV_GRADE")
+
+If Empty(nQtSegUm)
+	Return .T.
+Endif
+If lGrade
+   MatGrdPrrfRf(@cProduto)
+EndIF
+M->C2_QUANT := ConvUm(cProduto,M->C2_QUANT,nQtSegUm,1)
+nEndereco := Ascan(aGets,{ |x| Subs(x,9,8) == "C2_QUANT" } )
+If nEndereco > 0
+	aTela[Val(Subs(aGets[nEndereco],1,2))][Val(Subs(aGets[nEndereco],3,1))*2] := Transform(M->C2_QUANT,PesqPictQT("C2_QUANT"))
+EndIf
+Return .T.
+
+/*
+ÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜ
+±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±
+±±ÚÄÄÄÄÄÄÄÄÄÄÂÄÄÄÄÄÄÄÄÄÄÄÄÄÂÄÄÄÄÄÂÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÂÄÄÄÄÄÄÂÄÄÄÄÄÄÄÄÄÄ¿±±
+±±³Fun‡„o    ³ A650LotCTL  ³Autor³Rodrigo de A. Sartorio³ Data ³ 02/12/96 ³±±
+±±ÃÄÄÄÄÄÄÄÄÄÄÅÄÄÄÄÄÄÄÄÄÄÄÄÄÁÄÄÄÄÄÁÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÁÄÄÄÄÄÄÁÄÄÄÄÄÄÄÄÄÄ´±±
+±±³Descri‡„o ³Valida o lote de controle digitado pelo usuario.            ³±±
+±±ÃÄÄÄÄÄÄÄÄÄÄÅÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ´±±
+±±³ Uso      ³ Mata650                                                    ³±±
+±±ÀÄÄÄÄÄÄÄÄÄÄÁÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÙ±±
+±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±
+ßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßß
+*/
+Function A650LotCTL()
+Local cVar:=ReadVar()
+Local cAlias:=Alias(),nRecno:=Recno(),nOrdem:=IndexOrd()
+Local nOldOrdem:=0,nOldRecno:=0
+Local lRet:=.T.
+Local cCod := aCols[n,nPosCod],cLocal:=aCols[n,nPosLocal],cLote:="",cLoteDigi:="",cSeek:=""
+Local nQuant:=0,nSaldo:=0
+Local i:=0
+If !Rastro(cCod)
+	Help(" ",1,"NAORASTRO")
+	lRet:=.F.
+EndIf
+If aCols[n,nPosQuant] < 0
+	Help(" ",1,"A650QTDEMP")
+	lRet:=.F.
+EndIf
+If lRet
+	dbSelectArea("SB1")
+	dbSetOrder(1)
+	dbSeek(xFilial()+cCod)
+	If cVar == "M->D4_LOTECTL"
+		cConteudo:= &(ReadVar())
+		dbSelectArea("SB8")
+		dbSetOrder(3)
+		If dbSeek(xFilial()+cCod+cLocal+cConteudo)
+			If Rastro(cCod,"S")
+				cLote:=SB8->B8_NUMLOTE
+				nSaldo:=SB8->B8_SALDO - (SB8->B8_EMPENHO+SB8->B8_QACLASS+AvalQtdPre("SB8",1))
+				For i:=1 To Len(aCols)
+					If aCols[i,nPosLote] == cLote .And. !aCols[i,Len(aCols[i])] .Or. n = i
+						nQuant += aCols[i,nPosQuant]
+					EndIf
+				Next i
+			Else
+				cLote:=SB8->B8_LOTECTL
+				nSaldo:=SaldoLote(cCod,cLocal,cConteudo)
+				For i:=1 To Len(aCols)
+					If aCols[i,nPosLotCtl] == cLote .And. !aCols[i,Len(aCols[i])] .Or. n = i
+						nQuant += aCols[i,nPosQuant]
+					EndIf
+				Next i
+			EndIf
+			If nSaldo >= nQuant
+				If Rastro(cCod,"S")
+					M->D4_NUMLOTE	    :=SB8->B8_NUMLOTE
+					aCols[n,nPosLote]	:=SB8->B8_NUMLOTE
+				EndIf
+				M->D4_DTVALID			:=SB8->B8_DTVALID
+				aCols[n,nPosLotCtl]		:=SB8->B8_LOTECTL
+				aCols[n,nPosdValid]		:=SB8->B8_DTVALID
+				aCols[n,nPosPotenc]		:=SB8->B8_POTENCI
+			Else
+				Help(" ",1,"A240LOTENE")
+				lRet:=.f.
+				M->D4_NUMLOTE		:=CriaVar("D4_NUMLOTE")
+				M->D4_LOTECTL		:=CriaVar("D4_LOTECTL")
+				M->D4_DTVALID		:=CriaVar("D4_DTVALID")
+				M->D4_POTENCI		:=CriaVar("D4_POTENCI")
+				aCols[n,nPosLote]	:=M->D4_NUMLOTE
+				aCols[n,nPosLotCtl]	:=M->D4_LOTECTL
+				aCols[n,nPosdValid]	:=M->D4_DTVALID
+				aCols[n,nPosPotenc]	:=M->D4_POTENCI
+			EndIf
+		Else
+			If !Empty(cConteudo)
+				Help(" ",1,"A240LOTCTL")
+				lRet:=.F.
+			Else
+				M->D4_NUMLOTE		:=CriaVar("D4_NUMLOTE")
+				M->D4_LOTECTL		:=CriaVar("D4_LOTECTL")
+				M->D4_DTVALID		:=CriaVar("D4_DTVALID")
+				M->D4_POTENCI		:=CriaVar("D4_POTENCI")
+				aCols[n,nPosLote]	:=M->D4_NUMLOTE
+				aCols[n,nPosLotCtl]	:=M->D4_LOTECTL
+				aCols[n,nPosdValid]	:=M->D4_DTVALID
+				aCols[n,nPosPotenc]	:=M->D4_POTENCI
+			EndIf
+		EndIf
+	ElseIf cVar == "M->D4_NUMLOTE" .And. Rastro(cCod,"S")
+		cConteudo:=&(ReadVar())
+		cLote		:=cConteudo
+		dbSelectArea("SB8")
+		dbSetOrder(2)
+		If dbSeek(xFilial()+cConteudo)
+			For i:=1 To Len(aCols)
+				If aCols[i,nPosLote] == cLote .And. !aCols[i,Len(aCols[i])] .Or. n = i
+					nQuant += aCols[i,nPosQuant]
+				EndIf
+			Next i
+			If !((SB8->B8_SALDO - (SB8->B8_EMPENHO+SB8->B8_QACLASS+AvalQtdPre("SB8",1))) >= nQuant)
+				Help(" ",1,"A240LOTENE")
+				lRet:=.F.
+				M->D4_NUMLOTE		:=CriaVar("D4_NUMLOTE")
+				M->D4_LOTECTL		:=CriaVar("D4_LOTECTL")
+				M->D4_DTVALID		:=CriaVar("D4_DTVALID")
+				M->D4_POTENCI		:=CriaVar("D4_POTENCI")
+				aCols[n,nPosLote]	:=M->D4_NUMLOTE
+				aCols[n,nPosLotCtl]	:=M->D4_LOTECTL
+				aCols[n,nPosdValid]	:=M->D4_DTVALID
+				aCols[n,nPosPotenc]	:=M->D4_POTENCI
+			Else
+				M->D4_LOTECTL	:=SB8->B8_LOTECTL
+				M->D4_DTVALID	:=SB8->B8_DTVALID
+				M->D4_POTENCI	:=SB8->B8_POTENCI
+				aCols[n,nPosLotCtl]	:=M->D4_LOTECTL
+				aCols[n,nPosdValid]	:=M->D4_DTVALID
+				aCols[n,nPosPotenc]	:=M->D4_POTENCI
+			EndIf
+		Else
+			M->D4_NUMLOTE		:=CriaVar("D4_NUMLOTE")
+			M->D4_LOTECTL		:=CriaVar("D4_LOTECTL")
+			M->D4_DTVALID		:=CriaVar("D4_DTVALID")
+			M->D4_POTENCI		:=CriaVar("D4_POTENCI")
+			aCols[n,nPosLote]	:=M->D4_NUMLOTE
+			aCols[n,nPosLotCtl]	:=M->D4_LOTECTL
+			aCols[n,nPosdValid]	:=M->D4_DTVALID
+			aCols[n,nPosPotenc]	:=M->D4_POTENCI
+		EndIf
+	ElseIf cVar == "M->D4_NUMLOTE" .And. Rastro(cCod,"L")
+		M->D4_NUMLOTE		:=CriaVar("D4_NUMLOTE")
+		aCols[n,nPosLote]	:=M->D4_NUMLOTE
+	EndIf
+EndIf
+dbSelectArea(cAlias)
+dbSetOrder(nOrdem)
+dbGoTo(nRecno)
+Return lRet
+
+/*
+ÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜ
+±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±
+±±ÚÄÄÄÄÄÄÄÄÄÄÂÄÄÄÄÄÄÄÄÄÄÂÄÄÄÄÄÄÄÂÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÂÄÄÄÄÄÄÂÄÄÄÄÄÄÄÄÄ¿±±
+±±³Fun‡„o    ³ A650Seq  ³ Autor ³ Rodrigo de A. Sartorio ³ Data ³ 20/09/96³±±
+±±ÃÄÄÄÄÄÄÄÄÄÄÅÄÄÄÄÄÄÄÄÄÄÁÄÄÄÄÄÄÄÁÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÁÄÄÄÄÄÄÁÄÄÄÄÄÄÄÄÄ´±±
+±±³Descri‡„o ³ Valida a Sequencia na digitacao dos empenhos.              ³±±
+±±ÃÄÄÄÄÄÄÄÄÄÄÅÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ´±±
+±±³ Uso      ³ MATA650                                                    ³±±
+±±ÀÄÄÄÄÄÄÄÄÄÄÁÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÙ±±
+±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±
+ßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßß
+*/
+Function A650Seq()
+Local cSeq:=&(ReadVar()),i,lRet:=.T.,cProd:=aCols[n,1],cLote:=''
+For i:=1 To Len(aCols)
+	//ÚÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ¿
+	//³ Tratamento Utilizado para o Siga Pyme ³
+	//ÀÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÙ
+	If !__lPyme
+		cLote:=aCols[n,5]
+		If i # n .And. aCols[i,4] == cSeq .and. aCols[i,1] == cProd .and. aCols[i,5] == cLote .and. !aCols[i,Len(aCols[i])]
+			Help(" ",1,"A650SEQJA")
+			lRet:=.F.
+		EndIf
+	Else
+		If i # n .And. aCols[i,4] == cSeq .and. aCols[i,1] == cProd .and. !aCols[i,Len(aCols[i])]
+			Help(" ",1,"A650SEQJA")
+			lRet:=.F.
+		EndIf
+	EndIf	
+Next i
+Return lRet
+
+/*
+ÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜ
+±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±
+±±ÚÄÄÄÄÄÄÄÄÄÄÂÄÄÄÄÄÄÄÄÄÄÂÄÄÄÄÄÄÄÂÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÂÄÄÄÄÄÄÂÄÄÄÄÄÄÄÄÄ¿±±
+±±³Fun‡„o    ³A650VldRot³ Autor ³ Rodrigo de A. Sartorio ³ Data ³ 20/09/96³±±
+±±ÃÄÄÄÄÄÄÄÄÄÄÅÄÄÄÄÄÄÄÄÄÄÁÄÄÄÄÄÄÄÁÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÁÄÄÄÄÄÄÁÄÄÄÄÄÄÄÄÄ´±±
+±±³Descri‡„o ³ Valida o Roteiro de Operacoes.                             ³±±
+±±ÃÄÄÄÄÄÄÄÄÄÄÅÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ´±±
+±±³ Uso      ³ MATA650                                                    ³±±
+±±ÀÄÄÄÄÄÄÄÄÄÄÁÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÙ±±
+±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±
+ßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßß
+*/
+Function A650VldRot(cProduto,cRot,cLocal)
+Local cAlias:=Alias(),nRecno:=Recno()
+Local aAreaSB1:=SB1->(GetArea())
+dbSelectArea("SG2")
+If !(dbSeek(xFilial()+cProduto+cRot))
+	dbSelectArea("SB1")
+	dbSeek(xFilial()+cProduto+cLocal)
+	If !Empty(SB1->B1_OPERPAD)
+		cRot := SB1->B1_OPERPAD
+	Else
+		cRot := "  "
+	EndIf
+	RestArea(aAreaSB1)
+EndIf
+dbSelectArea(cAlias)
+dbGoto(nRecno)
+Return cRot
+
+/*
+ÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜ
+±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±
+±±ÚÄÄÄÄÄÄÄÄÄÄÂÄÄÄÄÄÄÄÄÄÄÂÄÄÄÄÄÄÄÂÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÂÄÄÄÄÄÄÂÄÄÄÄÄÄÄÄÄ¿±±
+±±³Fun‡„o    ³A650Rot   ³ Autor ³ Rodrigo de A. Sartorio ³ Data ³ 20/09/96³±±
+±±ÃÄÄÄÄÄÄÄÄÄÄÅÄÄÄÄÄÄÄÄÄÄÁÄÄÄÄÄÄÄÁÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÁÄÄÄÄÄÄÁÄÄÄÄÄÄÄÄÄ´±±
+±±³Descri‡„o ³ Valida o Roteiro de Operacoes.                             ³±±
+±±ÃÄÄÄÄÄÄÄÄÄÄÅÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ´±±
+±±³ Uso      ³ MATA650                                                    ³±±
+±±ÀÄÄÄÄÄÄÄÄÄÄÁÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÙ±±
+±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±
+ßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßß
+*/
+Function A650Rot()
+Local cRoteiro:=&(ReadVar()),lRet:=.T.,nEndereco
+Local lGrade   := GetMv("MV_GRADE")
+Local cProduto := M->C2_PRODUTO
+
+//ÚÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ¿
+//³Verifica se a grade esta ativa e se o produto digitado eh uma referencia³
+//ÀÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÙ
+If IntQIP(cProduto) //Define o Roteiro de Operacoes definido na Especificacao
+	M->C2_ROTEIRO := QIPRevRot(M->C2_PRODUTO)[2]
+Else
+	If !(lGrade .And. MatGrdPrrf(@cProduto))
+		dbSelectArea("SG2")
+		If !(dbSeek(xFilial()+M->C2_PRODUTO+cRoteiro))
+			dbSelectArea("SB1")
+			dbSeek(xFilial()+M->C2_PRODUTO+M->C2_LOCAL)
+			If !Empty(SB1->B1_OPERPAD)
+				M->C2_ROTEIRO := SB1->B1_OPERPAD
+				nEndereco := Ascan(aGets,{ |x| Subs(x,9,10) == "C2_ROTEIRO" } )
+				If nEndereco > 0
+					aTela[Val(Subs(aGets[nEndereco],1,2))][Val(Subs(aGets[nEndereco],3,1))*2] := SB1->B1_OPERPAD
+				EndIf
+			Else
+				Help(" ",1,"C630COD")
+				lRet:=.F.
+			EndIf
+		EndIf
+	Else
+		aRotGrade()
+	EndIf		
+EndIf
+Return lRet
+
+/*
+±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±
+±±ÚÄÄÄÄÄÄÄÄÄÄÂÄÄÄÄÄÄÄÄÄÄÂÄÄÄÄÄÄÄÂÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÂÄÄÄÄÄÄÂÄÄÄÄÄÄÄÄÄÄ¿±±
+±±³Fun‡„o    ³A650IniPrd³ Autor ³ Rodrigo de A. Sartorio³ Data ³ 29/04/97 ³±±
+±±ÃÄÄÄÄÄÄÄÄÄÄÅÄÄÄÄÄÄÄÄÄÄÁÄÄÄÄÄÄÄÁÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÁÄÄÄÄÄÄÁÄÄÄÄÄÄÄÄÄÄ´±±
+±±³Descri‡„o ³ Rotina p/ inicializacao de alguns campos a partir do Prod. ³±±
+±±ÃÄÄÄÄÄÄÄÄÄÄÅÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ´±±
+±±³ Uso      ³ MATA650                                                    ³±±
+±±ÀÄÄÄÄÄÄÄÄÄÄÁÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÙ±±
+±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±
+ßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßß
+*/
+Function A650IniPrd()
+Local cAlias:=Alias(),nRecno:=Recno(),nOrdem:=IndexOrd(),cLocal:="",cDescr:=""
+dbSelectArea("SB1")
+dbSetOrder(1)
+If dbSeek(xFilial()+&(ReadVar()))
+	cLocal:=SB1->B1_LOCPAD
+	cDescr:=SB1->B1_DESC  
+EndIf
+dbSelectArea(cAlias)
+dbSetOrder(nOrdem)
+dbGoTo(nRecno)
+aCols[n,nPosLocal]:=cLocal
+aCols[n,nPosDescr]:=cDescr
+
+If Existblock("A650LOCA")		// permite manipular o local
+	cLocal := Execblock("A650LOCA",.F.,.F.)
+	aCols[n,nPosLocal]:=cLocal
+Endif
+
+Return .T.
+
+
+/*
+ÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜ
+±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±
+±±ÚÄÄÄÄÄÄÄÄÄÄÂÄÄÄÄÄÄÄÄÄÄÂÄÄÄÄÄÄÄÂÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÂÄÄÄÄÄÄÂÄÄÄÄÄÄÄÄÄ¿±±
+±±³Fun‡„o    ³A650LinOk ³ Autor ³ Rodrigo de A. Sartorio ³ Data ³ 20/09/96³±±
+±±ÃÄÄÄÄÄÄÄÄÄÄÅÄÄÄÄÄÄÄÄÄÄÁÄÄÄÄÄÄÄÁÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÁÄÄÄÄÄÄÁÄÄÄÄÄÄÄÄÄ´±±
+±±³Descri‡„o ³ Valida a Linha da Getdados                                 ³±±
+±±ÃÄÄÄÄÄÄÄÄÄÄÅÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ´±±
+±±³ Uso      ³ MATA650                                                    ³±±
+±±ÀÄÄÄÄÄÄÄÄÄÄÁÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÙ±±
+±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±
+ßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßß
+*/
+Function A650LinOk()
+Local aSeq:={},i,lRet:=.T.,nAchoSeq:=0
+Local lExe,lMTA650L := (ExistBlock( "MTA650L" ) )
+Local cCod:=aCols[n,1]
+Local cProcura:=""
+Local nSaldoLote:=0,nAcumulado:=0
+Local cAlias:=Alias(),nRecno:=Recno(),nOrder:=IndexOrd()
+For i:=1 To Len(aCols)
+	If !aCols[i,Len(aCols[i])]
+		//ÚÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ¿
+		//³ Tratamento Utilizado para o Siga Pyme ³
+		//ÀÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÙ
+		If !__lPyme
+			nAchoSeq:=ASCAN(aSeq,aCols[i,nPosTrt]+aCols[i,nPosCod]+aCols[i,nPosLote]+aCols[i,nPosLotCtl]+aCols[i,nPosLocLz]+aCols[i,nPosnserie])
+		Else
+			nAchoSeq:=ASCAN(aSeq,aCols[i,nPosTrt]+aCols[i,nPosCod])
+		EndIf	
+		IF nAchoSeq > 0
+			Help(" ",1,"A650SEQJA")
+			lRet:=.F.
+		Else
+			//ÚÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ¿
+			//³ Tratamento Utilizado para o Siga Pyme ³
+			//ÀÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÙ
+			If !__lPyme
+				AADD(aSeq,aCols[i,nPosTrt]+aCols[i,nPosCod]+aCols[i,nPosLote]+aCols[i,nPosLotCtl]+aCols[i,nPosLocLz]+aCols[i,nPosnSerie])
+			Else
+				AADD(aSeq,aCols[i,nPosTrt]+aCols[i,nPosCod])
+			EndIf
+		Endif
+	EndIf
+Next i
+If !aCols[n,Len(aCols[n])]
+	If Rastro(cCod)
+		If Rastro(cCod,"L")
+			aCols[n,nPosLote]:=CriaVar("D4_NUMLOTE")
+			M->D4_NUMLOTE:=CriaVar("D4_NUMLOTE")
+			If !Empty(aCols[n,nPosLotCtl])
+				cProcura:=aCols[n,nPosCod]+aCols[n,nPosLocal]+aCols[n,nPosLotCtl]+aCols[n,nPosLocLz]+aCols[n,nPosnserie]
+				nAcumulado:=0
+				For i:=1 to Len(aCols)
+					If !aCols[i,Len(aCols[i])] .And. i # n .And. cProcura == aCols[i,nPosCod]+aCols[i,nPosLocal]+aCols[i,nPosLotCtl]+aCols[i,nPosLocLz]+aCols[i,nPosnSerie]
+						nAcumulado+=aCols[i,nPosQuant]
+					EndIf
+				Next I
+				nSaldoLote:=SaldoLote(aCols[n,nPosCod],aCols[n,nPosLocal],aCols[n,nPosLotCtl])
+				If nSaldoLote < nAcumulado
+					Help(" ",1,"A240LOTENE")
+					lRet:=.F.
+				EndIf
+			EndIf
+		Else
+			If !Empty(aCols[n,nPosLote])
+				dbSelectArea("SB8")
+				dbSetOrder(2)
+				If dbSeek(xFilial()+aCols[n,nPosLote]+aCols[n,nPosLotCtl]+aCols[n,nPosCod])
+					cProcura:=aCols[n,nPosCod]+aCols[n,nPosLocal]+aCols[n,nPosLote]+aCols[n,nPosLotCtl]+aCols[n,nPosLocLz]+aCols[n,nPosnSerie]
+					nAcumulado:=0
+					For i:=1 to Len(aCols)
+						If !aCols[i,Len(aCols[i])] .And. i # n .And. cProcura == aCols[i,nPosCod]+aCols[i,nPosLocal]+aCols[i,nPosLote]+aCols[i,nPosLotCtl]+aCols[i,nPosLocLz]+aCols[i,nPosnSerie]
+							nAcumulado+=aCols[i,nPosQuant]
+						EndIf
+					Next I
+					If (B8_SALDO - (B8_EMPENHO+B8_QACLASS+AvalQtdPre("SB8",1))) < nAcumulado
+						Help(" ",1,"A240LOTENE")
+						lRet:=.F.
+					EndIf
+				EndIf
+			EndIf
+		EndIf
+	Else
+		//ÚÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ¿
+		//³ Tratamento Utilizado para o Siga Pyme ³
+		//ÀÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÙ
+		If !__lPyme
+			aCols[n,nPosLote]	:=CriaVar("D4_NUMLOTE")
+			aCols[n,nPosLotCtl]	:=CriaVar("D4_LOTECTL")
+			aCols[n,nPosdValid]	:=CriaVar("D4_DTVALID")
+			M->D4_NUMLOTE:=CriaVar("D4_NUMLOTE")
+			M->D4_LOTECTL:=CriaVar("D4_LOTECTL")
+			M->D4_DTVALID:=CriaVar("D4_DTVALID")
+		EndIf
+	EndIf
+	//ÚÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ¿
+	//³ Tratamento referente a localizacao fisica  ³
+	//ÀÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÙ
+	If Localiza(cCod) .And. lRet
+		If lRet .And. (!Empty(aCols[n,nPosLocLz]) .Or. !Empty(aCols[n,nPosnSerie]))
+			lRet:=MtAvlNSer(aCols[n,nPosCod],aCols[n,nPosnSerie],aCols[n,nPosQuant],aCols[n,nPosQtSegum])
+			If lRet
+				cProcura:=aCols[n,nPosCod]+aCols[n,nPosLocal]+aCols[n,nPosLote]+aCols[n,nPosLotCtl]+aCols[n,nPosLocLz]+aCols[n,nPosnSerie]
+				nAcumulado:=0
+				For i:=1 to Len(aCols)
+					If !aCols[i,Len(aCols[i])] .And. i # n .And. cProcura == aCols[i,nPosCod]+aCols[i,nPosLocal]+aCols[i,nPosLote]+aCols[i,nPosLotCtl]+aCols[i,nPosLocLz]+aCols[i,nPosnSerie]
+						nAcumulado+=aCols[i,nPosQuant]
+					EndIf
+				Next I
+				If nAcumulado > SaldoSBF(aCols[n,nPosLocal],aCols[n,nPosLocLz],cCod,aCols[n,nPosnSerie],aCols[n,nPosLotCtl],aCols[n,nPosLote])
+					Help(" ",1,"SALDOLOCLZ")
+					lRet:=.F.
+				EndIf
+			EndIf
+		EndIf
+	EndIf
+	//ÚÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ¿
+	//³ Permite ao usuario validar a linha atraves do ExecBlock MTA650L   ³
+	//ÀÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÙ
+	If lMTA650l .And. lRet
+		lExe:=ExecBlock("MTA650L",.F.,.F.)
+		If ValType(lExe) == "L"
+			lRet:=lExe
+		EndIf
+	EndIf
+EndIf
+//ÚÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ¿
+//³ Permite ao usuario validar a linha atraves do ExecBlock MTA650L   ³
+//ÀÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÙ
+If lMTA650l
+	lExe:=ExecBlock("MTA650L",.F.,.F.)
+	If ValType(lExe) == "L"
+		lRet:=lExe
+	EndIf
+EndIf
+dbSelectArea(cAlias)
+dbSetOrder(nOrder)
+dbGoto(nRecno)
+Return lRet
+
+/*
+ÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜ
+±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±
+±±ÚÄÄÄÄÄÄÄÄÄÄÂÄÄÄÄÄÄÄÄÄÄÄÂÄÄÄÄÄÄÄÂÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÂÄÄÄÄÄÄÂÄÄÄÄÄÄÄÄÄ¿±±
+±±³Fun‡„o    ³A650DelSD3 ³ Autor ³Rodrigo de A. Sartorio ³ Data ³ 13/11/98³±±
+±±ÃÄÄÄÄÄÄÄÄÄÄÅÄÄÄÄÄÄÄÄÄÄÄÁÄÄÄÄÄÄÄÁÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÁÄÄÄÄÄÄÁÄÄÄÄÄÄÄÄÄ´±±
+±±³Descri‡„o ³Acerto na exclusao de OPs e movimentos estornados no SD3    ³±±
+±±ÃÄÄÄÄÄÄÄÄÄÄÅÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ´±±
+±±³ Uso      ³ MATA650                                                    ³±±
+±±ÀÄÄÄÄÄÄÄÄÄÄÁÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÙ±±
+±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±
+ßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßß
+*/
+Function A650DelSD3(cNumOp,lExcluiSC2,lExcGra)
+Local aArea:={Alias(),IndexOrd(),Recno()}
+Local nRegSD3 := 0     
+//ÚÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ¿
+//³ Verifica se devera' ser excluido ou nao todos os itens da Grade ³
+//ÀÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÙ
+lExcGra   := If(lExcGra == NIL, .F. , lExcGra) 
+
+//ÚÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ¿
+//³ Verifica se tem movimento                  ³
+//ÀÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÙ
+dbSelectArea("SD3")
+dbSetOrder(1)
+dbSeek(xFilial()+cNumOp)
+//ÚÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ¿
+//³ Verifica se os movimentos existentes foram ³
+//³ estornados                                 ³
+//ÀÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÙ
+If !Eof()
+	nRegSD3:=Recno()
+	lExcluiSC2:= IIf(SD3->D3_ESTORNO == "S",.T.,.F.)
+	             
+	While !Eof() .And. If(!lExcGra,SD3->D3_OP,left(SD3->D3_OP,len(cNumOp))) == cNumOp .And. lExcluiSC2
+		//ÚÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ¿
+		//³ So nao e'permitida a exclusao quando exis -³
+		//³ tir movimento que nao foi estornado        ³
+		//³ lExclui = .T. indica que os movimentos des-³
+		//³ OP foram estornados                        ³
+		//ÀÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÙ
+		If SD3->D3_ESTORNO != "S"
+			//ÚÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ¿
+			//³ Existem movimentos que nao foram estornados³
+			//ÀÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÙ
+			lExcluiSC2:=.F.
+		Endif
+		dbSkip()
+	End
+	dbGoto(nRegSD3)
+Endif
+//ÚÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ¿
+//³ Verifica se nao foi apontada producao PCP  ³
+//ÀÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÙ
+If cModulo == "PCP" .And. lExcluiSC2
+	dbSelectArea("SH6")
+	If dbSeek(xFilial()+cNumOp)
+		lExcluiSC2:=.F.
+	EndIf
+	dbSelectArea("SD3")
+EndIf
+If lExcluiSC2 .And. !Eof()
+	cText := STR0021+ cNumOp +STR0022+chr(10) + chr(13)	//"A Ordem de Produ‡„o "###" possui movimenta‡”es estornadas"
+	cText += STR0023 + chr(10) + chr(13)	//"Deseja deletar as movimenta‡”es de estorno e a Ordem de Produ‡„o ? "
+	lExcluiSD3 := (MsgYesNo(OemToAnsi(cText),OemToAnsi(STR0024)))	//"Aten‡„o"
+	lExcluiSC2 := lExcluiSD3
+	If lExcluiSD3
+		While !Eof() .And. If(!lExcGra,SD3->D3_OP,left(SD3->D3_OP,len(cNumOp))) == cNumOp 
+			//ÚÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ¿
+			//³ Deleta todas as movimentacoes referente a esta OP   que  ³
+			//³ foram estornadas                                         ³
+			//ÀÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÙ
+			RecLock("SD3",.F.,.T.)
+			dbDelete()
+			MsUnLock()
+			dbSkip()
+		End
+	Endif
+Endif
+dbSelectArea(aArea[1])
+dbSetOrder(aArea[2])
+dbGoto(aArea[3])
+Return
+
+/*/
+ÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜ
+±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±
+±±ÚÄÄÄÄÄÄÄÄÄÄÂÄÄÄÄÄÄÄÄÄÄÂÄÄÄÄÄÄÄÂÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÂÄÄÄÄÄÄÂÄÄÄÄÄÄÄÄÄÄ¿±±
+±±³Funcao    ³aRotGrade ³ Autor ³Patricia A. Salomao    ³ Data ³30/01/2002³±±
+±±ÃÄÄÄÄÄÄÄÄÄÄÅÄÄÄÄÄÄÄÄÄÄÁÄÄÄÄÄÄÄÁÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÁÄÄÄÄÄÄÁÄÄÄÄÄÄÄÄÄÄ´±±
+±±³Descri‡…o ³Se o produto for Referencia, abre Grade para digitar o      ³±±
+±±³          ³Roteiro de Operacoes                                        ³±±
+±±ÃÄÄÄÄÄÄÄÄÄÄÅÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ´±±
+±±³Parametros³                                                            ³±±
+±±ÃÄÄÄÄÄÄÄÄÄÄÅÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ´±±
+±±³Retorno   ³Sempre .T.                                                  ³±±
+±±ÃÄÄÄÄÄÄÄÄÄÄÅÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÂÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ´±±
+±±³   DATA   ³ Programador   ³Manutencao Efetuada                         ³±±
+±±ÃÄÄÄÄÄÄÄÄÄÄÅÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÅÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ´±±
+±±³          ³               ³                                            ³±±
+±±ÀÄÄÄÄÄÄÄÄÄÄÁÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÁÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÙ±±
+±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±
+ßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßß
+/*/
+Function aRotGrade()
+
+Local nLinha, nColuna, nOpcA := 0
+Local cProdRef := M->C2_PRODUTO
+Local lGrade   := GetMv("MV_GRADE")
+Local aAltGr   := {}
+Local aBackRot := aClone(aRotina)
+Local aColsCop := {}
+Local nAux     := 1
+Local aArea    := GetArea()         
+Local oDlg
+Local nCntFor  := 0
+
+//ÚÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ¿
+//³ Muda o valor do aRotina para nao incluir linha na GetDados   ³
+//ÀÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÙ
+aRotina[3,4] := 6
+
+//ÚÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ¿
+//³ Verifica se a grade esta ativa                       ³
+//ÀÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÙ
+If ( lGrade ) .And.  MatGrdPrrf(@cProdRef) 
+	//ÚÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ¿
+	//³ Verifica se ja montou a grade de produtos desta OP           ³
+	//ÀÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÙ	
+	aColsCop := AClone(aCols)	
+	If Len(acols) == 0
+        Aviso(STR0079,STR0084 ,{'Ok'}) 
+        M->C2_ROTEIRO := Space(Len(SC2->C2_ROTEIRO))
+        Return
+	EndIf
+	//ÚÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ¿
+	//³Monta aHeader e aCols                                                   ³
+	//ÀÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÙ
+	aHeader	:= Aclone(aHeadGrade[1])
+	aHeader[1] 	:=  {" ","R","@!",4,0,"","","C","","V",""}
+
+	//ÚÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ¿
+	//³Montagem do Array dos campos que poderao ser alterados                  ³
+	//ÀÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÙ
+	For nCntFor := 2 To Len(aHeadgrade[1])
+		aadd(aAltGr,aHeader[nCntFor][2])
+		aHeader[nCntFor][1] += Space(2)+"."
+		aHeader[nCntFor][3] := "@!"
+		aHeader[nCntFor][4] := 4
+		aHeader[nCntFor][5] := 0
+		aHeader[nCntFor][6] := ""		
+		aHeader[nCntFor][9] := "SG2"				
+	Next nCntFor
+	aCols := AClone(aColsRot)
+	For nLinha :=  1 To Len(aColsGrade[nAux])
+		If len(aColsRot) == 0
+			aadd(acols,Array(Len(aHeader)))
+		EndIf
+		For nColuna := 1 To Len(aHeader)
+		    If ValType(aCols[nLinha][nColuna]) == "U"
+				If  nColuna ==  1
+					acols[nLinha][nColuna] :=  aColsGrade[nAux][nLinha][nColuna]
+				Else                                                         
+					acols[nLinha][nColuna] :=  Space(Len(SC2->C2_ROTEIRO))
+				EndIf	
+			EndIf
+		Next nColuna
+	Next nLinha
+	DEFINE MSDIALOG oDlg TITLE STR0083 FROM 10,10 TO 25,68   OF oMainWnd //Roteiro de Operacoes
+		oGet:=MSGetDados():New(20,12,103,223,3,"AllwaysTrue","a650RotaOk()",,.F.,aAltGr,1)
+		oGet:lF3Header:=.T.
+	ACTIVATE MSDIALOG oDlg ON INIT EnchoiceBar(oDlg,{||IIF(oGet:TudoOK(),(oDlg:End(),nOpca:=1),nOpca := 0)},{||oDlg:End()})    
+	If ( nOpcA == 1 )
+		aColsRot := AClone(aCols)
+	EndIf
+	aCols := AClone(aColsCop)
+EndIf
+M->C2_ROTEIRO := Space(Len(SC2->C2_ROTEIRO))
+//ÚÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ¿
+//³ Restaura aRotina Original                                    ³
+//ÀÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÙ
+aRotina:=aClone(aBackRot)
+RestArea(aArea)
+Return .T.
+
+
+/*/
+ÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜ
+±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±
+±±ÚÄÄÄÄÄÄÄÄÄÄÂÄÄÄÄÄÄÄÄÄÄÂÄÄÄÄÄÄÄÂÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÂÄÄÄÄÄÄÂÄÄÄÄÄÄÄÄÄÄ¿±±
+±±³Funcao    ³a650RotaOk³ Autor ³Patricia A. Salomao    ³ Data ³30/01/2002³±±
+±±ÃÄÄÄÄÄÄÄÄÄÄÅÄÄÄÄÄÄÄÄÄÄÁÄÄÄÄÄÄÄÁÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÁÄÄÄÄÄÄÁÄÄÄÄÄÄÄÄÄÄ´±±
+±±³Descri‡…o ³Valida os dados digitados na Grade                          ³±±
+±±ÃÄÄÄÄÄÄÄÄÄÄÅÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ´±±
+±±³Parametros³Nenhum                                                      ³±±
+±±ÃÄÄÄÄÄÄÄÄÄÄÅÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ´±±
+±±³Retorno   ³Logico                                                      ³±±
+±±ÃÄÄÄÄÄÄÄÄÄÄÅÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÂÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ´±±
+±±³   DATA   ³ Programador   ³Manutencao Efetuada                         ³±±
+±±ÃÄÄÄÄÄÄÄÄÄÄÅÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÅÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ´±±
+±±³          ³               ³                                            ³±±
+±±ÀÄÄÄÄÄÄÄÄÄÄÁÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÁÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÙ±±
+±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±
+ßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßß
+/*/
+Function a650RotaOk()
+
+Local nLinha, nColuna, cRoteiro
+Local aLogs    := {}
+Local cMascara	:= GetMv("MV_MASCGRD")
+Local nTamRef	:= Val(Substr(cMascara,1,2))
+Local cProd := Substr(M->C2_PRODUTO,1,nTamRef)
+Local lRet  := .T.                  
+For nLinha :=  1 To Len(aCols)
+	For nColuna := 2 To Len(aHeader)	
+		cProdRef := cProd+acols[nLinha][1]+aHeadGrade[1][nColuna][1]						
+		cRoteiro := aCols[nLinha][nColuna]
+		nQuant   := aColsGrade[1][nLinha][nColuna][1]
+		If nQuant <> 0 
+			dbSelectArea("SG2")
+	        If !(dbSeek(xFilial()+cProdRef+cRoteiro))
+	        	dbSelectArea("SB1")
+	 			If dbSeek(xFilial()+cProdRef+M->C2_LOCAL)
+					If !Empty(SB1->B1_OPERPAD)
+						aCols[nLinha][nColuna] := SB1->B1_OPERPAD
+					Else
+						AADD(aLogs,{cProdRef,cRoteiro})
+					EndIf
+				EndIf	
+			EndIf
+		Endif	
+	Next nColuna
+Next nLinha
+
+If Len(aLogs) > 0                              
+    lRet := .F.
+	DEFINE MSDIALOG oDlg FROM  190,9 TO 310,450 TITLE STR0079 PIXEL	//"ATENCAO
+	@ 20,015 SAY oSay VAR STR0080 SIZE 268, 8 OF oDlg PIXEL //"Foram Informados Roteiros de Operacao Invalidos ..."
+	oSay:SetColor(CLR_HRED,GetSysColor(15))
+	@ 038,305 BTNBMP oBtn1 RESOURCE "BMPPERG" SIZE 25,25 DESIGN ACTION A650RotInv(aLogs) OF oDlg
+	DEFINE SBUTTON FROM 45, 180 TYPE 2 ACTION oDlg:End() ENABLE OF oDlg
+	ACTIVATE MSDIALOG oDlg CENTERED
+EndIf    
+			
+Return lRet
+
+/*
+ÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜ
+±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±
+±±ÚÄÄÄÄÄÄÄÄÄÄÂÄÄÄÄÄÄÄÄÄÄÂÄÄÄÄÄÄÄÂÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÂÄÄÄÄÄÄÂÄÄÄÄÄÄÄÄÄÄ¿±±
+±±³Fun‡…o    ³a650RotInv³ Autor ³Patricia A. Salomao    ³ Data ³31/01/2002³±±
+±±ÃÄÄÄÄÄÄÄÄÄÄÅÄÄÄÄÄÄÄÄÄÄÁÄÄÄÄÄÄÄÁÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÁÄÄÄÄÄÄÁÄÄÄÄÄÄÄÄÄÄ´±±
+±±³Descri‡…o ³ Abre janela contendo os roteiros invalidos que foram infor-³±±
+±±³          ³ mados.                                                     ³±±
+±±ÃÄÄÄÄÄÄÄÄÄÄÅÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ´±±
+±±³ Uso      ³ MATA650                                                    ³±±
+±±ÀÄÄÄÄÄÄÄÄÄÄÁÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÙ±±
+±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±
+ßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßß
+*/
+Function a650RotInv(aLogs)
+LOCAL oDlg,oQual,cVarq
+DEFINE MSDIALOG oDlg TITLE STR0081 From 130,70 To 350,360 OF oMainWnd PIXEL 
+@ 10,13 TO 90,122 LABEL "" OF oDlg  PIXEL
+@ 20,18 LISTBOX oQual VAR cVarQ Fields HEADER STR0018,STR0082 SIZE 100,62 NOSCROLL OF oDlg PIXEL //Produto, Recurso
+oQual:SetArray(aLogs)
+oQual:bLine := { || {aLogs[oQual:nAt,1],aLogs[oQual:nAt,2]}}
+DEFINE SBUTTON FROM 95,90 TYPE 2 ACTION oDlg:End() ENABLE OF oDlg PIXEL
+ACTIVATE MSDIALOG oDlg
+RETURN

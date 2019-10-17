@@ -1,0 +1,36 @@
+#ifdef SPANISH
+	#define STR0001 "Este programa emitira el extracto bancario mediante modelo CNAB."
+	#define STR0002 "Para que emitir el mismo debe efectuarse la "
+	#define STR0003 "configuracion conforme documentacion del banco."
+	#define STR0004 "Resumen Bancario - Copia CNAB"
+	#define STR0005 "FECHA     DOCUM     HISTORIAL                             CREDITO              DEBITO               SALDO"
+	#define STR0006 "A rayas"
+	#define STR0007 "Administracion"
+	#define STR0008 "SALDO INICIAL EN"
+	#define STR0009 "TOTAL CREDITOS"
+	#define STR0010 "TOTAL DEBITOS "
+#else
+	#ifdef ENGLISH
+		#define STR0001 "This report prints the bank statement through CNAB standard. "
+		#define STR0002 "In order to issue it, set the configuration according to "
+		#define STR0003 "bank documentation.                  "
+		#define STR0004 "Bank Statement-through CNAB"
+		#define STR0005 "DATE      DOCUM     HISTORY                               CREDIT               DEBIT                BALAN"
+		#define STR0006 "Z.Form "
+		#define STR0007 "Management   "
+		#define STR0008 "INITIAL BALANCE IN"
+		#define STR0009 "TOTAL CREDITS "
+		#define STR0010 "TOTAL DEBITS  "
+	#else
+		#define STR0001 "Este relatório irá emitir o extrato bancario via padräo CNAB."
+		#define STR0002 "Para que o mesmo seja emitido, deverá ser efetuado a configu-"
+		#define STR0003 "raçäo conforme documentaçäo do banco."
+		#define STR0004 "Extrato Bancario - Via CNAB"
+		#define STR0005 "DATA      DOCUM     HISTORICO                             CREDITO              DEBITO               SALDO"
+		#define STR0006 "Zebrado"
+		#define STR0007 "Administração"
+		#define STR0008 "SALDO INICIAL EM "
+		#define STR0009 "TOTAL CREDITOS"
+		#define STR0010 "TOTAL DEBITOS "
+	#endif
+#endif

@@ -1,0 +1,2531 @@
+#INCLUDE "Protheus.ch"
+#INCLUDE "GPEM110.CH"
+
+#IFNDEF TOP
+	#DEFINE __TiposValidos__ 			( "FL*13*PR*PF*PD" )
+#ELSE
+	#DEFINE __TiposValidos__ 			( "'FL','13','PR','PF','PD'" )
+#ENDIF	
+
+#DEFINE __Elementos_aSrvReturn__	09	
+
+#DEFINE __aSrvReturn_TudoOK__		01
+#DEFINE __aSrvReturn_aCols__ 		02
+#DEFINE __aSrvReturn_aHeader__		03
+#DEFINE __aSrvReturn_aRecnos__		04
+#DEFINE __aSrvReturn_nPosFil__		05
+#DEFINE __aSrvReturn_nPosPD__		06
+#DEFINE __aSrvReturn_nPosLctop__ 	07
+#DEFINE __aSrvReturn_aRecLctop__	08
+#DEFINE __aSrvReturn_cAliasLctop__	09
+
+#DEFINE __Elementos_aSRZzs__		04
+
+#DEFINE __aSzs_Pos_Fil__			01
+#DEFINE __aSzs_Pos_Cc__				02
+#DEFINE __aSzs_Pos_Mat__			03
+#DEFINE __aSzs_Pos_Pd__				04
+
+Static lGpem110ExecInRemote
+
+/*/
+эээээээээээээээээээээээээээээээээээээээээээээээээээээээээээээээээээээээээээээ
+╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠
+╠╠зддддддддддбддддддддддбдддддддбдддддддддддддддддддддддбддддддбдддддддддд©╠╠
+╠╠ЁFun┤┘o    Ё GPEM110  Ё Autor Ё Marcos Stiefano       Ё Data Ё 07/06/95 Ё╠╠
+╠╠цддддддддддеддддддддддадддддддадддддддддддддддддддддддаддддддадддддддддд╢╠╠
+╠╠ЁDescri┤┘o Ё Contabiliza┤ao da Folha                                    Ё╠╠
+╠╠цддддддддддедддддддддддддддддддддддддддддддддддддддддддддддддддддддддддд╢╠╠
+╠╠ЁSintaxe   Ё GEPM110()                                                  Ё╠╠
+╠╠цддддддддддедддддддддддддддддддддддддддддддддддддддддддддддддддддддддддд╢╠╠
+╠╠Ё         ATUALIZACOES SOFRIDAS DESDE A CONSTRU─AO INICIAL.             Ё╠╠
+╠╠цддддддддддддбддддддддбддддддбдддддддддддддддддддддддддддддддддддддддддд╢╠╠
+╠╠ЁProgramador Ё Data   Ё BOPS Ё  Motivo da Alteracao                     Ё╠╠
+╠╠цддддддддддддеддддддддеддддддедддддддддддддддддддддддддддддддддддддддддд╢╠╠
+╠╠ЁMauricio MR Ё04/03/02Ё------Ё Inclusao de Traducao de Perguntas.       Ё╠╠
+╠╠ЁEmerson     Ё25/04/02Ё------Ё Criar registro de controle no SRZ mesmo  Ё╠╠
+╠╠Ё            Ё        Ё      Ё que nenhum lancamento tenha sido gerado. Ё╠╠ 
+╠╠ЁEmerson     Ё30/04/02Ё------Ё Inclusao do ponto de entrada "GP110APL". Ё╠╠
+╠╠ЁMauro       Ё13/05/02Ё------Ё Contabilizacao Varias Filiais Cons.Param.Ё╠╠
+╠╠ЁEmerson     Ё02/07/02Ё------Ё Excluir parametro 10 (.T.) de fMonta_Tpr.Ё╠╠
+╠╠ЁEmerson     Ё10/07/02Ё------Ё Testar quebra de Filial+Centro de Custo  Ё╠╠
+╠╠Ё            Ё        Ё      Ё na geracao de lanctos provisao-fGeraCtab.Ё╠╠ 
+╠╠ЁEmerson     Ё30/08/02Ё------Ё Se nao existir registro mes de referenciaЁ╠╠
+╠╠Ё            Ё        Ё      Ё despreza funcionario na contab. provisao.Ё╠╠ 
+╠╠ЁEmerson     Ё07/09/02Ё------Ё Adicionar categorias "I*J" a cCateg.     Ё╠╠
+╠╠ЁEmerson     Ё10/10/02Ё------Ё Comparar RZ_CC apenas com "=" e nao "==".Ё╠╠
+╠╠ЁEmerson     Ё10/10/02Ё------Ё Posicionar SRA/SI3 de acordo com SRZ.	  Ё╠╠
+╠╠ЁEmerson     Ё12/05/03Ё------Ё Passar a gerar os lancamentos de ambas asЁ╠╠ 
+╠╠Ё            Ё        Ё      Ё provisoes, contabilizando a selecionada. Ё╠╠ 
+╠╠ЁMarinaldo   Ё30/05/03ЁMelhorЁ Otimizacao do processo de  ContabilizacaoЁ╠╠ 
+╠╠юддддддддддддаддддддддаддддддадддддддддддддддддддддддддддддддддддддддддды╠╠
+╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠
+ъъъъъъъъъъъъъъъъъъъъъъъъъъъъъъъъъъъъъъъъъъъъъъъъъъъъъъъъъъъъъъъъъъъъъъъъъъъъъ*/
+Function GPEM110()
+
+Local aArea		:= GetArea()
+Local aSays		:= {}
+Local aButtons	:= {}
+Local cSvFilAnt := cFilAnt
+Local nOpca		:= 0.00
+
+Private aRotina := {;
+						{ STR0005 , "GPE110Par" , 0 , 1},;	//"Par┐metros"
+                      	{ STR0006 , "GPE110Con" , 0 , 4} ;	//"Autom═tica"
+                    } 
+Private cCadastro	:= OemToAnsi(STR0007) //"Contabiliza┤└o da Folha"
+
+AcertaSX1() /* Essa Chamada devera ser Excluida para as proximas versoes */
+
+/*
+здддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддд©
+Ё Monta Tela de Entrada para a Selecao dos Parametros          Ё
+юдддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддды*/
+aAdd(aSays,OemToAnsi(STR0008) )  //"Este programa contabilizar═ os lan┤amentos da folha de pagamento "
+aAdd(aSays,OemToAnsi(STR0009) )  //"para a contabilidade lendo o arquivo (SRZ) . Dever═ ser utilizado"
+aAdd(aSays,OemToAnsi(STR0010) )  //"apos as emissДes da folha, GRPS e provisДes."
+
+aAdd(aButtons, { 5,.T.,{|| Pergunte("GPM110",.T. ) } } )
+aAdd(aButtons, { 1,.T.,{|o| nOpca := 1,IF(gpconfOK(),FechaBatch(),nOpca:=0) }} )
+aAdd(aButtons, { 2,.T.,{|o| FechaBatch() }} )
+	
+FormBatch( cCadastro , aSays , aButtons )
+
+/*
+здддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддд©
+Ё Variaveis utilizadas para parametros                         Ё
+юдддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддды*/
+IF ( nOpca == 1 )
+	Gpem110Processa( .T. , .T. )
+EndIF
+
+/*
+здддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддд©
+Ё Restaura a Filial de Entrada                                 Ё
+юдддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддды*/
+cFilAnt := cSvFilAnt
+
+/*
+здддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддд©
+Ё Restaura os Ponteiros de Entrada                             Ё
+юдддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддды*/
+RestArea( aArea )
+
+Return( NIL )
+
+/*
+зддддддддддбдддддддддддддддбдддддбдддддддддддддддддддддбддддддбдддддддддд©
+ЁFun┤└o    ЁGpem110ProcessaЁAutorЁEquipe Advanced RH   Ё Data Ё14/05/2003Ё
+цддддддддддедддддддддддддддадддддадддддддддддддддддддддаддддддадддддддддд╢
+ЁDescri┤└o ЁProcessa a Contabilizacao do Modulo SIGAGPE    			     Ё
+цддддддддддеддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддд╢
+ЁSintaxe   Ё<Vide Parametros Formais>									 Ё
+цддддддддддеддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддд╢
+ЁParametrosЁ<Vide Parametros Formais>									 Ё
+цддддддддддеддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддд╢
+ЁRetorno   ЁNIL                                                   	     Ё
+цддддддддддеддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддд╢
+ЁObserva┤└oЁ                                                      	     Ё
+цддддддддддеддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддд╢
+Ё Uso      ЁGPEM110  													 Ё
+юддддддддддаддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддды*/
+Function Gpem110Processa( lShowProc , lExecInRemote  )
+
+/*
+здддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддд©
+Ё As variaveis Locais de Ambiente devem Ser Declaradas e IniciaЁ
+Ё lizadas Aqui                                                 Ё
+юдддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддды*/
+Local aArea			:= GetArea()
+Local aAreaSRZ		:= SRZ->( GetArea() )
+Local aAreaSRA		:= SRA->( GetArea() )
+Local aAreaSI3		:= SI3->( GetArea() )
+Local aAreaSM0		:= SM0->( GetArea() )
+Local cSvFilAnt		:= cFilAnt
+
+/*
+здддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддд©
+Ё As variaveis Locais do corpo do programa devem ser Aqui DeclaЁ
+Ё radas mas  inicializa das Abaixo. GOTO :INIT LOCAL           Ё
+юдддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддды*/
+Local aSrvLanc
+Local aCT5
+Local aPadrao
+Local aFiliais
+Local aLogIncon
+Local aLogTitle
+Local aFilContab
+Local aSRZzs
+Local aModuloReSet
+Local bSrvLancAsc
+Local bTotal
+Local cInconsist
+Local cSrvPds
+Local cArquivo
+Local cFilConDe
+Local cFilConAte
+Local cAliasCc
+Local cZzsInRZFil
+Local cZzsInRZCc
+Local cZzsInRZMat
+Local cZzsInRZPd
+Local cFilReplace
+Local cFilContab
+Local lExistMatSRZ
+Local lGerouFol
+Local lGerou13s
+Local lSrzCompart
+Local lSrvCompart
+Local lCt5Compart
+Local lSi5Compart
+Local lMvCPosSrv
+Local lMvCPosLcp
+Local lSrvLancOk
+Local lCtbInUse
+Local nContador
+Local nPosPadrao
+Local nFilial
+Local nFiliais
+Local nVerba
+Local nVerbas
+Local nLastRec
+Local cMesAno	:= SuperGetMv("MV_FOLMES",,"")		//Parametro mes de processamento da folha
+Local lContFech := SuperGetMv("MV_GPCTAFM",,.F.)   //Parametro se deve contabilizar somente apos fechamento
+
+#IFDEF TOP             	
+   	Local aSrzFields
+	Local cQuery
+	Local cQueryPds
+	Local cQueryOrd
+	Local cSrzQuery
+	Local cQueryTmp
+	Local cSrzFields
+	Local cRetSqlName
+	Local cSRZIndexKey
+	Local lSelectPds
+	Local nSrzFields
+	Local nField
+#ENDIF
+Private cMesCont := SuperGetMv("MV_GPMESCT",,"")  //Parametro que armazena o ultimo mes contabilizado, atualizado apos a contabilizacao.
+If cPaisLoc == "URU"
+	Private nTotFol := 0
+	Private nTot13  := 0
+	Private lAgui := .F.
+	Private lFolha:= .F. 
+	Private nFuncFol := 0
+Endif
+DEFAULT lShowProc := .F.
+
+/*
+здддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддд©
+Ё Verifica se o Processo de Contabilizacao esta sendo ExecutadoЁ
+Ё via Remote												   Ё
+юдддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддды*/
+Gpem110InRemote( @lExecInRemote )
+
+Begin Sequence
+
+	/*
+	здддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддд©
+	Ё Chamada Recursiva com Barra de Processamento                 Ё
+	юдддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддды*/
+	IF ( ( lShowProc ) .and. ( lGpem110ExecInRemote ) )
+		Processa( {|lEnd| Gpem110Processa( .F. , lGpem110ExecInRemote ) , STR0011 } )  //"Contabiliza┤└o da Folha"
+		Break
+	EndIF
+
+	/*
+	здддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддд©
+	Ё :INIT LOCAL												   Ё
+	Ё Aqui eh que as variaveis Locais que serao utilizadas no corpoЁ
+	Ё do progama deverao ser Inicializadas						   Ё
+	юдддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддды*/
+	aSrvLanc		:= {}
+	aCT5			:= {}
+	aPadrao			:= {}
+	aFiliais		:= {}
+	aLogIncon		:= {}
+	aLogTitle		:= {}
+	aFilContab		:= {}
+	aSRZzs			:= SRZzs()
+	bSrvLancAsc		:= { || NIL }
+	bTotal			:= { || NIL }
+	cInconsist		:= ""
+	cSrvPds			:= ""
+	cArquivo		:= ""
+	cFilConDe		:= Space(2)
+	cFilConAte		:= cFilConDe
+	cAliasCc    	:= ""
+	cZzsInRZFil		:= aSRZzs[__aSzs_Pos_Fil__]
+	cZzsInRZCc		:= aSRZzs[__aSzs_Pos_Cc__ ]
+	cZzsInRZMat		:= aSRZzs[__aSzs_Pos_Mat__]
+	cZzsInRZPd		:= aSRZzs[__aSzs_Pos_Pd__ ]
+	cFilReplace		:= ""
+	cFilContab		:= ""
+	lExistMatSRZ	:= ( Type("SRZ->RZ_MAT") == "C" )
+	lGerouFol		:= .F. 
+	lGerou13s 		:= .F.
+	lSrzCompart		:= Empty( xFilial( "SRZ" ) )
+	lSrvCompart		:= Empty( xFilial( "SRV" ) )
+	lCt5Compart		:= ( ( Select("CT5") > 0.00 ) .and. Empty( xFilial( "CT5" ) ) )
+	lSi5Compart		:= ( ( Select("SI5") > 0.00 ) .and. Empty( xFilial( "SI5" ) ) )
+	lMvCPosSrv		:= .F.
+	lMvCPosLcp		:= .F.
+	lSrvLancOk		:= .F.
+	lCtbInUse		:= CtbInUse()
+	nContador		:= 0.00
+	nPosPadrao		:= 0.00
+	nFilial			:= 0.00
+	nFiliais		:= 0.00
+	nVerba			:= 0.00
+	nVerbas			:= 0.00
+	nLastRec		:= 0.00
+
+	#IFDEF TOP
+	   	aSrzFields		:= SRZ->( dbStruct() )
+		cQuery			:= ""
+		cQueryPds		:= ""
+		cQueryOrd       := ""
+		cSrzQuery 		:= ""
+		cQueryTmp		:= ""
+		cSrzFields		:= ""
+		cRetSqlName		:= InitSqlName( "SRZ" )
+		cSRZIndexKey	:= ""
+		lSelectPds		:= .T.
+		nSrzFields		:= Len( aSrzFields	)
+		nField			:= 0.00
+	#ENDIF
+
+	Private Inclui		:= .T.
+	Private cLote		:= ""
+	Private cPadrao		:= ""	
+	Private dDataLanc	:= dDataBase
+	Private nTotRegs 	:= 0.00
+	Private nTotal   	:= 0.00
+	Private cEncInss	:= GetMv("MV_ENCINSS",,"N")
+	
+	/*
+	здддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддд©
+	Ё Algum Lugar Esta Zerando nModulo, Entao Aqui garantimos   queЁ
+	Ё Tenha o Conteudo correspondente ao Modulo SIGAGPE            Ё
+	юдддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддды*/
+	IF ( ( Type("nModulo") == "U" ) .or. ( ( Type("nModulo") == "N" ) .and. ( nModulo == 0.00 ) ) )
+		aModuloReSet := SetModulo( "SIGAGPE" , "GPE" )
+	EndIF
+	
+	/*
+	здддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддд©
+	Ё Carrega as Perguntas										   Ё
+	юдддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддды*/
+	Pergunte( "GPM110" , .F. )
+	/*
+	здддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддд©
+	Ё Transfere as Perguntas para variaveis de Memoria			   Ё
+	юдддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддды*/
+	cMesAnoCtab := mv_par01								// MM/AAAA da Contabilizacao
+	lFolPgto    := ( mv_par02 == 1 .or. mv_par02 == 3 ) // Contabilizar Folha:1-Folha de Pgto;2-Folha de 13o Sal;3-Ambas;4-Nao
+	lFol13Sl    := ( mv_par02 == 2 .or. mv_par02 == 3 ) // Contabilizar Provisao:1-Ferias;2-13o.Sal.;3-Ambas;4-Nao
+	lProvFer    := ( mv_par03 == 1 .or. mv_par03 == 3 ) // Provisao de Ferias
+	lProv13o    := ( mv_par03 == 2 .or. mv_par03 == 3 )	// Provisao de 13o. Salario
+	lCtabBxaFer := ( mv_par04 == 1 )                    // Cont.Bx.Ferias.Prov:1-Sim;2-Nao
+	lCtabBxaRes := ( mv_par05 == 1 )                    // Cont.Bx.Res.Prov:1-Sim;2-Nao
+	lDigita     := ( mv_par06 == 1 )					// Mostra Lancamentos:1-Sim;2-Nao
+	lAglut      := ( mv_par07 == 1 )					// Aglutina Lancamentos:1-Sim;2-Nao
+	cFilConDe	:= mv_par08								// Filial De
+	cFilConAte	:= mv_par09								// Filial Ate
+	If cPaisLoc == "DOM"
+   	cSemana := mv_par10
+	Endif
+
+	/*
+	здддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддд©
+	Ё VERIFICA MES DE PROCESSAMENTO DA FOLHA COM MES DE CONTABILIZACAO Ё
+	юдддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддды*/
+ 	If Right(cMesAnoCtab,4)+Left(cMesAnoCtab,2) > cMesAno 
+		MsgInfo(  STR0047 + ": "+ Right(cMesAno,2)+ "/" + Left(cMesAno,4) ,STR0044 ) //"Aviso"#"Mes de Contabilizacao nao pode ser maior que o mes de Processamento Atual"
+  	    Return
+  	Endif    
+
+	/*
+	здддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддд©
+	Ё VERIFICA SE DEVE CONTABILIZAR SOMENTE APOS FECHAMENTO CONFORME PARAMETRO Ё
+	юдддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддды*/
+	If lContFech .And. cMesAno <= Right(cMesAnoCtab,4)+Left(cMesAnoCtab,2)
+		MsgInfo(  STR0043, STR0042 ) //Aviso#Fechamento do mes nao foi processado
+	   Return
+	Endif
+
+	/*
+	здддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддд©
+	Ё VERIFICA ULTIMO MES CONTABILIZADO COM O MES QUE ESTA SENDO CONTABILIZADO Ё
+	Ё E AVISO USUARIO QUE MES E MENOR QUE ULTIMO CONTABILIZADO COM DE CONTINUARЁ
+	юдддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддды*/
+	If cPaisLoc <> "CHI"
+		If cMesCont >= Right(cMesAnoCtab,4)+Left(cMesAnoCtab,2)
+			IF !MsgNoYes(OemToAnsi(STR0045)+ cMesAnoCtab+CRLF+OemToAnsi(STR0046)+":"+Right(cMesCont,2)+Left(cMesCont,4)+CRLF+OemToAnsi(STR0048),OemToAnsi(STR0044)) //"ATEN─▌O"#"O Mes que esta sendo Contabilizado, "#" e menor que o mes da ultima contabilizacao, "#"Verifique se mes ja foi contabilizado."
+  				Return                                                    //#"Verifique se mes ja foi contabilizado."
+			EndIF
+		Endif	
+	Else
+		If lContFech .And. cMesCont >= Right(cMesAnoCtab,4)+Left(cMesAnoCtab,2) 
+			MsgInfo(  STR0049, STR0042 ) //Aviso#Este mes ja foi contabilizado
+		Endif		   
+	Endif	
+	/*
+	здддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддд©
+	Ё Gerar arquivo SRZ com os lancamentos contabeis			   Ё
+	юдддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддды*/
+	IF ( lFolPgto )	// Folha Pagto / Indeterminado-Determinado
+		lGerouFol := fGeraFolSRZ(1,{1,2},cMesAnoCtab) 
+	EndIF
+	
+	IF ( lFol13Sl )	// Folha 13╖ / Indeterminado-Determinado
+		lGerou13s := fGeraFolSRZ(2,{1,2},cMesAnoCtab) 
+	EndIF
+	
+	/*
+	здддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддд©
+	Ё Inicializa as constantes e chama a funcao fGeraProvSrz()	   |
+	юдддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддды*/
+	IF ( ( lProvFer ) .or. ( lProv13o ) )	// "Geracao de Lancamentos - Provisao"
+		GpeProvisao(STR0023,cMesAnoCtab,,,6)
+	EndIF
+	
+	/*
+	здддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддд©
+	Ё Posiciona arquivos na Ordem 1 para a contabilizacao 		   Ё
+	юдддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддды*/
+	SRA->( dbSetOrder( 01 ) )
+	
+	/*
+	здддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддд©
+	Ё Define o Alias do arquivo de Centro de Custo e Seleciona a orЁ
+	Ё dem														   Ё
+	юдддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддды*/
+	cAliasCc := IF( lCtbInUse , "CTT" , "SI3" )
+	(cAliasCc)->( dbSetOrder( 01 ) )
+	
+	/*
+	здддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддд©
+	Ё Seleciona a Ordem 1 para o arquivo de Lancamentos Padroes    Ё
+	юдддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддды*/
+	IF ( lCtbInUse )
+		CT5->( dbSetOrder( 01 ) )
+	Else
+		SI5->( dbSetOrder( 01 ) )
+	EndIF
+	
+	/*
+	здддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддд©
+	Ё Monta Bloco para o aScan no aSrvLanc                		   Ё
+	юдддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддды*/
+	bSrvLancAsc	:= { |x|;
+					  		(;
+					  			( x[ aSrvLanc[ __aSrvReturn_nPosFil__ ] ] == RZ_FILIAL ) .or. ;
+					  			( Empty( x[ aSrvLanc[ __aSrvReturn_nPosFil__ ] ] ) );
+					  		) .and. ;
+					  		( x[ aSrvLanc[ __aSrvReturn_nPosPD__ ] ] == RZ_PD );
+					}
+	
+	/*
+	здддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддд©
+	Ё Carrega as Filiais que serao utilizadas para a ContabilizacaoЁ
+	юдддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддды*/
+	aFiliais := Gpem110FilCar( cEmpAnt , cFilConDe , cFilConAte  )
+	
+	/*
+	здддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддд©
+	Ё Redefine o Conteudo das variavels cFilConDe e cFilConAte quanЁ
+	Ёdo modo de acesso do SRZ for compartilhado					   Ё
+	юдддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддды*/
+	IF ( lSrzCompart )
+		cFilConDe	:= xFilial( "SRZ" , cFilConDe 	)
+		cFilConAte	:= xFilial( "SRZ" , cFilConAte	)
+	EndIF
+
+	/*
+	здддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддд©
+	Ё Acertar valores do SRZ antes da contabilizacao               Ё
+	юдддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддды*/
+	IF ( ExistBlock( "GP110ACT" ) )
+		/*
+		здддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддд©
+		ЁExistem Clientes que, para contabilizar Todas as filiais    emЁ
+		Ёuma, mesmo com o Modo de Acesso do SRZ igual a Exclusivo, alteЁ
+		Ёram o conteudo do campo RZ_FILIAL para branco (Simulando um arЁ
+		Ёquivo compartilhado). Para prever essas situacoes, e, se o ponЁ
+		Ёponto de Entrada abaixo retornar conteudo correspondente a  fiЁ
+		Ёlial a ser pesquisada e Contabilizada Array com dois ElementosЁ
+		ЁObs.: Recomendamos o uso da funcao SRZFilReplace, caso seja neЁ
+		Ёcessario estar dando Replace no campo RZ_FILIAL. A funcao deveЁ
+		Ёra ser chamada da seguinte forma:                             Ё
+		ЁSRZFilReplace( cFilReplace , [ bCondReplace ] )               Ё
+		юдддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддды*/
+		aFilContab := ExecBlock( "GP110ACT" , .F. , .F. )
+		IF ( ( ValType( aFilContab ) == "A" ) .and. ( Len( aFilContab ) == 2 ) )
+			cFilReplace := aFilContab[ 01 ]
+			cFilContab	:= aFilContab[ 02 ]
+			/*
+			здддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддд©
+			Ё Se o Retorno do ExecBlock for Caracter e o Tamanho for EquivaЁ
+			Ё Lente ao Tamanho do RZ_FILIAL								   Ё
+			юдддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддды*/
+			IF ( ( ValType( cFilReplace ) == "C" ) .and. ( Len( cFilReplace ) == TamSx3("RZ_FILIAL")[1] ) ) .and.;
+			   ( ( ValType( cFilContab  ) == "C" ) .and. ( Len( cFilContab  ) == TamSx3("RZ_FILIAL")[1] ) ) 
+				/*
+				здддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддд©
+				Ё Verifica se a Filial Onde sera Efetuada a Contabilizacao   ehЁ
+				Ё Valida													   Ё
+				юдддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддды*/
+				IF ( aScan( aFiliais , { |x| x[1] == cFilContab } ) == 0.00 )
+		 			cInconsist := ( STR0039 + cFilContab )	//"A Filial: " 
+		 			cInconsist += STR0040					//",Retornada pelo Ponto de Entrada GP110ACT eh Invalida."
+		 			aAdd( aLogIncon , cInconsist )
+		 			cInconsist := STR0041					//"Informe uma Filial valida para que possa ocorrer a contabilizacao."
+					aAdd( aLogIncon , cInconsist )
+					Break
+				EndIF
+				/*
+				здддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддд©
+				Ё Assume a Filial Retornada pelo ExecBlock                     Ё
+				юдддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддды*/
+				cFilConAte := ( cFilConDe := cFilReplace )
+				/*
+				здддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддд©
+				Ё Simulando o SRZ compartilhado                                Ё
+				юдддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддды*/
+				lSrzCompart	:= .T.
+			EndIF
+		EndIF
+	EndIF
+	
+	#IFNDEF TOP
+		/*
+		здддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддд©
+		Ё Carrega Regua de Processamento                               Ё
+		юдддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддды*/
+		IF ( lGpem110ExecInRemote )
+			ProcRegua( ( SRZ->( RecCount() ) + 1 ) )
+		EndIF	
+	#ELSE
+		For nField := 1 To nSrzFields
+			cSrzFields += aSrzFields[ nField , 01 ] + ", "
+		Next nField
+		/*
+		здддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддд©
+		Ё Retira a Ultima Virgula									   Ё
+		юдддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддды*/
+		cSrzFields := SubStr( cSrzFields , 1 , Len( cSrzFields ) - 2 )
+	#ENDIF
+
+	/*
+	здддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддд©
+	Ё Define o Bloco para totalizacao                              Ё
+	юдддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддды*/
+	bTotal := { || ;
+	  				RodaProva(nHdlPrv,nTotal) ,;
+	  				cA100Incl(cArquivo,nHdlPrv,3,cLote,lDigita,lAglut);
+	  		  }
+	
+	/*
+	здддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддд©
+	Ё Percorre Todas as Filiais Selecionadas nos Parametros De/Ate Ё
+	юдддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддды*/
+	nFiliais := Len( aFiliais )
+	For nFilial := 1 To nFiliais
+	
+		/*
+		здддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддд©
+		Ё Altera o Conteudo de cFilAnt                                 Ё
+		юдддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддды*/
+		IF !Empty( cFilContab )
+			cFilAnt := cFilContab
+		Else
+			cFilAnt := aFiliais[ nFilial , 01 ]
+		EndIF	
+	
+		/*
+		здддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддд©
+		Ё Carrega conteudo dos parametros                              Ё
+		юдддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддды*/
+		lMvCPosSrv	:= ( SuperGetMV("MV_CPOSSRV",NIL,"S") == "S" )
+		lMvCPosLcp	:= ( SuperGetMV("MV_CPOSLCP",NIL,"S") == "S" )
+	
+		/*
+		здддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддд©
+		Ё Reincializa aCT5 a Cada Filial                               Ё
+		юдддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддды*/
+		IF !( lCt5Compart )
+			aCT5 := {}
+		EndIF
+		
+		/*
+		здддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддд©
+		Ё Reincializa aPadrao a Cada Filial                            Ё
+		юдддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддды*/
+		IF ( ( lCtbInUse ) .and. !( lCt5Compart ) )
+			aPadrao := {}			
+		ElseIF !( lSi5Compart )
+			aPadrao := {}
+		EndIF
+	
+		/*
+		здддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддд©
+		Ё Posiciona o SM0 na Filial Corrente                           Ё
+		юдддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддды*/
+		SM0->( MsGoto( aFiliais[ nFilial , 02 ] ) )
+	
+		/*
+		здддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддд©
+		Ё Carrega Regua de Processamento                               Ё
+		юдддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддды*/
+		IF ( Empty( aSrvLanc ) .or. !( lSrvCompart ) )
+			/*
+			здддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддд©
+			Ё Carrega as Verbas Vs Lancamentos Padroes. Se nao Existir,  GeЁ
+			Ё ra Log													   Ё
+			юдддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддды*/
+			IF !( lSrvLancOk := ( aSrvLanc := ( Gpem110SrvLanc( cFilAnt , cFilAnt , @aPadrao , lCtbInUse ) ) )[__aSrvReturn_TudoOK__] )
+				cInconsist := ( STR0025 + cFilAnt )	//" - Nao Existem Verbas a serem contabilizadas na filial: "
+				cInconsist += STR0026				//" - Verifique se os Lancamentos Padroes estao definidos."
+				aAdd( aLogIncon , cInconsist )				
+				Loop
+			Else
+				/*
+				здддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддд©
+				Ё Reinicializa lSelectPds									   Ё
+				юдддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддды*/
+				lSelectPds := .T.
+				/*
+				здддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддд©
+				Ё Monta String Com as Verbas que serao Utilizadas na  ContabiliЁ
+				Ё zacao														   Ё
+				юдддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддды*/
+				cSrvPds := ""
+				nVerbas := Len( aSrvLanc[ __aSrvReturn_aCols__ ] )
+				For nVerba := 1 To nVerbas
+					cSrvPds += ( "'" + aSrvLanc[ __aSrvReturn_aCols__ , nVerba , aSrvLanc[ __aSrvReturn_nPosPD__ ] ] + "'," )
+				Next nVerba
+				/*
+				здддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддд©
+				Ё Retira a Ultima Virgula									   Ё
+				юдддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддды*/
+				cSrvPds := SubStr( cSrvPds , 1 , Len( cSrvPds ) - 1 )
+			EndIF
+		EndIF
+	
+		/*
+		здддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддд©
+		ЁSe nao Conseguiu Carregar as Verbas x Lancamentos Padroes paraЁ
+		Ёa Filial pesquisa a proxima								   Ё
+		юдддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддды*/
+		IF !( lSrvLancOk )
+			cInconsist := ( STR0025 + cFilAnt )	//" - Nao Existem Verbas a serem contabilizadas na filial: "
+			cInconsist += STR0026				//" - Verifique se os Lancamentos Padroes estao definidos."
+			IF ( aScan( aLogIncon , { |x| ( x == cInconsist ) } ) == 0.00 )
+				aAdd( aLogIncon , cInconsist )
+			EndIF
+			Loop
+		EndIF
+	
+		/*
+		здддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддд©
+		Ё Carrega o Numero do Lote Contabil                            Ё
+		юдддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддды*/
+		IF Empty( cLote := Gpem110LoteCont( "GPE" , cFilAnt ) )
+			cInconsist := ( STR0027 + cFilAnt )		//" - Nao Existe o Lote Contabil GPE para a Filial: "
+			cInconsist += STR0028					//" - Verifique no SX5 (Tabelas:Tabela 09) a Existencia do Lote."
+			aAdd( aLogIncon , cInconsist )				
+			Loop
+		EndIF
+	
+		/*
+		здддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддд©
+		Ё Inicializa Variaveis                                         Ё
+		юдддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддды*/
+		nContador := 0
+		nTotal    := 0
+		nHdlPrv   := 0
+	
+		/*
+		здддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддд©
+		Ё Percorre todos os Registros do SRZ para a Filial corrente	   Ё
+		юдддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддды*/
+		dbSelectArea( "SRZ" )
+		#IFNDEF TOP
+			SRZ->( dbSeek( IF( !( lSrzCompart ) , cFilAnt , cFilConDe ) , .T. ) )
+		#ELSE
+			
+			/*
+			здддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддд©
+			Ё Obtem a Chave do Indice									   Ё
+			юдддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддды*/
+			cSRZIndexKey := SRZ->( IndexKey() )
+			
+			/*
+			здддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддд©
+			Ё Monta a Query para selecao das informacoes do SRZ			   Ё
+			юдддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддды*/
+			cSrzQuery	:= "SELECT "
+			cSrzQuery	+= cSrzFields
+			cQuery		:= " FROM "
+			cQuery		+= cRetSqlName + " SRZ "
+			cQuery		+= "WHERE "
+			cQuery		+= "SRZ.RZ_FILIAL='" + IF( lSrzCompart , cFilConDe , cFilAnt ) + "'"
+			cQuery		+= " AND "
+			/*
+			здддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддд©
+			Ё Despreza Centros de Custo com 'zz...'						   Ё
+			юдддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддды*/
+			cQuery		+= "SRZ.RZ_CC NOT IN("+ cZzsInRZCc + ")"
+			/*
+			здддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддд©
+			Ё Filtra as Matriculas                 						   Ё
+			юдддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддды*/
+			IF ( lExistMatSRZ )
+		   		IF ( cEncInss == "S" )
+					/*
+					здддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддд©
+					Ё Despreza os RZ_MAT com 'zz..' quando cEndInss == "S"		   Ё
+					юдддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддды*/
+		    		cQuery	+= " AND "
+		    		cQuery	+= "SRZ.RZ_MAT NOT IN("+ cZzsInRZMat + ")"
+		      	ElseIF ( cEncInss == "N" )
+					/*
+					здддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддд©
+					Ё Despreza os RZ_MAT sem 'zz..' quando cEndInss == "N"		   Ё
+					юдддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддды*/
+		    		cQuery	+= " AND "
+		    		cQuery	+= "SRZ.RZ_MAT IN("+ cZzsInRZMat + ")"
+				EndIF
+			EndIF
+			/*
+			здддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддд©
+			ЁSe Nao Solicitou a Geracao da Folha, ou Se Solicitou e nao conЁ
+			Ёsegui Gerar a Folha										   Ё
+			юдддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддды*/
+			IF ( !( lFolPgto ) .or. ( ( lFolPgto ) .and. !( lGerouFol ) ) )
+				/*
+				здддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддд©
+				ЁDespreza Todos os Lancamentos para o Tipo Folha "FL"          Ё
+				юдддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддды*/
+				cQuery	+= " AND "
+				cQuery	+= "SRZ.RZ_TIPO NOT IN('FL')"
+	        EndIF
+			/*
+			здддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддд©
+			ЁSe Nao Solicitou a Geracao da Folha de 13o. Salario, ou Se  SoЁ
+			Ёlicitou e nao Consegui Gerar Informacoes de 13o. Salario	   Ё
+			юдддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддды*/
+			IF ( !( lFol13Sl ) .or. ( ( lFol13Sl ) .and. !( lGerou13s ) ) )
+				/*
+				здддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддд©
+				ЁDespreza Todos os Lancamentos para o Tipo 13o. Salario "13"   Ё
+				юдддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддды*/
+				cQuery	+= " AND "
+				cQuery	+= "SRZ.RZ_TIPO NOT IN('13')"
+	        EndIF
+			/*
+			здддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддд©
+			ЁSe Nao Solicitou a Geracao da Provisao de Ferias              Ё
+			юдддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддды*/
+			IF !( lProvFer )
+				/*
+				здддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддд©
+				ЁDespreza Todos os Lancamentos para o Tipo Provisao de FErias  Ё
+				Ё"PF"  													       Ё
+				юдддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддды*/
+				cQuery	+= " AND "
+				cQuery	+= "SRZ.RZ_TIPO NOT IN('PF')"
+			ENDIF
+			/*
+			здддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддд©
+			ЁSe Nao Solicitou a Geracao da Provisao de 13o.Salario         Ё
+			юдддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддды*/
+			IF !( lProv13o )
+				/*
+				здддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддд©
+				ЁDespreza Todos os Lancamentos para o Tipo Provisao de 13o.  SaЁ
+				Ёlario														   Ё
+				юдддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддды*/
+				cQuery	+= " AND "
+				cQuery	+= "SRZ.RZ_TIPO NOT IN('PD')"
+			EndIF
+			cQuery		+= " AND "
+			cQuery		+= "SRZ.D_E_L_E_T_=' ' "
+			
+			/*
+			здддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддд©
+			ЁMonta a Query para selecao das Verbas                         Ё
+			юдддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддды*/
+			IF ( lSelectPds )
+				cQueryPds	:= " AND "
+				cQueryPds	+= "SRZ.RZ_PD IN(" + cSrvPds + ")"
+			EndIF
+
+			/*
+			здддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддд©
+			ЁMonta a Query para selecao da Ordem                           Ё
+			юдддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддды*/
+			cQueryOrd	:= "ORDER BY " + SqlOrder( cSRZIndexKey )
+			
+			/*
+			здддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддд©
+			Ё Seleciona as Verbas										   Ё
+			юдддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддды*/
+			IF !( lSelectPds := (;
+									Len(;
+											( cQueryTmp := ChangeQuery( ( cSrzQuery + cQuery + cQueryPds + cQueryOrd ) ) );
+										) <= 15980 ;
+								 );
+				)				 
+				cSrvPds		:= ""
+				cQueryTmp	:= ""
+				cQueryPds	:= ""
+				cSrzQuery	+= cQuery
+				cSrzQuery	+= cQueryOrd
+				cQueryOrd	:= ""
+				cSrzQuery	:= ChangeQuery(cSrzQuery)
+			Else
+				cSrzQuery	:= cQueryTmp
+				cQueryTmp	:= ""
+				cQueryPds	:= ""
+				cQueryOrd	:= ""
+			EndIF
+			
+			SRZ->( dbCloseArea() ) //Fecha o SRZ para uso da Query
+			IF ( MsOpenDbf(.T.,"TOPCONN",TcGenQry(,,cSrzQuery),"SRZ",.T.,.T.) )
+				For nField := 1 To nSrzFields
+					IF ( aSrzFields[ nField , 2 ] <> "C" )
+						TcSetField("SRZ",aSrzFields[nField,1],aSrzFields[nField,2],aSrzFields[nField,3],aSrzFields[nField,4])
+					EndIF
+				Next nField
+				IF ( lGpem110ExecInRemote )
+					/*
+					здддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддд©
+					Ё Verifica o Total de Registros a Serem Processados            Ё
+					юдддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддды*/
+					cSrzQuery	:= "SELECT COUNT(*) NLASTREC "
+					cSrzQuery	+= cQuery
+					cSrzQuery	+= IF( lSelectPds , cQueryPds , "" )
+					cSrzQuery	:= ChangeQuery( cSrzQuery )
+		        	IF ( MsOpenDbf(.T.,"TOPCONN",TcGenQry(,,cSrzQuery),"__QRYCOUNT",.T.,.T.) )
+						nLastRec := __QRYCOUNT->NLASTREC
+						__QRYCOUNT->( dbCloseArea() )
+						/*
+						здддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддд©
+						Ё Redefine o Total da Regua de Processamento     			   Ё
+						юдддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддды*/
+						ProcRegua( ( nLastRec + 1 ) )
+					EndIF
+				EndIF
+				/*
+				здддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддд©
+				Ё Reinizializa as variaveis de Querys						   Ё
+				юдддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддды*/
+				cSrzQuery	:= ""
+				cQuery		:= ""
+			Else
+				/*
+				здддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддд©
+				Ё Reinizializa as variaveis de Querys						   Ё
+				юдддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддды*/
+				cSrzQuery	:= ""
+				cQuery		:= ""
+				/*
+				здддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддд©
+				Ё Carrega a Inconsistencia            						   Ё
+				юдддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддды*/
+	         	cInconsist := ( STR0035 +  cFilAnt )	//"- Nao foi possivel abrir o SRZ da Filial: "
+				cInconsist += STR0036					//"- A contabilizacao dessa filial nao foi efetuada"
+			 	aAdd( aLogIncon , cInconsist )
+				Loop
+			EndIF
+		#ENDIF	
+	
+		/*
+		здддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддд©
+		Ё Inicializa a Mensagem da Regua de Processamento			   Ё
+		юдддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддды*/
+		IF ( lGpem110ExecInRemote )
+			IncProc( OemToAnsi( STR0018 + cFilAnt ) ) //"Processando a Contabilizacao para a Filial: "
+		EndIF	
+	
+		/*
+		здддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддд©
+		Ё Percorre todos os Registros do SRZ para a Filial corrente	   Ё
+		юдддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддды*/
+		While SRZ->( !Eof() .and. ( RZ_FILIAL == IF( lSrzCompart , cFilConDe , cFilAnt ) ) )
+	
+			/*
+			здддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддд©
+			Ё Movimentando Regua de Processamento                          Ё
+			юдддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддды*/
+			IF ( lGpem110ExecInRemote )
+				IncProc()
+			EndIF	
+	
+			/*
+			здддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддд©
+			Ё Se Contabilizar Por Funcionarios                             Ё
+			юдддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддды*/
+			IF ( lExistMatSRZ )
+				#IFNDEF TOP
+					/*
+					здддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддд©
+					Ё Despreza os RZ_MAT com 'zz..' quando cEndInss == "S"		   Ё
+					юдддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддды*/
+			   		IF ( ( cEncInss == "S" ) .and. ( SRZ->RZ_MAT $ cZzsInRZMat ) )
+			      		SRZ->( dbskip() )
+			         	Loop
+			      	EndIF
+					/*
+					здддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддд©
+					Ё Despreza os RZ_MAT sem 'zz..' quando cEndInss == "N"		   Ё
+					юдддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддды*/
+					IF ( ( cEncInss == "N" ) .and. !( SRZ->RZ_MAT $ cZzsInRZMat ) )
+		    	   		SRZ->( dbskip() )
+		      			Loop
+			      	EndIF
+				#ENDIF
+				/*
+				здддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддд©
+				Ё Posicona SRA na Matricula que esta sendo processada		   Ё
+				юдддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддды*/
+		      	SRA->( MsSeek( SRZ->( RZ_FILIAL + RZ_MAT ) ) )
+			EndIF
+	
+			/*
+			здддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддд©
+			Ё Nao Contabiliza para Filial, CC e PD iguais a zz... 		   Ё
+			юдддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддды*/
+			#IFNDEF TOP
+				IF SRZ->( ( RZ_FILIAL $ cZzsInRZFil ) .or. ( RZ_CC $ cZzsInRZCc ) .or. ( RZ_PD $ cZzsInRZPd ) )
+					SRZ->( dbskip() )
+					Loop
+				EndIF
+			#ENDIF	
+		
+			/*
+			здддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддд©
+			ЁSe Nao Solicitou a Geracao da Folha, ou Se Solicitou e nao conЁ
+			Ёsegui Gerar a Folha										   Ё
+			юдддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддды*/
+			#IFNDEF TOP
+				IF ( !( lFolPgto ) .or. ( ( lFolPgto ) .and. !( lGerouFol ) ) )
+					/*
+					здддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддд©
+					ЁDespreza Todos os Lancamentos para o Tipo Folha "FL"          Ё
+					юдддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддды*/
+					IF ( SRZ->RZ_TIPO == "FL" )
+						SRZ->( dbskip() )
+						Loop
+					EndIF
+				EndIF
+			#ENDIF		
+	
+			/*
+			здддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддд©
+			ЁSe Nao Solicitou a Geracao da Folha de 13o. Salario, ou Se  SoЁ
+			Ёlicitou e nao Consegui Gerar Informacoes de 13o. Salario	   Ё
+			юдддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддды*/
+			#IFNDEF TOP
+				IF ( !( lFol13Sl ) .or. ( ( lFol13Sl ) .and. !( lGerou13s ) ) )
+					/*
+					здддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддд©
+					ЁDespreza Todos os Lancamentos para o Tipo 13o. Salario "13"   Ё
+					юдддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддды*/
+					IF ( SRZ->RZ_TIPO == "13" )
+						SRZ->( dbskip() )
+						Loop                                          
+					EndIF
+				EndIF
+			#ENDIF    
+		
+			/*
+			здддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддд©
+			Ё Verifica se Gerou as Provisoes de Ferias               	   Ё
+			юдддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддды*/
+			#IFNDEF TOP
+				IF !( lProvFer ) 
+					/*
+					здддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддд©
+					ЁDespreza Todos os Lancamentos para Provisao de Ferias "PD"    Ё
+					юдддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддды*/
+					IF ( SRZ->RZ_TIPO == "PF" )
+						SRZ->( dbskip() )
+						Loop
+					EndIF
+				EndIF
+			#ENDIF	
+	
+			/*
+			здддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддд©
+			Ё Verifica se Gerou as Provisoes de 13o. Salario         	   Ё
+			юдддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддды*/
+	        #IFNDEF TOP
+		        IF !( lProv13o )
+					/*
+					здддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддд©
+					ЁDespreza Todos os Lancamentos para Provisao 13o.Salario "PD"  Ё
+					юдддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддды*/
+		        	IF ( SRZ->RZ_TIPO == "PD" )
+						SRZ->( dbskip() )
+						Loop
+		        	EndIF
+		        EndIF
+			#ENDIF
+	
+			/*
+			здддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддд©
+			Ё Carrega o Lancamento Padrao da Verba						   Ё
+			юдддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддды*/
+			IF ( ( nPosPadrao := SRZ->( aScan( aSrvLanc[ __aSrvReturn_aCols__ ] , bSrvLancAsc ) ) ) > 0.00 )
+				cPadrao := aSrvLanc[ __aSrvReturn_aCols__ , nPosPadrao , aSrvLanc[ __aSrvReturn_nPosLctop__ ] ]
+				/*
+				здддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддд©
+				Ё Verifica se deve Posicionar o SRV. O posisionamento eh  desneЁ
+				Ё cessario uma vez que ja se obteve o Lancamento Padrao para  aЁ
+				Ё verba. Foi mantido apenas para compatibilidade               Ё
+				юдддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддды*/
+			    IF ( lMvCPosSrv )	
+					/*
+					здддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддд©
+					Ё Posiciona no SRV                    						   Ё
+					юдддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддды*/
+				    SRV->( MsGoto( aSrvLanc[ __aSrvReturn_aRecnos__ , nPosPadrao ] ) )
+				EndIF
+				/*
+				здддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддд©
+				Ё Verifica se Deve Posicionar o Lancamento Padrao. O  PosicionaЁ
+				Ё mento no Lancamento Padrao eh Garantido pela Funcao DetProva.Ё
+				Ё Sendo assim, aqui ele se torna descecessario. Foi mantido apeЁ
+				Ё nas para compatibilidade.									   Ё
+				юдддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддды*/
+				IF ( lMvCPosLcp )	
+					/*
+					здддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддд©
+					Ё Posiciona no Lancamento Padrao      						   Ё
+					юдддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддды*/
+					( aSrvLanc[ __aSrvReturn_cAliasLctop__ ] )->( MsGoto( aSrvLanc[ __aSrvReturn_aRecLctop__ , nPosPadrao ] ) )
+				EndIF
+			Else
+				/*
+				здддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддд©
+				Ё Nao Contabiliza Verbas sem Lancamento Padrao				   Ё
+				юдддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддды*/
+				#IFNDEF TOP
+					SRZ->( dbskip() )
+					Loop
+				#ELSE
+					IF !( lSelectPds )
+						SRZ->( dbskip() )
+						Loop
+					EndIF
+				#ENDIF	
+			EndIF
+	
+			/*
+			здддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддд©
+			Ё Posicona Centro de Custo que esta sendo processado    	   Ё
+			юдддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддды*/
+	   	  	IF !( ( cAliasCc )->( MsSeek( SRZ->( xFilial( cAliasCc , RZ_FILIAL ) + RZ_CC ) , .F. ) ) )
+				cInconsist := STR0029 + SRZ->RZ_CC + STR0030 + cFilAnt + STR0031 + cAliasCc +"."	//" - O Centro de Custo: "###" da Filial: "###" nao foi encontrado no: "
+				cInconsist += STR0032																//" - Devera ser Cadastrado para que possa ocorrer a contabiliacao."
+				IF ( aScan( aLogIncon , { |x| ( x == cInconsist ) } ) == 0.00 )
+					aAdd( aLogIncon , cInconsist )
+				EndIF
+				SRZ->( dbskip() )
+				Loop
+	   	  	EndIF
+	
+			/*
+			здддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддд©
+			Ё Incrementa o Contador de Lancamentos        				   Ё
+			юдддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддды*/
+			IF ( ( ++nContador ) == 1 )
+				nHdlPrv := HeadProva(cLote,"GPEM110",Substr(cUsuario,7,6),@cArquivo)
+			EndIF
+	
+			/*
+			здддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддд©
+			Ё Chamada a DetProva                          				   Ё
+			юдддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддды*/
+			dbSelectArea( "SRZ" )
+			nTotal += DetProva(nHdlPrv,cPadrao,"GPEM110",cLote,,,,,,@aCT5)
+	
+			/*
+			здддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддд©
+			Ё Proximo Lancamento                          				   Ё
+			юдддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддды*/
+			SRZ->( dbskip() )
+	
+		End While
+	
+		/*
+		здддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддд©
+		Ё Totalizadores                               				   Ё
+		юдддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддды*/
+		IF ( nTotal > 0 )
+	  		IF ( lGpem110ExecInRemote )
+	  			MsAguarde( bTotal , STR0038 + cFilAnt ) // "Totalizando a Filial: "
+			Else
+				Eval( bTotal )
+			EndIF
+		EndIF
+	
+		/*
+		здддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддд©
+		Ё Restaura o SRZ padrao										   Ё
+		юдддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддды*/
+		#IFDEF TOP
+			IF ( Select("SRZ") > 0.00 )
+				SRZ->( dbCloseArea() )
+				ChkFile( "SRZ" )
+				RestArea( aAreaSRZ )
+			EndIF
+		#ENDIF
+	
+		/*
+		здддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддд©
+		Ё Se o SRZ for compartilhjado, ja processou tudo na 1a. Vez	   Ё
+		юдддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддды*/
+		IF ( lSrzCompart )		// ja processou tudo na primeira vez
+			Exit
+		EndIF
+
+		//--GRAVA NO PARAMETRO O MES CONTABILIZADO
+		If GetMv("MV_GPMESCT",.T.) .And. cMesCont < Right(cMesAnoCtab,4)+Left(cMesAnoCtab,2) 
+			PutMv("MV_GPMESCT", Right(cMesAnoCtab,4)+Left(cMesAnoCtab,2) )
+		Endif	
+	
+	Next nFilial
+
+End Sequence
+	
+/*
+здддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддд©
+Ё Gera o Log de Inconsistencias								   Ё
+юдддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддды*/
+IF !Empty( aLogIncon )
+	//"Foram Encontradas Inconsistencias na Contabilizacao."
+	aAdd( aLogTitle , STR0033 )
+	fMakeLog( { aLogIncon } , aLogTitle , "GPEM010" , lGpem110ExecInRemote )
+EndIF
+
+/*
+здддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддд©
+Ё Restaura a Filial de Entrada                                 Ё
+юдддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддды*/
+cFilAnt := cSvFilAnt
+
+/*
+здддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддд©
+Ё Restaura o Modulo de Entrada                                 Ё
+юдддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддды*/
+IF !Empty( aModuloReSet )
+	ReSetModulo( aModuloReSet )
+EndIF	
+
+/*
+здддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддд©
+Ё Recupera a Integridade dos dados                             Ё
+юдддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддды*/
+RestArea( aAreaSRA )
+RestArea( aAreaSI3 )
+RestArea( aAreaSRZ )
+RestArea( aAreaSM0 )
+RestArea( aArea    )
+
+Return( NIL )
+
+/*/
+эээээээээээээээээээээээээээээээээээээээээээээээээээээээээээээээээээээээээээээ
+╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠
+╠╠зддддддддддбдддддддддддддддбдддддбддддддддддддддддддддбддддддбдддддддддд©╠╠
+╠╠ЁFun┤┘o    ЁGpem110LoteContЁAutorЁMarinaldo de Jesus  Ё Data Ё29/05/2003Ё╠╠
+╠╠цддддддддддедддддддддддддддадддддаддддддддддддддддддддаддддддадддддддддд╢╠╠
+╠╠ЁDescri┤┘o ЁRetorna o Numero do Lote da Folha no SX5					  Ё╠╠
+╠╠цддддддддддедддддддддддддддддддддддддддддддддддддддддддддддддддддддддддд╢╠╠
+╠╠ЁSintaxe   ЁGpem110LoteCont( cChave , cFil )							  Ё╠╠
+╠╠цддддддддддедддддддддддддддддддддддддддддддддддддддддддддддддддддддддддд╢╠╠
+╠╠ЁUso 	 	 ЁGPEM110     												  Ё╠╠
+╠╠юддддддддддадддддддддддддддддддддддддддддддддддддддддддддддддддддддддддды╠╠
+╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠
+ъъъъъъъъъъъъъъъъъъъъъъъъъъъъъъъъъъъъъъъъъъъъъъъъъъъъъъъъъъъъъъъъъъъъъъъъъъъъъ*/
+Static Function Gpem110LoteCont( cChave , cFil )
+DEFAULT cChave	:= "GPE"
+DEFAULT cFil	:= cFilAnt
+Return( fDesc( "SX5" , "09"+AllTrim(cChave) , "X5Descri()" , 04 , cFil , 01 ) )
+
+/*/
+эээээээээээээээээээээээээээээээээээээээээээээээээээээээээээээээээээээээээээээ
+╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠
+╠╠зддддддддддбдддддддддддддддбдддддбддддддддддддддддддддбддддддбдддддддддд©╠╠
+╠╠ЁFun┤┘o    ЁGpem110SrvLanc ЁAutorЁMarinaldo de Jesus  Ё Data Ё29/05/2003Ё╠╠
+╠╠цддддддддддедддддддддддддддадддддаддддддддддддддддддддаддддддадддддддддд╢╠╠
+╠╠ЁDescri┤┘o ЁCarrega Array das Verbas Vs Lancamentos Padroes			  Ё╠╠
+╠╠цддддддддддедддддддддддддддддддддддддддддддддддддддддддддддддддддддддддд╢╠╠
+╠╠ЁSintaxe   Ё<Vide Parametros Formais>              				  	  Ё╠╠
+╠╠цддддддддддедддддддддддддддддддддддддддддддддддддддддддддддддддддддддддд╢╠╠
+╠╠ЁUso 	     ЁGPEM110     												  Ё╠╠
+╠╠юддддддддддадддддддддддддддддддддддддддддддддддддддддддддддддддддддддддды╠╠
+╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠
+ъъъъъъъъъъъъъъъъъъъъъъъъъъъъъъъъъъъъъъъъъъъъъъъъъъъъъъъъъъъъъъъъъъъъъъъъъъъъъ*/
+Static Function Gpem110SrvLanc( cSrvFilDe , cSrvFilAte , aPadrao , lCtbInUse )
+
+Local aSrvReturn	:= Array( __Elementos_aSrvReturn__ )
+Local aSrvCols		:= {}
+Local aSrvHeader	:= {}
+Local aSrvRecnos	:= {}
+Local aSrvFields	:= { "RV_FILIAL", "RV_COD" , "RV_LCTOP" }
+Local aSrvQuery 	:= {}
+Local aRecLctop		:= {}
+Local bSrvWhile		:= { |cKey,cFil| ( ( cFil := RV_FILIAL ) >= cSrvFilDe ) .and. ( cFil <= cSrvFilAte ) }
+Local bSrvSkip		:= { || NIL }
+Local cAliasLctop	:= IF( lCtbInUse , "CT5" , "SI5" )
+Local cCpoLctop		:= IF( ( cAliasLctop == "CT5" ) , "CT5_LANPAD" , "I5_CODIGO" )
+Local cFilLctop		:= xFilial( cAliasLctop )
+Local cPrefixLctop	:= ( PrefixoCpo( cAliasLctop ) + "_" )
+Local lTudoOk		:= .F.
+Local nPosFil		:= 0.00
+Local nPosPd		:= 0.00
+Local nPosLctop		:= 0.00
+Local nRecnoLctop	:= 0.00
+Local lEqualFil		:= .F.
+
+#IFDEF TOP
+	Local cSpcLctop	:= Space( TamSx3("RV_LCTOP")[1] )
+#ENDIF
+
+DEFAULT cSrvFilDe	:= cFilAnt
+DEFAULT cSrvFilAte	:= cSrvFilDe
+DEFAULT aPadrao		:= {}
+DEFAULT lCtbInUse	:= CtbInUse()
+
+/*
+здддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддд©
+Ё Redefine as Filiais De/Ate                   				   Ё
+юдддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддды*/
+cSrvFilDe	:= xFilial( "SRV" , cSrvFilDe  )
+cSrvFilAte	:= xFilial( "SRV" , cSrvFilAte )
+/*
+здддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддд©
+Ё Anula bSrvWhile caso as Filiais sejam Iguais				   Ё
+юдддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддды*/
+IF ( lEqualFil := ( cSrvFilDe == cSrvFilAte ) )
+	bSrvWhile := NIL
+EndIF
+
+#IFDEF TOP
+
+	/*
+	здддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддд©
+	Ё Redefine bSrvSkip Quando TOP                 				   Ё
+	юдддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддды*/
+	bSrvSkip := { |lVerPadrao|	( lVerPadrao := ( MyVerPadrao( RV_LCTOP , @nRecnoLctop , @aPadrao , cAliasLctop , cFilLctop , cCpoLctop , cPrefixLctop ) ) ) ,;
+								IF(;
+									( lVerPadrao ) ,;
+									aAdd( aRecLctop , nRecnoLctop ),;
+									 NIL;
+								   ),;
+								 !( lVerPadrao );
+				}
+	/*
+	здддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддд©
+	Ё Condicao da Query Para Carga das Informacoes do SRV		   Ё
+	юдддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддды*/
+	aSrvQuery	  := Array( 09 )
+	aSrvQuery[01] := "("
+	aSrvQuery[02] := 	"RV_FILIAL>='"+cSrvFilDe+"'"
+	aSrvQuery[03] := 	" AND "
+	aSrvQuery[04] := 	"RV_FILIAL<='"+cSrvFilAte+"'"
+	aSrvQuery[05] := ")"
+	aSrvQuery[06] := " AND "
+	aSrvQuery[07] := "RV_LCTOP<>'"+cSpcLctop+"'"
+	aSrvQuery[08] := " AND "
+	aSrvQuery[09] := "D_E_L_E_T_=' ' "
+#ELSE
+	/*
+	здддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддд©
+	Ё Redefine bSrvSkip Quando Nao TOP             				   Ё
+	юдддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддды*/
+	bSrvSkip := { |lVerPadrao| IF(;
+									!Empty( RV_LCTOP ),;
+									(;
+										( lVerPadrao := ( MyVerPadrao( RV_LCTOP , @nRecnoLctop , @aPadrao , cAliasLctop ) ) ) ,;
+										IF(;
+											( lVerPadrao ) ,;
+												aAdd( aRecLctop , nRecnoLctop ),;
+								 				NIL;
+						   				   ),;
+										!( lVerPadrao );
+									),;	
+									.T.;
+								  );
+				  }
+#ENDIF
+
+/*
+здддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддд©
+Ё Carrega as Informacoes do SRV                				   Ё
+юдддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддды*/
+aSrvCols := GdMontaCols(;
+							@aSrvHeader	,;	//01 -> Array com os Campos do Cabecalho da GetDados
+							NIL			,;	//02 -> Numero de Campos em Uso
+							NIL			,;	//03 -> [@]Array com os Campos Virtuais
+							NIL			,;	//04 -> [@]Array com os Campos Visuais
+							"SRV"		,;	//05 -> Opcional, Alias do Arquivo Carga dos Itens do aCols
+							aSrvFields	,;	//06 -> Opcional, Campos que nao Deverao constar no aHeader
+							@aSrvRecnos	,;	//07 -> [@]Array unidimensional contendo os Recnos
+							"SRV"   	,;	//08 -> Alias do Arquivo Pai
+							cSrvFilDe	,;	//09 -> Chave para o Posicionamento no Alias Filho
+							bSrvWhile	,;	//10 -> Bloco para condicao de Loop While
+							bSrvSkip	,;	//11 -> Bloco para Skip no Loop While
+							.F.			,;	//12 -> Se Havera o Elemento de Delecao no aCols 
+							.F.			,;	//13 -> Se cria variaveis Publicas
+							.F.			,;	//14 -> Se Sera considerado o Inicializador Padrao
+							NIL			,;	//15 -> Lado para o inicializador padrao
+							.F.			,;	//16 -> Opcional, Carregar Todos os Campos
+							.T. 		,;	//17 -> Opcional, Nao Carregar os Campos Virtuais
+							aSrvQuery	,;	//18 -> Opcional, Utilizacao de Query para Selecao de Dados
+							.F.			,;	//19 -> Opcional, Se deve Executar bKey  ( Apenas Quando TOP )
+							.T.			,;	//20 -> Opcional, Se deve Executar bSkip ( Apenas Quando TOP )
+							.F.			,;	//21 -> Carregar Coluna Fantasma
+							.T.			,;	//22 -> Inverte a Condicao de aNotFields carregando apenas os campos ai definidos
+							.F.			,;	//23 -> Verifica se Deve verificar se o campo eh usado
+							.F.			,;	//24 -> Verifica se Deve verificar o nivel do usuario
+							.F.	 		 ;	//25 -> Verifica se Deve Carregar o Elemento Vazio no aCols
+					)
+
+/*
+здддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддд©
+Ё Se carregou as Verbas Vs Lancamentos                         Ё
+юдддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддды*/
+IF ( lTudoOk := ( Len( aSrvRecnos ) > 0.00 ) )
+	nPosFil		:= GdFieldPos( "RV_FILIAL"	, aSrvHeader )
+	nPosPd		:= GdFieldPos( "RV_COD"		, aSrvHeader )
+	nPosLctop	:= GdFieldPos( "RV_LCTOP"	, aSrvHeader )
+EndIF
+
+/*
+здддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддд©
+Ё Alimenta o aSrvReturn                        				   Ё
+юдддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддды*/
+aSrvReturn[ __aSrvReturn_TudoOK__ 		] := lTudoOk
+aSrvReturn[ __aSrvReturn_aCols__		] := aClone( aSrvCols )
+aSrvReturn[ __aSrvReturn_aHeader__		] := aClone( aSrvHeader )
+aSrvReturn[ __aSrvReturn_aRecnos__		] := aClone( aSrvRecnos )
+aSrvReturn[ __aSrvReturn_nPosFil__		] := nPosFil
+aSrvReturn[ __aSrvReturn_nPosPD__		] := nPosPd
+aSrvReturn[ __aSrvReturn_nPosLctop__	] := nPosLctop
+aSrvReturn[ __aSrvReturn_aRecLctop__	] := aClone( aRecLctop )
+aSrvReturn[ __aSrvReturn_cAliasLctop__	] := cAliasLctop
+
+Return( aClone( aSrvReturn ) )
+
+/*/
+эээээээээээээээээээээээээээээээээээээээээээээээээээээээээээээээээээээээээээээ
+╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠
+╠╠зддддддддддбдддддддддддддддбдддддбддддддддддддддддддддбддддддбдддддддддд©╠╠
+╠╠ЁFun┤┘o    ЁGpem110FilCar  ЁAutorЁMarinaldo de Jesus  Ё Data Ё29/05/2003Ё╠╠
+╠╠цддддддддддедддддддддддддддадддддаддддддддддддддддддддаддддддадддддддддд╢╠╠
+╠╠ЁDescri┤┘o ЁCarrega Array com as Filiais que serao contabilizadas		  Ё╠╠
+╠╠цддддддддддедддддддддддддддддддддддддддддддддддддддддддддддддддддддддддд╢╠╠
+╠╠ЁSintaxe   Ё<Vide Parametros Formais>              				  	  Ё╠╠
+╠╠цддддддддддедддддддддддддддддддддддддддддддддддддддддддддддддддддддддддд╢╠╠
+╠╠ЁUso 	     ЁGPEM110     												  Ё╠╠
+╠╠юддддддддддадддддддддддддддддддддддддддддддддддддддддддддддддддддддддддды╠╠
+╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠
+ъъъъъъъъъъъъъъъъъъъъъъъъъъъъъъъъъъъъъъъъъъъъъъъъъъъъъъъъъъъъъъъъъъъъъъъъъъъъъ*/
+Static Function Gpem110FilCar( cEmp , cFilDe , cFilAte  )
+Return( GetFilRecnos( cEmp , cFilDe , cFilAte ) )
+
+/*
+эээээээээээээээээээээээээээээээээээээээээээээээээээээээээээээээээээээээээээээ
+╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠
+╠╠зддддддддддбддддддддддбдддддддбдддддддддддддддддддддддбддддддбдддддддддд©╠╠
+╠╠ЁFun┤┘o    ЁfGeraFolSRЁ Autor Ё Emerson Rosa de Souza	Ё Data Ё 18/08/00 Ё╠╠
+╠╠цддддддддддеддддддддддадддддддадддддддддддддддддддддддаддддддадддддддддд╢╠╠
+╠╠ЁDescri┤└o Ё Gera o arquivo SRZ com os lancamentos da folha			  Ё╠╠
+╠╠цддддддддддедддддддддддддддддддддддддддддддддддддддддддддддддддддддддддд╢╠╠
+╠╠ЁSintaxe   Ё fGeraFolSRZ(nFol13S,aTpContr,cMesAnoRef)				      |╠╠
+╠╠цддддддддддедддддддддддддддддддддддддддддддддддддддддддддддддддддддддддд╢╠╠
+╠╠ЁParametrosЁ nFol13S    - Tipo de lancamento FOLHA ou 13 SALARIO		  |╠╠
+╠╠Ё          Ё aTpContr   - Tipo de Contrato DET/INDET ou AMBOS			  |╠╠
+╠╠Ё          Ё cMesAnoRef - Mes e Ano de geracao dos lancamentos 	      |╠╠
+╠╠цддддддддддедддддддддддддддддддддддддддддддддддддддддддддддддддддддддддд╢╠╠
+╠╠Ё Uso      Ё Generico                                                   Ё╠╠
+╠╠юддддддддддадддддддддддддддддддддддддддддддддддддддддддддддддддддддддддды╠╠
+╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠
+ъъъъъъъъъъъъъъъъъъъъъъъъъъъъъъъъъъъъъъъъъъъъъъъъъъъъъъъъъъъъъъъъъъъъъъъъъъъъъ*/
+Function fGeraFolSRZ(nFol13S,aTpContr,cMesAnoRef)
+Local cAlias      := ALIAS()
+Local lRet 		  := .T.
+Local cMesArqRef  := If(nFol13S == 2,"13"+Right(cMesAnoRef,4),cMesAnoRef)
+Local cTipoLanc,cDescLanc,cStrGeracao,nNroContr,lLimpaSRZ:=.F.
+
+Private aInfo := {}
+
+//здддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддд©
+//Ё Variaveis utilizadas na funcao GR040Imp() para gerar o SRZ   Ё
+//юдддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддды
+cSit	  := " ADFT"
+cCat      := "ACDEGHIJMPST"
+Semana    := If(cPaisLoc <> "DOM","99",cSemana)
+nRelat    := If(nFol13S == 1, 2, 4) // 1-Folha  4-Decimo Terceiro 2a Parcela
+lImpNiv   := lImpTot := .F.
+nOrdem    := 4                      // Ordem de Centro de Custo do Movimento
+cFilDe    := Space(2)
+cFilAte   := "zz"
+cCcDe     := Space(9)
+cCcAte    := Replicate("z",09)
+cMatDe    := Space(6)
+cMatAte   := Replicate("z",06)
+cNomDe    := Space(30)
+cNomAte   := Replicate("z",30)
+
+cTipoLanc := If(nFol13S == 1, "FL", "13")
+cDescLanc := cTipoLanc + Space(1) + cMesAnoRef
+
+//здддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддд©
+//Ё Alterar parametros da geracao de lancamentos para o SRZ		 Ё
+//юдддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддды
+If ExistBlock("GP110APL")
+   EXECBLOCK("GP110APL",.F.,.F.)
+Endif
+
+For nNroContr := 1 To Len(aTpContr)
+
+	cTpc  := Str(aTpContr[nNroContr],1)
+	cTpc1 := If(cTpc == "1", " *1",cTpc)
+	//здддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддд©
+	//Ё Define o texto para a geracao dos lancamentos                Ё
+	//юдддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддды
+	If nFol13S == 1 .and. cTpc == "1"
+		cStrGeracao := STR0019  // "Geracao de Lancamentos - Folha/Indeterminado"
+	ElseIf nFol13S == 1 .and. cTpc == "2"
+		cStrGeracao := STR0020  // "Geracao de Lancamentos - Folha/Determinado"
+	ElseIf nFol13S == 2 .and. cTpc == "1"
+		cStrGeracao := STR0021  // "Geracao de Lancamentos - 13o Sal/Indeterminado"
+	ElseIf nFol13S == 2 .and. cTpc == "2"
+		cStrGeracao := STR0022  // "Geracao de Lancamentos - 13o Sal/Determinado"
+	EndIf
+
+	//здддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддд©
+	//Ё Gerar SRZ caso nao tenha sido gerado ou a folha recalculada  Ё
+	//юдддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддды
+	dbSelectArea("SRZ")
+	dbSetOrder(1)
+	If !SRZ->( dbSeek( "zz" + cDescLanc + Space(3) + cTpc ) ) .Or. (cPaisLoc $ "DOM/URU")
+	
+		//здддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддд©
+		//Ё Devera limpar tambem, se a geracao dos lancamentos for no mesЁ
+		//Ё seguinte ao mes encontrado no arquivo.						 Ё
+		//юдддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддды
+		lLimpaSRZ := .F.
+		If SRZ->( dbSeek( "zz" + cTipoLanc , .F. ) ) .and.; 
+		   Right(cMesAnoRef,4)+Left(cMesAnoRef,2) > Substr(SRZ->RZ_CC,6,4)+Substr(SRZ->RZ_CC,4,2)
+		   lLimpaSRZ := .T.
+		EndIf
+        
+	    /*
+	    здддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддд©
+		ЁDeleta os Registros no SRZ para nova contabilizacao de Folha  |
+		юдддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддды*/
+		DeleteSrzTop(	cTpc		,;	//Conteudo para comparar com RZ_TPC
+						cTipoLanc	,;	//Tipo de Lancamento a comparar com RZ_TIPO
+						lLimpaSRZ	,;	//Se Limpa Todos os Tipos do SRZ
+						.F.			,;	//Se se refere a Provisoes
+						.F.			 ;	//Se mostra Dialogo dom barra de evolucao
+					 )
+	    
+	    //здддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддд©
+		//Ё Gera lancamentos no SRZ a partir da rotina de imp. da folha  |
+		//юдддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддды
+		Processa({|| lRet := GR040Imp(,,"SRZ",cMesAnoRef,aTpContr[nNroContr],.T.)},cStrGeracao,,.F.)
+		dbSelectArea("SRZ")
+		dbSetOrder(1)
+		If !lRet
+			Exit
+		Else
+		    //здддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддд©
+			//Ё Gera um registro indicando mes e tipo de lancamento gerado.  Ё
+			//юдддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддды
+			RecLock("SRZ",.T.)
+			SRZ->RZ_FILIAL := "zz"
+			SRZ->RZ_CC     := cDescLanc
+			SRZ->RZ_PD     := Space(3)
+			SRZ->RZ_TPC    := cTpc
+			SRZ->RZ_TIPO   := cTipoLanc
+			If cPaisLoc == "DOM"
+				SRZ->RZ_SEMANA := cSemana
+			Endif	
+		   SRZ->( MsUnlock() )
+		EndIf
+	EndIf
+Next nNroContr
+dbSelectArea(cAlias)
+Return lRet
+
+/*
+эээээээээээээээээээээээээээээээээээээээээээээээээээээээээээээээээээээээээээээ
+╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠
+╠╠зддддддддддбддддддддддбдддддддбдддддддддддддддддддддддбддддддбдддддддддд©╠╠
+╠╠ЁFun┤┘o    ЁfGeraProvSЁ Autor Ё Emerson Rosa de Souza	Ё Data Ё 18/08/00 Ё╠╠
+╠╠цддддддддддеддддддддддадддддддадддддддддддддддддддддддаддддддадддддддддд╢╠╠
+╠╠ЁDescri┤└o ЁGera o arquivo SRZ com os lancamentos da provisao		  	  Ё╠╠
+╠╠цддддддддддедддддддддддддддддддддддддддддддддддддддддддддддддддддддддддд╢╠╠
+╠╠ЁSintaxe   ЁfGeraProvSRZ( cMesAnoRef , lExecInRemote )				  |╠╠
+╠╠цддддддддддедддддддддддддддддддддддддддддддддддддддддддддддддддддддддддд╢╠╠
+╠╠ЁParametrosЁ 															  |╠╠
+╠╠цддддддддддедддддддддддддддддддддддддддддддддддддддддддддддддддддддддддд╢╠╠
+╠╠Ё Uso      Ё Generico                                                   Ё╠╠
+╠╠юддддддддддадддддддддддддддддддддддддддддддддддддддддддддддддддддддддддды╠╠
+╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠
+ъъъъъъъъъъъъъъъъъъъъъъъъъъъъъъъъъъъъъъъъъъъъъъъъъъъъъъъъъъъъъъъъъъъъъъъъъъъъъ*/
+Function fGeraProvSRZ( cMesAnoRef , lExecInRemote )
+
+Local cAlias     := ALIAS()
+Local dDataRef   := CTOD("")
+Local cTipoLanc  := "PR"
+Local cDescLanc  := cTipoLanc + Space(1) + cMesAnoRef
+Local cTiposDel	 := ""
+
+Private cEncInss := GetMv("MV_ENCINSS",,"N")
+
+/*
+здддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддд©
+Ё Verifica se o Processo de Contabilizacao esta sendo ExecutadoЁ
+Ё via Remote												   Ё
+юдддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддды*/
+Gpem110InRemote( @lExecInRemote )
+
+//здддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддд©
+//Ё Gerar SRZ caso nao tenha sido gerado ou provisao recalculada Ё
+//юдддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддды
+dbSelectArea("SRZ")
+dbSetOrder(1)
+If !SRZ->( dbSeek( "zz" + cDescLanc + Space(3) + "1" ) )
+
+    /*
+    здддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддд©
+	ЁDeleta os Registros no SRZ para nova contabilizacao de Proviso|
+	Ёes de Ferias e de 13o Salario								   |
+	юдддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддды*/
+	#IFNDEF TOP
+		cTiposDel := "PF*PD"
+	#ELSE
+		cTiposDel := "'PF','PD'"	
+	#ENDIF	
+	DeleteSrzTop(	NIL			,;	//Conteudo para comparar com RZ_TPC
+					cTiposDel	,; 	//Tipo de Lancamento a comparar com RZ_TIPO
+					.F.			,;	//Se Limpa Todos os Tipos do SRZ
+					.T.			,;	//Se se refere a Provisoes
+					.F.			 ;	//Se mostra Dialogo dom barra de evolucao
+				 )
+
+	//здддддддддддддддддддддддддддддддддддддддддддддддддддддддддддд©
+	//Ё Monta a data de referencia para geracao dos lancamentos    |
+	//юдддддддддддддддддддддддддддддддддддддддддддддддддддддддддддды
+	nUltDia  := f_UltDia(CTOD("01/" + Left(cMesAnoCtab,2)+"/"+Right(cMesAnoCtab,4),"DDMMYY"))
+	dDataRef := CTOD(StrZero(nUltDia,2) + "/" + Left(cMesAnoCtab,2)+"/"+Right(cMesAnoCtab,4),"DDMMYY")
+
+	//здддддддддддддддддддддддддддддддддддддддддддддддддддддддддддд©
+	//Ё Chama a rotina que gera lancamentos contabeis da provisao  |
+	//юдддддддддддддддддддддддддддддддддддддддддддддддддддддддддддды
+	fGeraCtab( dDataRef , lGpem110ExecInRemote )
+
+	dbSelectArea("SRZ")
+
+    //здддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддд©
+	//Ё Gera um registro indicando mes e tipo de lancamento gerado.  Ё
+	//юдддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддды
+	RecLock("SRZ",.T.)
+	SRZ->RZ_FILIAL := "zz"
+	SRZ->RZ_CC     := cDescLanc
+	SRZ->RZ_PD     := Space(3)
+	SRZ->RZ_TPC    := "1"
+	SRZ->RZ_TIPO   := cTipoLanc
+	If cPaisLoc == "DOM"
+		SRZ->RZ_SEMANA := cSemana
+	Endif	
+  	SRZ->( MsUnlock() )
+
+EndIf
+dbSelectArea(cAlias)
+
+Return
+
+/*
+эээээээээээээээээээээээээээээээээээээээээээээээээээээээээээээээээээээээээээээ
+╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠
+╠╠зддддддддддбддддддддддбдддддддбдддддддддддддддддддддддбддддддбдддддддддд©╠╠
+╠╠ЁFun┤ao	 ЁfGeraCtab Ё Autor Ё Emerson Rosa de Souza Ё Data Ё 16.07.00 Ё╠╠
+╠╠цддддддддддеддддддддддадддддддадддддддддддддддддддддддаддддддадддддддддд╢╠╠
+╠╠ЁDescri┤ao ЁGera os lancamentos contabeis de provisao    			  	  Ё╠╠
+╠╠цддддддддддедддддддддддддддддддддддддддддддддддддддддддддддддддддддддддд╢╠╠
+╠╠ЁSintaxe	 ЁfGeraCtab( dDataRef , lExecInRemote )						  Ё╠╠
+╠╠цддддддддддедддддддддддддддддддддддддддддддддддддддддддддддддддддддддддд╢╠╠
+╠╠ЁUso	 	 ЁGenerico 												  	  Ё╠╠
+╠╠юддддддддддадддддддддддддддддддддддддддддддддддддддддддддддддддддддддддды╠╠
+╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠
+ъъъъъъъъъъъъъъъъъъъъъъъъъъъъъъъъъъъъъъъъъъъъъъъъъъъъъъъъъъъъъъъъъъъъъъъъъъъъъ*/
+Function fGeraCtab( dDataRef , lExecInRemote )
+//здддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддд©
+//Ё Define Variaveis Locais (Programa)							 Ё
+//юдддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддды
+Local cTPRDbf,cTPRNtx,nCnt1,nCnt2
+Local cAlias := ALIAS()
+Local aRateio		:= {}
+
+//зддддддддддддддддддддддддддддддддддддддддддддддддддддддд©
+//Ё Define Variaveis Private(Programa)					  Ё
+//юддддддддддддддддддддддддддддддддддддддддддддддддддддддды
+Private aFerVenc     := Array(_Linhas,_Colunas)
+Private aFerProp     := Array(_Linhas,_Colunas)
+Private a13Salar     := Array(_Linhas,_Colunas)
+Private a14Salar     := Array(_Linhas,_Colunas)
+Private aTotCcFer    := Array(_Linhas,_Colunas)
+Private aTotFunFer   := Array(_Linhas,_Colunas)
+Private aTotCc13s    := Array(_Linhas,_Colunas)
+Private aTotCc14s    := Array(_Linhas,_Colunas)
+Private aVerba  	 := {}
+Private aTransf      := {}
+Private aCodFol  	 := {}
+Private lSalInc    	 := .F.
+Private lTrataTrf    := .F.
+Private lAbortPrint  := .F.
+
+/*
+здддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддд©
+Ё Verifica se o Processo de Contabilizacao esta sendo ExecutadoЁ
+Ё via Remote												   Ё
+юдддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддды*/
+Gpem110InRemote( @lExecInRemote )
+
+//здддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддд©
+//Ё Variaveis utilizadas para montagem do arquivo temporario.    Ё
+//юдддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддды
+nOrdem		:= 2								    // Centro de Custo
+cFilDe	   	:= Space(2)							    //	Filial De
+cFilAte    	:= "zz"    								//	Filial Ate
+cCcDe	   	:= Space(9)							    //	Centro de Custo De
+cCcAte	   	:= Replicate("z",09)  					//	Centro de Custo Ate
+cMatDe	   	:= Space(6)							    //	Matricula De
+cMatAte     := Replicate("z",06)     				//	Matricula Ate
+cNomeDe     := Space(30)							//	Nome De
+cNomeAte    := Replicate("z",30)					//	Nome Ate
+cCateg		:= "ACDEGHIJMPST"						//  Categorias
+
+//здддддддддддддддддддддддддддддддддддддддддддддддддддддддддддд©
+//Ё Monta o arquivo temporario "TPR" a partir do SRA e SRE     |
+//юдддддддддддддддддддддддддддддддддддддддддддддддддддддддддддды
+fMonta_TPR(@cTPRDbf,@cTPRNtx,nOrdem,dDataRef,@lSalInc,@lTrataTrf,@aTransf)
+
+dbSelectArea( "SRA" )
+dbSetOrder(1)
+
+dbSelectArea( "TPR" )
+dbGoTop()
+
+//здддддддддддддддддддддддддддддддддддддддддддддддддддддддддддд©
+//Ё Carrega regua de processamento							   Ё
+//юдддддддддддддддддддддддддддддддддддддддддддддддддддддддддддды
+IF ( lGpem110ExecInRemote )
+	ProcRegua( TPR->( RecCount() ) )
+EndIF	
+
+//здддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддд©
+//Ё Limpa o array com o conteudo especificado no 2╖ parametro    Ё
+//юдддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддды
+fLimpaArray( @aTotCcFer, 0 )
+fLimpaArray( @aTotFunFer, 0 )
+fLimpaArray( @aTotCc13s, 0 )
+fLimpaArray( @aTotCc14s, 0 )
+
+cFilialAnt := "__cFilialAnt__"
+cCcAnt	   := TPR->PR_CC
+
+/*
+здддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддд©
+Ё Percorre Todo o Arquivo Temporario						   Ё
+юдддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддды*/
+While TPR->( !Eof() )
+
+	/*
+	здддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддд©
+	Ё Se cancalou o processamento     							   Ё
+	юдддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддды*/
+    IF ( lAbortPrint )
+       Exit
+    EndIF
+
+	/*
+	здддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддд©
+	Ё Garante o Posicionamento do Funcionario no SRA			   Ё
+	юдддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддды*/
+	SRA->( dbSeek( TPR->PR_FILIAL + TPR->PR_MAT ) )
+
+    /*
+	здддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддд©
+	Ё Quebra de Filial											   Ё
+	юдддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддды*/
+	IF ( TPR->PR_FILIAL # cFilialAnt )
+
+		/*
+		здддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддд©
+		Ё Atualiza a Vilial                       				       Ё
+		юдддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддды*/
+		cFilialAnt := TPR->PR_FILIAL
+
+		/*
+		здддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддд©
+		Ё Encerra caso nao Tenha conseguido carregar as Verbas	       Ё
+		юдддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддды*/
+		IF !( Fp_CodFol( @aCodFol , cFilialAnt ) )
+			Exit
+		EndIF
+		
+		/*
+		здддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддд©
+		Ё Carrega os identificadores da Provisoes					   Ё
+		юдддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддды*/
+		fIdentProv(@aVerba,aCodFol,.T.,.T.)
+		
+		/*
+		здддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддд©
+		Ё Atualiza Mensagem na Regua de Processamento				   Ё
+		юдддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддды*/
+		IF ( lGpem110ExecInRemote )
+			IncProc( ( OemToAnsi( STR0034 ) + cFilialAnt )  )	//"Gerando os Lan┤amentos Cont═beis para a Filial: "
+		EndIF	
+    
+	Else
+	
+		/*
+		здддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддд©
+		Ё Movimenta Regua de Processamento							   Ё
+		юдддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддды*/
+    	IF ( lGpem110ExecInRemote )
+    		IncProc()
+    	EndIF	
+
+    EndIF	
+
+	//здддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддд©
+	//Ё Se nao houver informacoes do cabecalho despreza funcionario  Ё
+	//юдддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддды
+	If fBusCabSRT(dDataRef)
+
+		//здддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддд©
+		//Ё Busca os lancamentos de ferias vencidas e proporcionais      Ё
+		//юдддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддды
+		fBusDetSRT(@aFerVenc,,aVerba,aTransf,dDataRef,_FerVenc,lTrataTrf,.T.)
+		fBusDetSRT(@aFerProp,,aVerba,aTransf,dDataRef,_FerProp,lTrataTrf,.T.)
+
+		//здддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддд©
+		//Ё Busca os lancamentos de 13╖ e 14╖ Salario				     Ё
+		//юдддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддды
+		fBusDetSRT(@a13Salar,,aVerba,aTransf,dDataRef,_13Salar,lTrataTrf,.T.)
+		fBusDetSRT(@a14Salar,,aVerba,aTransf,dDataRef,_14Salar,lTrataTrf,.T.)
+
+		//здддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддд©
+		//Ё Totalizador -> Vencidas/Proporcionais/13╖/14╖				 Ё
+		//юдддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддды
+		For nCnt1 := 1 To _Linhas
+			For nCnt2 := 1 To _Colunas
+				aTotCcFer[nCnt1,nCnt2]  += aFerVenc[nCnt1,nCnt2]+aFerProp[nCnt1,nCnt2]
+				aTotFunFer[nCnt1,nCnt2] += aFerVenc[nCnt1,nCnt2]+aFerProp[nCnt1,nCnt2]
+				aTotCc13s[nCnt1,nCnt2] += a13Salar[nCnt1,nCnt2]
+				aTotCc14s[nCnt1,nCnt2] += a14Salar[nCnt1,nCnt2]
+			Next nCnt2
+		Next nCnt1
+
+		//здддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддд©
+		//Ё Grava no SRZ valores dos Funcionarios - Contabilizacao Analitica Ё
+		//юдддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддды
+	    If cEncInss == "S"
+			If lCtabBxaRes
+				fChkVBxa(@aTotFunFer,_FerVenc,_BxRes)
+			EndIf	
+
+			//здддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддд©
+			//| Ponto de Entrada para devolver o conteudo dos arrays aTotFunFer|
+			//| a13Salar e a14Sala rateado. O retorno deve ser um array        |
+			//| tridimensional onde o 1o nivel representa a quantidade de      |
+			//| rateios efetuada e os dois ultimos niveis tem a mesma estrutura|
+			//| o array aTotFunFer com duas colunas a mais trazendo os codigos |
+			//| de Item e Classe.                                              |
+			//юдддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддды
+			If ExistBlock("GP110SRZ")
+				aRateio		:= EXECBLOCK("GP110SRZ",.F.,.F.,{"FER",dDataRef})
+			EndIf
+			If Len(aRateio) > 0 .And. ( Len(aRateio[1,1]) == _Colunas + 2 )
+				For nx := 1 to Len(aRateio)
+					fGravaSrz(aClone(aRateio[nx]),_FerVenc,cFilialAnt,cCcAnt,SRA->RA_MAT)
+				Next nx
+				aRateio		:= {}
+			Else
+				fGravaSrz(aTotFunFer,_FerVenc,cFilialAnt,cCcAnt,SRA->RA_MAT)
+			EndIf
+			fLimpaArray( @aTotFunFer, 0 )
+			If lCtabBxaRes
+				fChkVBxa(@a13Salar,_13Salar,_BxRes)
+				fChkVBxa(@a14Salar,_14Salar,_BxRes)
+			EndIf
+
+			//-- Repeticao do ponto de entrada para tratamento do 13o salario
+			If ExistBlock("GP110SRZ")
+				aRateio		:= EXECBLOCK("GP110SRZ",.F.,.F.,{"13",dDataRef})
+			EndIf
+			If Len(aRateio) > 0 .And. ( Len(aRateio[1,1]) == _Colunas + 2 )
+				For nx := 1 to Len(aRateio)
+					fGravaSrz(aRateio[nx],_13Salar,cFilialAnt,cCcAnt,SRA->RA_MAT)
+				Next nx
+				aRateio		:= {}
+			Else
+				fGravaSrz(a13Salar,_13Salar,cFilialAnt,cCcAnt,SRA->RA_MAT)
+			Endif
+
+			//-- Repeticao do ponto de entrada para tratamento do 14o salario
+			If ExistBlock("GP110SRZ")
+				aRateio		:= EXECBLOCK("GP110SRZ",.F.,.F.,{"14",dDataRef})
+			EndIf
+			If Len(aRateio) > 0 .And. ( Len(aRateio[1,1]) == _Colunas + 2 )
+				For nx := 1 to Len(aRateio)
+					fGravaSrz(aRateio[nx],_14Salar,cFilialAnt,cCcAnt,SRA->RA_MAT)
+				Next nx
+				aRateio		:= {}
+			Else
+				fGravaSrz(a14Salar,_14Salar,cFilialAnt,cCcAnt,SRA->RA_MAT)
+			Endif
+		Endif
+    EndIf
+
+	dbSelectArea( "TPR" )
+	dbSkip()
+
+	If TPR->PR_FILIAL + TPR->PR_CC # cFilialAnt + cCcAnt
+
+		//здддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддд©
+		//Ё Verifica se existem as verbas de rescisao, se nao existirem  Ё
+		//Ё subtrair os valores destas verbas dos lancamentos do mes.    Ё
+		//юдддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддды
+		If lCtabBxaRes
+			fChkVBxa(@aTotCcFer,_FerVenc,_BxRes)
+		EndIf	
+		//здддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддд©
+		//Ё Grava o array aTotCCFer no arquivo SRZ.                      Ё
+		//юдддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддды
+		fGravaSrz(aTotCcFer,_FerVenc,cFilialAnt,cCcAnt,"zzzzzz")
+		fLimpaArray( @aTotCcFer, 0 )
+
+		//здддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддд©
+		//Ё Verifica se existem as verbas de rescisao, se nao existirem  Ё
+		//Ё subtrair os valores destas verbas dos lancamentos do mes.    Ё
+		//юдддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддды
+		If lCtabBxaRes
+			fChkVBxa(@aTotCc13s,_13Salar,_BxRes)
+			fChkVBxa(@aTotCc14s,_14Salar,_BxRes)
+		EndIf
+		//здддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддд©
+		//Ё Grava o array aTotCCFer no arquivo SRZ.                      Ё
+		//юдддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддды
+		fGravaSrz(aTotCc13s,_13Salar,cFilialAnt,cCcAnt,"zzzzzz")
+		fGravaSrz(aTotCc14s,_14Salar,cFilialAnt,cCcAnt,"zzzzzz")
+		fLimpaArray( @aTotCc13s, 0 )
+		fLimpaArray( @aTotCc14s, 0 )
+
+		//здддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддд©
+		//Ё Atualiza o centro de custo para uma nova totalizacao		 Ё
+		//юдддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддды
+		cCcAnt := TPR->PR_CC
+
+	EndIf
+Enddo
+
+TPR->(dbCloseArea())
+fErase(cTPRNtx + OrdBagExt())
+fErase(cTPRDbf + ".DBF")
+
+dbSelectArea(cAlias)
+
+Return Nil
+
+/*
+эээээээээээээээээээээээээээээээээээээээээээээээээээээээээээээээээээээээээээээ
+╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠
+╠╠зддддддддддбддддддддддбдддддддбдддддддддддддддддддддддбддддддбдддддддддд©╠╠
+╠╠ЁFun┤ao	 ЁfGravaSRZ Ё Autor Ё Emerson Rosa de Souza Ё Data Ё 25.08.00 Ё╠╠
+╠╠цддддддддддеддддддддддадддддддадддддддддддддддддддддддаддддддадддддддддд╢╠╠
+╠╠ЁDescri┤ao Ё Grava os totais de centro de custo no SRZ			 	  Ё╠╠
+╠╠цддддддддддедддддддддддддддддддддддддддддддддддддддддддддддддддддддддддд╢╠╠
+╠╠ЁSintaxe	 Ё fGravaSRZ(aProvisao,nTipoProv,cFilialAnt,cCCProv)		  Ё╠╠
+╠╠цддддддддддедддддддддддддддддддддддддддддддддддддддддддддддддддддддддддд╢╠╠
+╠╠Ё Uso	 	 Ё Generico 												  Ё╠╠
+╠╠юддддддддддадддддддддддддддддддддддддддддддддддддддддддддддддддддддддддды╠╠
+╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠
+ъъъъъъъъъъъъъъъъъъъъъъъъъъъъъъъъъъъъъъъъъъъъъъъъъъъъъъъъъъъъъъъъъъъъъъъъъъъъъ*/
+Static Function fGravaSRZ(aProvisao,nTipoProv,cFilProv,cCCProv,cMat)
+Local cAlias  := Alias()
+Local lEstrut		:= ( len(aProvisao[1])==_Colunas+2 )
+Local lTemItem		:= SRZ->( FieldPos( "RZ_ITEM" ) # 0 )
+Local lTemClVl		:= SRZ->( FieldPos( "RZ_CLVL" ) # 0 )
+Local nTipo2,nTipo3
+Local nPosVerba,cCodVerba
+
+dbSelectArea( "SRZ" )
+For nTipo2 := 1 To _Linhas
+	//здддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддд©
+	//Ё Linhas que nao deverao ser gravadas no arquivo				 |
+	//юдддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддды
+	If nTipo2 == _Anter .or. nTipo2 == _Atual .or. nTipo2 == _BxTot
+		Loop
+	EndIf
+
+    If (nTipo2 == _BxFer .and. !lCtabBxaFer) .or. (nTipo2 == _BxRes .and. !lCtabBxaRes )
+		Loop
+	EndIf
+
+	//здддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддд©
+	//Ё Grava as colunas de valores no arquivo detalhe               Ё
+	//юдддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддды
+	For nTipo3 := 1 To _Colunas
+		//здддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддд©
+		//Ё Busca a verba e grava os lancamentos no SRZ				     Ё
+		//юдддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддды
+		nPosLinha := If(nTipo2 == _NoMes,_Atual,nTipo2)
+        nPosVerba := aScan(aVerba, { |X| X[1] == nTipoProv .and. X[2] == nPosLinha .and. X[3] == nTipo3 })
+        cCodVerba := If( nPosVerba > 0, aVerba[nPosVerba,4], Space(3) )
+        If !Empty(cCodVerba).and. aProvisao[nTipo2,nTipo3] # 0
+			RecLock( "SRZ", .T. )
+			SRZ->RZ_FILIAL  := cFilProv
+			SRZ->RZ_CC      := cCCProv
+			SRZ->RZ_PD      := cCodVerba
+			SRZ->RZ_HRS     := 0
+			SRZ->RZ_VAL     := aProvisao[nTipo2,nTipo3]
+			SRZ->RZ_OCORREN := 0
+			SRZ->RZ_TIPO    := If(nTipoProv == _FerVenc, "PF", "PD")
+			SRZ->RZ_TPC     := "1"           
+			if Type("SRZ->RZ_MAT") # "U"
+				SRZ->RZ_MAT     := cMat
+			Endif	
+			If cPaisLoc == "DOM"
+				SRZ->RZ_SEMANA := cSemana
+			Endif	
+			If lTemItem .And. lEstrut
+				SRZ->RZ_ITEM	:= aProvisao[nTipo2,_Colunas+1]
+			Endif
+			If lTemClVl .And. lEstrut
+				SRZ->RZ_CLVL	:= aProvisao[nTipo2,_Colunas+2]
+			Endif
+			SRZ->( MsUnlock() )
+		EndIf
+	Next nTipo3
+Next nTipo2
+dbSelectArea( cAlias )
+
+Return
+
+/*
+эээээээээээээээээээээээээээээээээээээээээээээээээээээээээээээээээээээээээээээ
+╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠
+╠╠зддддддддддбддддддддддбдддддддбдддддддддддддддддддддддбддддддбдддддддддд©╠╠
+╠╠ЁFun┤ao	 ЁfDelRegSRZЁ Autor Ё Emerson Rosa de Souza Ё Data Ё 28.08.00 Ё╠╠
+╠╠цддддддддддеддддддддддадддддддадддддддддддддддддддддддаддддддадддддддддд╢╠╠
+╠╠ЁDescri┤ao Ё Delete registro indicando que devera ser gerado um novo SRZЁ╠╠
+╠╠цддддддддддедддддддддддддддддддддддддддддддддддддддддддддддддддддддддддд╢╠╠
+╠╠ЁSintaxe	 Ё fDelRegSRZ(nFol13s,cTpCFol,dDtRefBus)   					  Ё╠╠
+╠╠цддддддддддедддддддддддддддддддддддддддддддддддддддддддддддддддддддддддд╢╠╠
+╠╠Ё Uso	 	 Ё Generico 												  Ё╠╠
+╠╠юддддддддддадддддддддддддддддддддддддддддддддддддддддддддддддддддддддддды╠╠
+╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠
+ъъъъъъъъъъъъъъъъъъъъъъъъъъъъъъъъъъъъъъъъъъъъъъъъъъъъъъъъъъъъъъъъъъъъъъъъъъъъъ*/
+Function fDelRegSRZ(nFl13Pr,cTpCFol,dDtRefBus)
+Local cAlias := Alias(),cDescLanc
+
+dbSelectArea("SRZ")
+dbSetOrder(1)
+
+cTpCFol   := If(Empty(cTpCFol), "1", cTpCFol)
+dDtRefBus := If(dDtRefBus == Nil, dDataBase, dDtRefBus)
+cDescLanc := If(nFl13Pr == 1, "FL", If(nFl13Pr == 2,"13", "PR")) + Space(1) +;
+				 StrZero(Month(dDtRefBus),2)+StrZero(Year(dDtRefBus),4)
+
+If SRZ->( dbSeek( "zz" + cDescLanc + Space(3) + cTpCFol ) )
+	RecLock("SRZ",.F.)
+	SRZ->( dbDelete() )
+   	SRZ->( MsUnlock() )
+EndIf
+dbSelectArea(cAlias)
+
+Return Nil
+
+/*
+эээээээээээээээээээээээээээээээээээээээээээээээээээээээээээээээээээээээээээээ
+╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠
+╠╠зддддддддддбддддддддддбдддддддбдддддддддддддддддддддддбддддддбдддддддддд©╠╠
+╠╠ЁFun┤ao	 Ё fChkVBxa Ё Autor Ё Emerson Rosa de Souza Ё Data Ё 12.02.01 Ё╠╠
+╠╠цддддддддддеддддддддддадддддддадддддддддддддддддддддддаддддддадддддддддд╢╠╠
+╠╠ЁDescri┤ao Ё Verifica se existe codigo de verba para baixa de rescisao  Ё╠╠
+╠╠цддддддддддедддддддддддддддддддддддддддддддддддддддддддддддддддддддддддд╢╠╠
+╠╠ЁSintaxe	 Ё fChkVBxa(aProvisao,nTipProv,nTipBxa)						  Ё╠╠
+╠╠цддддддддддедддддддддддддддддддддддддддддддддддддддддддддддддддддддддддд╢╠╠
+╠╠Ё Uso	 	 Ё Generico 												  Ё╠╠
+╠╠юддддддддддадддддддддддддддддддддддддддддддддддддддддддддддддддддддддддды╠╠
+╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠╠
+ъъъъъъъъъъъъъъъъъъъъъъъъъъъъъъъъъъъъъъъъъъъъъъъъъъъъъъъъъъъъъъъъъъъъъъъъъъъъъ*/
+Static Function fChkVBxa(aProvisao,nTipProv,nTipBxa)
+Local nPosVBxa,cCodVBxa,nCntBx
+
+nTipProv := If(nTipProv == _FerProp,_FerVenc,nTipProv)
+nPosVBxa := aScan(aVerba, { |X| X[1] == nTipProv .and. X[2] == nTipBxa .and. X[3] == _Prov })
+cCodVBxa := If( nPosVBxa > 0, aVerba[nPosVBxa,4], Space(3) )
+If Empty(cCodVBxa)
+	For nCntBx := 1 To _Colunas
+		aProvisao[_NoMes,nCntBx]  -= aProvisao[nTipBxa,nCntBx]
+		aProvisao[nTipBxa,nCntBx] := 0
+	Next nCntBx
+EndIf
+
+Return
+
+/*
+зддддддддддбдддддддддддддбдддддддбдддддддддддддддддддддбддддддбдддддддддд©
+ЁFun┤└o    ЁDeleteSrzXbs Ё Autor ЁMarinaldo de Jesus   Ё Data Ё14/05/2003Ё
+цддддддддддедддддддддддддадддддддадддддддддддддддддддддаддддддадддддддддд╢
+ЁDescri┤└o ЁDeletar Registros no SRZ para ambientes em TOP				 Ё
+цддддддддддеддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддд╢
+ЁSintaxe   Ё<Vide Parametros Formais>									 Ё
+цддддддддддеддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддд╢
+ЁParametrosЁ<Vide Parametros Formais>									 Ё
+цддддддддддеддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддд╢
+ЁRetorno   ЁNIL                                                   	     Ё
+цддддддддддеддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддд╢
+ЁObserva┤└oЁ                                                      	     Ё
+цддддддддддеддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддд╢
+Ё Uso      ЁGPEM110  													 Ё
+юддддддддддаддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддды*/
+Static Function DeleteSrzXbs(	cTpc			,;	//Conteudo para comparar com RZ_TPC
+								cTipoLanc		,;	//Tipo de Lancamento a comparar com RZ_TIPO
+								lLimpaSRZ		,;	//Se Limpa Todos os Tipos do SRZ
+								lProvisoes		,;	//Se se refere a Provisoes
+								lShowDele		 ;	//Se mostra Dialogo dom barra de evolucao
+							 )
+                
+Local cTiposVld			:= __TiposValidos__
+Local cSpaceRZTPC   	:= Space( TamSx3("RZ_TPC")[1] )
+Local lDeleteSRZ		:= .F.
+Local nProcRegua		:= 0.00
+
+DEFAULT cTpc			:= cSpaceRZTPC
+DEFAULT cTipoLanc		:= ""
+DEFAULT lLimpaSRZ		:= .F.
+DEFAULT lProvisoes		:= .F.
+DEFAULT lShowDele		:= .F.
+
+IF ( !( lShowDele ) .and. ( lGpem110ExecInRemote ) )
+	////"Preparando SRZ para a Contabiliza┤└o"
+	Processa( { || DeleteSrzXbs(	cTpc			,;	//Conteudo para comparar com RZ_TPC
+									cTipoLanc		,;	//Tipo de Lancamento a comparar com RZ_TIPO
+									lLimpaSRZ		,;	//Se Limpa Todos os Tipos do SRZ
+									lProvisoes		,;	//Se se refere a Provisoes
+									.T.				 ;	//Se mostra Dialogo dom barra de evolucao
+							 );
+               },;
+               OemToAnsi( STR0037 );
+             )
+	Return( NIL )
+EndIF
+
+IF ( lGpem110ExecInRemote )
+	ProcRegua( ( nProcRegua := SRZ->( RecCount() ) ) )
+EndIF	
+
+SRZ->( dbGoTop() )
+While SRZ->( !Eof() )
+	IF ( lGpem110ExecInRemote )
+		IncProc()
+	EndIF	
+	IF !( lProvisoes )
+		lDeleteSRZ := SRZ->(;
+								(;
+									( RZ_TPC == cTpc ) .or. ;
+									( RZ_TPC == cSpaceRZTPC ) ;
+								) .and. ;
+								(;
+									( lLimpaSRZ )			 .or. ;
+									( RZ_TIPO == cTipoLanc ) .or. ;
+									!( RZ_TIPO $ cTiposVld )      ; 
+								);
+	   					    )
+	Else
+		lDeleteSRZ := ( SRZ->RZ_TIPO $ cTipoLanc )
+	EndIF
+	IF ( lDeleteSRZ )
+		SRZ->( RecLock( "SRZ" , .F. , .T. ) )
+		SRZ->( dbdelete() )
+		SRZ->( MsUnlock() )
+	EndIF
+	SRZ->( dbSkip() )
+End While
+
+Return( NIL )
+
+/*
+зддддддддддбдддддддддддддбдддддддбдддддддддддддддддддддбддддддбдддддддддд©
+ЁFun┤└o    ЁDeleteSrzTop Ё Autor ЁMarinaldo de Jesus   Ё Data Ё14/05/2003Ё
+цддддддддддедддддддддддддадддддддадддддддддддддддддддддаддддддадддддддддд╢
+ЁDescri┤└o ЁDeletar Registros no SRZ para ambientes em TOP				 Ё
+цддддддддддеддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддд╢
+ЁSintaxe   Ё<Vide Parametros Formais>									 Ё
+цддддддддддеддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддд╢
+ЁParametrosЁ<Vide Parametros Formais>									 Ё
+цддддддддддеддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддд╢
+ЁRetorno   ЁNIL                                                   	     Ё
+цддддддддддеддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддд╢
+ЁObserva┤└oЁ                                                      	     Ё
+цддддддддддеддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддд╢
+Ё Uso      ЁGPEM110  													 Ё
+юддддддддддаддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддды*/
+Static Function DeleteSrzTop(	cTpc			,;	//Conteudo para comparar com RZ_TPC
+								cTipoLanc		,;	//Tipo de Lancamento a comparar com RZ_TIPO
+								lLimpaSRZ		,;	//Se Limpa Todos os Tipos do SRZ
+								lProvisoes		,;	//Se se refere a Provisoes
+								lShowDele		 ;	//Se mostra Dialogo dom barra de evolucao
+							 )
+#IFDEF TOP
+
+	Local cTiposVld  		:= __TiposValidos__
+	Local cRetSqlName		:= InitSqlName( "SRZ" )
+	Local cQueryExec		:= ""
+	Local cQueryCond		:= ""
+	Local cQueryRecno		:= ""
+	Local cQueryDelet		:= "DELETE"
+	Local cSpaceRZTPC   	:= Space( TamSx3("RZ_TPC")[1] )
+	Local cCpoRecno			:= ""
+	Local cCpoDeleted		:= ""
+	Local lAs400			:= ( TcSrvType() == "AS/400" )
+	Local nMinRec			:= 0.00
+	Local nMaxRec			:= 0.00
+	Local nProcRegua		:= 0.00
+
+	DEFAULT cTpc			:= cSpaceRZTPC
+	DEFAULT cTipoLanc		:= ""
+	DEFAULT lLimpaSRZ		:= .F.
+	DEFAULT lProvisoes		:= .F.
+	DEFAULT lShowDele		:= .F.
+
+	IF ( !( lShowDele ) .and. ( lGpem110ExecInRemote ) )
+		//"Preparando SRZ para a Contabiliza┤└o"
+		Processa( { || DeleteSrzTop(	cTpc			,;	//Conteudo para comparar com RZ_TPC
+										cTipoLanc		,;	//Tipo de Lancamento a comparar com RZ_TIPO
+										lLimpaSRZ		,;	//Se Limpa Todos os Tipos do SRZ
+										lProvisoes		,;	//Se se refere a Provisoes
+										.T.				 ;	//Se mostra Dialogo dom barra de evolucao
+							 		);
+				  },;
+			   	  OemToAnsi( STR0037 );
+			    )
+		Return( NIL )
+	EndIF
+
+	cCpoRecno 	:= IF( lAs400 , "RRN("+cRetSqlName+")", "R_E_C_N_O_" )
+	cCpoDeleted	:= IF( lAs400 , "@DELETED@" , "D_E_L_E_T_" )
+
+	MsMinMaxRec( "SRZ" , @nMinRec , @nMaxRec )
+
+	IF ( lGpem110ExecInRemote )
+		nProcRegua := ( ( nMaxRec - nMinRec ) + 1 )
+		IF ( nProcRegua >= 1024 )
+			nProcRegua := Round( ( nProcRegua / 1024 ) , 0 )
+			nProcRegua := Int( nProcRegua )
+		EndIF
+		ProcRegua( nProcRegua )
+	EndIF	
+
+	IF ( nMaxRec > 0.00 )
+	
+		cQueryCond	:= " FROM "
+		cQueryCond	+= cRetSqlName
+		cQueryCond	+= " WHERE "
+		cQueryCond	+= "("
+		cQueryCond	+=	"("
+		IF !( lProvisoes )
+			cQueryCond	+=		"("
+			cQueryCond	+=			"RZ_TPC='" + cTpc + "'"
+			cQueryCond	+=			" OR "
+			cQueryCond	+=			"RZ_TPC='" + cSpaceRZTPC + "'"
+			cQueryCond	+=		 ")"
+			IF !( lLimpaSRZ )
+				cQueryCond	+= " AND "
+				cQueryCond	+= "("
+				cQueryCond	+=		"RZ_TIPO IN('" + cTipoLanc + "')"
+				cQueryCond	+=		" OR "
+				cQueryCond	+=		"RZ_TIPO NOT IN(" + cTiposVld + ")"
+				cQueryCond	+= ")"
+			EndIF
+		Else
+			cQueryCond	+= "RZ_TIPO IN(" + cTipoLanc + ")"
+		EndIF	
+		cQueryCond	+=	")"
+		cQueryCond	+= 	" OR "
+		cQueryCond	+= 	cCpoDeleted + "='*'"
+		cQueryCond	+= ")"
+		
+		cQueryDelet += cQueryCond
+		cQueryDelet += " AND "
+		
+		While ( nMinRec <= nMaxRec )
+			IF ( lGpem110ExecInRemote )
+				IncProc()
+			EndIF	
+			cQueryRecno := "("
+			cQueryRecno +=		cCpoRecno + " >= " + Str( nMinRec , 10 , 0 )
+			cQueryRecno += 		" AND "
+			cQueryRecno += 		cCpoRecno + " <= " + Str( ( nMinRec += 1024 ) , 10 , 0 )
+			cQueryRecno += ")"
+			cQueryExec	:= ( cQueryDelet + cQueryRecno )
+			TcSqlExec( cQueryExec )
+			SRZ->( dbGotop() )
+		End While
+
+	EndIF
+		
+#ELSE
+
+	DeleteSrzXbs(	cTpc			,;	//Conteudo para comparar com RZ_TPC
+					cTipoLanc		,;	//Tipo de Lancamento a comparar com RZ_TIPO
+					lLimpaSRZ		,;	//Se Limpa Todos os Tipos do SRZ
+					lProvisoes		,;	//Se se refere a Provisoes
+					lShowDele		 ;	//Se mostra Dialogo dom barra de evolucao
+				 )
+
+#ENDIF
+	
+Return( NIL )
+
+/*
+зддддддддддбдддддддддддддбдддддддбдддддддддддддддддддддбддддддбдддддддддд©
+ЁFun┤└o    ЁMyVerPadrao  Ё Autor ЁMarinaldo de Jesus   Ё Data Ё05/06/2003Ё
+цддддддддддедддддддддддддадддддддадддддддддддддддддддддаддддддадддддддддд╢
+ЁDescri┤└o ЁVerificar a Existencia do Lancamento Padrao   				 Ё
+цддддддддддеддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддд╢
+ЁSintaxe   Ё<Vide Parametros Formais>									 Ё
+цддддддддддеддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддд╢
+ЁParametrosЁ<Vide Parametros Formais>									 Ё
+цддддддддддеддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддд╢
+ЁRetorno   ЁlLctopOk                                               	     Ё
+цддддддддддеддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддд╢
+ЁObserva┤└oЁ                                                      	     Ё
+цддддддддддеддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддд╢
+Ё Uso      ЁGPEM110  													 Ё
+юддддддддддаддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддды*/
+Static Function MyVerPadrao(	cPadrao 		,;	//Codigo do Lancamento Padrao
+								nRecnoLctop		,;	//Recno do Lancamento Padrao ( Por Referencia)
+								aPadrao 		,;	//Array com os Codigos vs Recnos ( Por Referencia )
+								cAliasLctop		,;	//Alias do arquivo para pesquisa 
+								cFilLctop		,;	//Filial do arquivo para pesquisa ( Apenas Quando TOP )
+								cCpoLctop		,;	//Campo do arquivo para pesquisa ( Apenas Quando TOP )
+								cPrefixLctop	 ;	//Prefixo do campo do arquivo para pesquisa ( Apenas Quando TOP )
+							)
+
+Local cSvAlias		:= Alias()
+Local cQuery		:= ""
+Local lLctopOk		:= .T.
+Local nPosLctop		:= 0.00
+
+nRecnoLctop := 0.00
+
+IF !( lLctopOk := !( ( nPosLctop := aScan( aPadrao , { |x| x[1] == cPadrao } ) ) == 0.00 ) )
+	#IFDEF TOP
+		cQuery	:= "SELECT "
+		cQuery	+= ( cPrefixLctop+"FILIAL" )
+		cQuery	+= ", "
+		cQuery	+= cCpoLctop
+		cQuery	+= ", "
+		cQuery	+= "R_E_C_N_O_ RECNO"
+		cQuery	+= " FROM "
+		cQuery	+= InitSqlName( cAliasLctop )
+		cQuery	+= " "
+		cQuery	+= cAliasLctop
+		cQuery	+= " WHERE "
+		cQuery	+= ( ( cAliasLctop+"."+cPrefixLctop+"FILIAL='" ) + cFilLctop + "'" )
+		cQuery	+= " AND "
+		cQuery	+= ( ( cAliasLctop+"."+cCpoLctop+"='" ) + cPadrao + "'" )
+		cQuery	+= " AND "
+		cQuery	+= ( cAliasLctop + ".D_E_L_E_T_=' ' " )
+		cQuery	+= "ORDER BY " + SqlOrder( (cAliasLctop)->( IndexKey() ) )
+		cQuery  := ChangeQuery( cQuery )
+		IF MsOpenDbf(.T.,"TOPCONN",TcGenQry(NIL,NIL,cQuery),"MyVerLctop",.T.,.T.)
+			IF ( lLctopOk := ( MyVerLctop->( !Eof() ) ) )
+				nRecnoLctop := MyVerLctop->RECNO
+			EndIF
+			MyVerLctop->( dbCloseArea() )
+		EndIF
+	#ELSE
+		IF ( lLctopOk := ( VerPadrao( cPadrao ) ) )
+			nRecnoLctop := ( cAliasLctop )->( Recno() )
+		EndIF
+	#ENDIF
+	aAdd( aPadrao , { cPadrao , nRecnoLctop } )
+Else
+	nRecnoLctop := aPadrao[ nPosLctop , 02 ]
+EndIF
+
+dbSelectArea( cSvAlias )
+
+lLctopOk := ( nRecnoLctop > 0.00 )
+
+Return( lLctopOk  )
+
+/*
+зддддддддддбдддддддддддддбдддддддбдддддддддддддддддддддбддддддбдддддддддд©
+ЁFun┤└o    ЁSRZFilReplaceЁ Autor ЁMarinaldo de Jesus   Ё Data Ё05/06/2003Ё
+цддддддддддедддддддддддддадддддддадддддддддддддддддддддаддддддадддддддддд╢
+ЁDescri┤└o ЁExecutar Replace no Campo RZ_FILIAL           				 Ё
+цддддддддддеддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддд╢
+ЁSintaxe   Ё<Vide Parametros Formais>									 Ё
+цддддддддддеддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддд╢
+ЁParametrosЁ<Vide Parametros Formais>									 Ё
+цддддддддддеддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддд╢
+ЁRetorno   ЁNIL                                                    	     Ё
+цддддддддддеддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддд╢
+ЁObserva┤└oЁ                                                      	     Ё
+цддддддддддеддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддд╢
+ЁUso       ЁPonto de Entrada GP110ACT									 Ё
+юддддддддддаддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддды*/
+Function SRZFilReplace( cFilReplace , bCondReplace )
+         
+Local aArea				:= GetArea()
+Local aAreaSRZ			:= SRZ->( GetArea() )
+Local aSrzRecnos		:= {}
+Local aSrzFields		:= { "RZ_FILIAL" }
+Local aSrzQuery			:= {}
+Local bSrzWhile			:= { || NIL }
+Local bSrzSkip			:= { || NIL }
+Local cZzsInRZFil		:= ( SRZzs()[__aSzs_Pos_Fil__] )
+Local nMinRec	 		:= 0.00
+Local nMaxRec			:= 0.00
+
+DEFAULT bCondReplace	:= { || .T. }
+
+#IFDEF TOP
+
+	/*
+	здддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддд©
+	Ё Condicao da Query Para Carga das Informacoes do SRZ		   Ё
+	юдддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддды*/
+	aSrzQuery	  := Array( 05 )
+	aSrzQuery[01] := "("
+	aSrzQuery[02] :=	"RZ_FILIAL NOT IN("+ cZzsInRZFil + ")"
+	aSrzQuery[03] := ")"
+	aSrzQuery[04] := " AND "
+	aSrzQuery[05] := "D_E_L_E_T_=' ' "
+
+#ELSE
+
+	bSrzWhile := { |cKey| .T. }
+	bSrzSkip  := { || ( RZ_FILIAL $ cZzsInRZFil ) }	
+
+#ENDIF
+
+/*
+здддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддд©
+Ё Posiciona no Inicio do Arquivo                     		   Ё
+юдддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддды*/
+SRZ->( dbGotop() )
+
+/*
+здддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддд©
+Ё Carregando os Recnos                               		   Ё
+юдддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддды*/
+GdMontaCols(;
+				NIL			,;	//01 -> Array com os Campos do Cabecalho da GetDados
+				NIL			,;	//02 -> Numero de Campos em Uso
+				NIL			,;	//03 -> [@]Array com os Campos Virtuais
+				NIL			,;	//04 -> [@]Array com os Campos Visuais
+				"SRZ"		,;	//05 -> Opcional, Alias do Arquivo Carga dos Itens do aCols
+				aSrzFields	,;	//06 -> Opcional, Campos que nao Deverao constar no aHeader
+				@aSrzRecnos	,;	//07 -> [@]Array unidimensional contendo os Recnos
+				"SRZ"   	,;	//08 -> Alias do Arquivo Pai
+				NIL			,;	//09 -> Chave para o Posicionamento no Alias Filho
+				bSrzWhile	,;	//10 -> Bloco para condicao de Loop While
+				NIL			,;	//11 -> Bloco para Skip no Loop While
+				.F.			,;	//12 -> Se Havera o Elemento de Delecao no aCols 
+				.F.			,;	//13 -> Se cria variaveis Publicas
+				.F.			,;	//14 -> Se Sera considerado o Inicializador Padrao
+				NIL			,;	//15 -> Lado para o inicializador padrao
+				.F.			,;	//16 -> Opcional, Carregar Todos os Campos
+				.T. 		,;	//17 -> Opcional, Nao Carregar os Campos Virtuais
+				aSrzQuery	,;	//18 -> Opcional, Utilizacao de Query para Selecao de Dados
+				.F.			,;	//19 -> Opcional, Se deve Executar bKey  ( Apenas Quando TOP )
+				.F.			,;	//20 -> Opcional, Se deve Executar bSkip ( Apenas Quando TOP )
+				.F.			,;	//21 -> Carregar Coluna Fantasma
+				.T.			,;	//22 -> Inverte a Condicao de aNotFields carregando apenas os campos ai definidos
+				.F.			,;	//23 -> Verifica se Deve verificar se o campo eh usado
+				.F.			,;	//24 -> Verifica se Deve verificar o nivel do usuario
+				.F.	 		 ;	//25 -> Verifica se Deve Carregar o Elemento Vazio no aCols
+			)
+
+/*
+здддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддд©
+Ё Substituindo o Conteudo do RZ_FILIAL               		   Ё
+юдддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддды*/
+nMaxRec := Len( aSrzRecnos )
+For nMinRec := 1 To nMaxRec
+	SRZ->( dbGoto( aSrzRecnos[ nMinRec ] ) )
+	IF SRZ->( !( RZ_FILIAL $ cZzsInRZFil ) .and. Eval( bCondReplace ) )
+		SRZ->( RecLock( "SRZ" , .F. ) )
+		SRZ->RZ_FILIAL := cFilReplace
+		SRZ->( MsUnLock() )
+	EndIF	
+Next nMinRec
+
+/*
+здддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддд©
+Ё Restaurando os Ponteiros de Entrada                		   Ё
+юдддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддды*/
+RestArea( aAreaSRZ )
+RestArea( aArea )
+
+Return( NIL )
+
+/*
+зддддддддддбдддддддддддддбдддддддбдддддддддддддддддддддбддддддбдддддддддд©
+ЁFun┤└o    ЁSRZzs()      Ё Autor ЁMarinaldo de Jesus   Ё Data Ё05/06/2003Ё
+цддддддддддедддддддддддддадддддддадддддддддддддддддддддаддддддадддддддддд╢
+ЁDescri┤└o ЁRetorna Array com os zz..s. possiveis para o SRZ			 Ё
+цддддддддддеддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддд╢
+ЁSintaxe   Ё<Vide Parametros Formais>									 Ё
+цддддддддддеддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддд╢
+ЁParametrosЁ<Vide Parametros Formais>									 Ё
+цддддддддддеддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддд╢
+ЁRetorno   ЁNIL                                                    	     Ё
+цддддддддддеддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддд╢
+ЁObserva┤└oЁ                                                      	     Ё
+цддддддддддеддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддд╢
+ЁUso       ЁGPEM110                   								     Ё
+юддддддддддаддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддды*/
+Static Function SRZzs()
+
+Local aSRZzs		:= Array( __Elementos_aSRZzs__ )
+Local cZzsInRZFil	:= ""
+Local cZzsInRZCc	:= ""
+Local cZzsInRZMat	:= ""
+Local cZzsInRZPd	:= ""
+Local lExistMatSRZ	:= ( Type("SRZ->RZ_MAT") == "C" )
+
+/*
+здддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддд©
+Ё Define os "zz..." possiveis para o campo RZ_FILIAL		   Ё
+юдддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддды*/
+cZzsInRZFil	:= ( "'" + Replicate( "z" , 2 ) + "'," )
+cZzsInRZFil	+= ( "'" + Padr( Replicate( "z" , 2 ) , TamSx3( "RZ_FILIAL")[1] ) + "'," )
+cZzsInRZFil	+= ( "'" + Replicate( "z" , TamSx3( "RZ_FILIAL" )[1] ) + "'," )
+cZzsInRZFil	+= ( "'" + Replicate( "Z" , 2 ) + "'," )
+cZzsInRZFil	+= ( "'" + Padr( Replicate( "Z" , 2 ) , TamSx3( "RZ_FILIAL")[1] ) + "'," )
+cZzsInRZFil	+= ( "'" + Replicate( "Z" , TamSx3( "RZ_FILIAL" )[1] ) + "'" )
+
+/*
+здддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддд©
+Ё Define os "zz..." possiveis para o campo RZ_CC			   Ё
+юдддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддды*/
+cZzsInRZCc	:= ( "'" + Replicate( "z" , 9 ) + "'," )
+cZzsInRZCc	+= ( "'" + Padr( Replicate( "z" , 9 ) , TamSx3( "RZ_CC" )[1] ) + "'," )
+cZzsInRZCc	+= ( "'" + Replicate( "z" , TamSx3( "RZ_CC" )[1] ) + "'" )
+cZzsInRZCc	+= ( "'" + Replicate( "Z" , 9 ) + "'," )
+cZzsInRZCc	+= ( "'" + Padr( Replicate( "Z" , 9 ) , TamSx3( "RZ_CC" )[1] ) + "'," )
+cZzsInRZCc	+= ( "'" + Replicate( "Z" , TamSx3( "RZ_CC" )[1] ) + "'" )
+
+/*
+здддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддд©
+Ё Define os "zz..." possiveis para o campo RZ_PD			   Ё
+юдддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддды*/
+cZzsInRZPd	:= ( "'" + Replicate( "z" , 3 ) + "'," )
+cZzsInRZPd	+= ( "'" + Padr( Replicate( "z" , 3 ) , TamSx3( "RZ_PD" )[1] ) + "'," )
+cZzsInRZPd	+= ( "'" + Replicate( "z" , TamSx3( "RZ_PD" )[1] ) + "'" )
+cZzsInRZPd	+= ( "'" + Replicate( "Z" , 3 ) + "'," )
+cZzsInRZPd	+= ( "'" + Padr( Replicate( "Z" , 3 ) , TamSx3( "RZ_PD" )[1] ) + "'," )
+cZzsInRZPd	+= ( "'" + Replicate( "Z" , TamSx3( "RZ_PD" )[1] ) + "'" )
+
+/*
+здддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддд©
+Ё Define os "zz..." possiveis para o campo RZ_MAT			   Ё
+юдддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддды*/
+IF ( lExistMatSRZ )
+	cZzsInRZMat	:= ( "'" + Replicate( "z" , 6 ) + "'," )
+	cZzsInRZMat	+= ( "'" + Padr( Replicate( "z" , 6 ) , TamSx3( "RZ_MAT" )[1] ) + "'," )
+	cZzsInRZMat	+= ( "'" + Replicate( "z" , TamSx3( "RZ_MAT" )[1] ) + "'" )
+	cZzsInRZMat	+= ( "'" + Replicate( "Z" , 6 ) + "'," )
+	cZzsInRZMat	+= ( "'" + Padr( Replicate( "Z" , 6 ) , TamSx3( "RZ_MAT" )[1] ) + "'," )
+	cZzsInRZMat	+= ( "'" + Replicate( "Z" , TamSx3( "RZ_MAT" )[1] ) + "'" )
+EndIF
+
+/*
+здддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддд©
+Ё Carrega o Array                                 		       Ё
+юдддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддды*/
+aSRZzs[__aSzs_Pos_Fil__] := cZzsInRZFil
+aSRZzs[__aSzs_Pos_Cc__ ] := cZzsInRZCc
+aSRZzs[__aSzs_Pos_Mat__] := cZzsInRZMat
+aSRZzs[__aSzs_Pos_Pd__ ] := cZzsInRZPd
+
+Return( aClone( aSRZzs ) )
+
+/*
+зддддддддддбдддддддддддддддбдддддбдддддддддддддддддддддбддддддбдддддддддд©
+ЁFun┤└o    ЁGpem110InRemoteЁAutorЁMarinaldo de Jesus   Ё Data Ё24/06/2003Ё
+цддддддддддедддддддддддддддадддддадддддддддддддддддддддаддддддадддддддддд╢
+ЁDescri┤└o ЁVerifica se o Processo de Contabilizacao esta sendo ExecutadoЁ
+Ё          Ёvia Remote													 Ё
+цддддддддддеддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддд╢
+ЁSintaxe   Ё<Vide Parametros Formais>									 Ё
+цддддддддддеддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддд╢
+ЁParametrosЁ<Vide Parametros Formais>									 Ё
+цддддддддддеддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддд╢
+ЁRetorno   ЁNIL                                                    	     Ё
+цддддддддддеддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддд╢
+ЁObserva┤└oЁ                                                      	     Ё
+цддддддддддеддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддд╢
+ЁUso       ЁGPEM110                   								     Ё
+юддддддддддаддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддды*/
+Static Function Gpem110InRemote( lExecInRemote )
+
+DEFAULT lExecInRemote := .T.
+
+lGpem110ExecInRemote := lExecInRemote
+IF ( ( Type("__cInternet") <> "U" ) .and. ( __cInternet == "AUTOMATICO" ) )
+	lGpem110ExecInRemote := .F.
+EndIF
+
+Return( NIL )
+
+/* Funcao para acerto de Base */
+/* Devera ser Excluida das proximas versoes */
+Static Function AcertaSX1()
+
+Local aArea		:= GetArea()
+Local aAreaSX1	:= SX1->( GetArea() )
+
+IF SX1->( dbSeek( "GPM11008" ) )
+	IF ( SX1->X1_F3 <> "XM0" )
+		SX1->( RecLock( "SX1" , .F. ) )
+		SX1->X1_F3 := "XM0"
+		SX1->( MsUnLock() )
+	EndIF
+	SX1->( dbSkip() )
+	IF ( SX1->( X1_GRUPO + X1_ORDEM ) == "GPM11009" )
+		IF ( SX1->X1_F3 <> "XM0" )
+			SX1->( RecLock( "SX1" , .F. ) )
+			SX1->X1_F3 := "XM0"
+			SX1->( MsUnLock() )
+		EndIF
+	EndIF
+EndIF
+
+RestArea( aAreaSX1 )
+RestArea( aArea )
+
+Return( NIL )

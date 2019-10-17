@@ -1,0 +1,209 @@
+/*
+ÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜ
+ฑฑฑฑฑฑฑฑฑฑฑฑฑฑฑฑฑฑฑฑฑฑฑฑฑฑฑฑฑฑฑฑฑฑฑฑฑฑฑฑฑฑฑฑฑฑฑฑฑฑฑฑฑฑฑฑฑฑฑฑฑฑฑฑฑฑฑฑฑฑฑฑฑฑฑฑฑ
+ฑฑษออออออออออัออออออออออหอออออออัออออออออออออออออออออหออออออัอออออออออออออปฑฑ
+ฑฑบPrograma  ณRWF001    บAutor  ณAdriano Luis Brandaoบ Data ณ  11/07/05   บฑฑ
+ฑฑฬออออออออออุออออออออออสอออออออฯออออออออออออออออออออสออออออฯอออออออออออออนฑฑ
+ฑฑบDesc.     ณFuncao de envio de e-mail solicitando cadastro de produto ouบฑฑ
+ฑฑบ          ณFornecedor                                                  บฑฑ
+ฑฑฬออออออออออุออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออนฑฑ
+ฑฑบUso       ณ AP - DELLA VIA                                             บฑฑ
+ฑฑศออออออออออฯออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออผฑฑ
+ฑฑฑฑฑฑฑฑฑฑฑฑฑฑฑฑฑฑฑฑฑฑฑฑฑฑฑฑฑฑฑฑฑฑฑฑฑฑฑฑฑฑฑฑฑฑฑฑฑฑฑฑฑฑฑฑฑฑฑฑฑฑฑฑฑฑฑฑฑฑฑฑฑฑฑฑฑ
+฿฿฿฿฿฿฿฿฿฿฿฿฿฿฿฿฿฿฿฿฿฿฿฿฿฿฿฿฿฿฿฿฿฿฿฿฿฿฿฿฿฿฿฿฿฿฿฿฿฿฿฿฿฿฿฿฿฿฿฿฿฿฿฿฿฿฿฿฿฿฿฿฿฿฿฿฿
+*/
+User Function RWF001()
+
+Local oDlg,oGrp1,oCombo2,oGrp3,oGet4,oGrp5,oGet6,oSBtn7,oSBtn8
+Private _cCombo 	:= ""
+Private _cDescri 	:= Space(150)
+Private _cMotivo	:= Space(150)
+Private _cEMail		:= GetNewPar("MV_WFSOLCD","microsiga2@dellavia.com.br")
+
+
+oDlg := MSDIALOG():Create()
+oDlg:cName := "oDlg"
+oDlg:cCaption := "Solicitacao de Cadastros"
+oDlg:nLeft := 0
+oDlg:nTop := 0
+oDlg:nWidth := 597
+oDlg:nHeight := 345
+oDlg:lShowHint := .F.
+oDlg:lCentered := .F.
+
+oGrp1 := TGROUP():Create(oDlg)
+oGrp1:cName := "oGrp1"
+oGrp1:cCaption := "Tipo Cadastro"
+oGrp1:nLeft := 33
+oGrp1:nTop := 34
+oGrp1:nWidth := 192
+oGrp1:nHeight := 50
+oGrp1:lShowHint := .F.
+oGrp1:lReadOnly := .F.
+oGrp1:Align := 0
+oGrp1:lVisibleControl := .T.
+
+oCombo2 := TCOMBOBOX():Create(oDlg)
+oCombo2:cName := "oCombo2"
+oCombo2:cCaption := "oCombo2"
+oCombo2:nLeft := 45
+oCombo2:nTop := 53
+oCombo2:nWidth := 145
+oCombo2:nHeight := 21
+oCombo2:lShowHint := .F.
+oCombo2:lReadOnly := .F.
+oCombo2:Align := 0
+oCombo2:cVariable := "_cCombo"
+oCombo2:bSetGet := {|u| If(PCount()>0,_cCombo:=u,_cCombo) }
+oCombo2:lVisibleControl := .T.
+oCombo2:aItems := { "1-Fornecedor","2-Produto"}
+oCombo2:nAt := 0
+
+oGrp3 := TGROUP():Create(oDlg)
+oGrp3:cName := "oGrp3"
+oGrp3:cCaption := "Descricao do Cadastro"
+oGrp3:nLeft := 33
+oGrp3:nTop := 117
+oGrp3:nWidth := 508
+oGrp3:nHeight := 53
+oGrp3:lShowHint := .F.
+oGrp3:lReadOnly := .F.
+oGrp3:Align := 0
+oGrp3:lVisibleControl := .T.
+
+oGet4 := TGET():Create(oDlg)
+oGet4:cName := "oGet4"
+oGet4:cCaption := "oGet4"
+oGet4:nLeft := 45
+oGet4:nTop := 136
+oGet4:nWidth := 482
+oGet4:nHeight := 21
+oGet4:lShowHint := .F.
+oGet4:lReadOnly := .F.
+oGet4:Align := 0
+oGet4:cVariable := "_cDescri"
+oGet4:bSetGet := {|u| If(PCount()>0,_cDescri:=u,_cDescri) }
+oGet4:lVisibleControl := .T.
+oGet4:lPassword := .F.
+oGet4:lHasButton := .F.
+oGet4:bValid := {|| naovazio() }
+
+oGrp5 := TGROUP():Create(oDlg)
+oGrp5:cName := "oGrp5"
+oGrp5:cCaption := "Motivo"
+oGrp5:nLeft := 33
+oGrp5:nTop := 195
+oGrp5:nWidth := 508
+oGrp5:nHeight := 59
+oGrp5:lShowHint := .F.
+oGrp5:lReadOnly := .F.
+oGrp5:Align := 0
+oGrp5:lVisibleControl := .T.
+
+oGet6 := TGET():Create(oDlg)
+oGet6:cName := "oGet6"
+oGet6:cCaption := "oGet6"
+oGet6:nLeft := 45
+oGet6:nTop := 218
+oGet6:nWidth := 482
+oGet6:nHeight := 21
+oGet6:lShowHint := .F.
+oGet6:lReadOnly := .F.
+oGet6:Align := 0
+oGet6:cVariable := "_cMotivo"
+oGet6:bSetGet := {|u| If(PCount()>0,_cMotivo:=u,_cMotivo) }
+oGet6:lVisibleControl := .T.
+oGet6:lPassword := .F.
+oGet6:lHasButton := .F.
+
+oSBtn7 := SBUTTON():Create(oDlg)
+oSBtn7:cName := "oSBtn7"
+oSBtn7:cCaption := "oSBtn7"
+oSBtn7:nLeft := 376
+oSBtn7:nTop := 277
+oSBtn7:nWidth := 52
+oSBtn7:nHeight := 22
+oSBtn7:lShowHint := .F.
+oSBtn7:lReadOnly := .F.
+oSBtn7:Align := 0
+oSBtn7:lVisibleControl := .T.
+oSBtn7:nType := 2
+oSBtn7:bAction := {|| oDlg:End() }
+
+oSBtn8 := SBUTTON():Create(oDlg)
+oSBtn8:cName := "oSBtn8"
+oSBtn8:cCaption := "Enviar"
+oSBtn8:nLeft := 485
+oSBtn8:nTop := 277
+oSBtn8:nWidth := 52
+oSBtn8:nHeight := 22
+oSBtn8:lShowHint := .F.
+oSBtn8:lReadOnly := .F.
+oSBtn8:Align := 0
+oSBtn8:lVisibleControl := .T.
+oSBtn8:nType := 1
+oSBtn8:bAction := {|| _fConfirm() }
+
+oDlg:Activate()
+
+Return
+
+
+/*
+ÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜ
+ฑฑฑฑฑฑฑฑฑฑฑฑฑฑฑฑฑฑฑฑฑฑฑฑฑฑฑฑฑฑฑฑฑฑฑฑฑฑฑฑฑฑฑฑฑฑฑฑฑฑฑฑฑฑฑฑฑฑฑฑฑฑฑฑฑฑฑฑฑฑฑฑฑฑฑฑฑ
+ฑฑษออออออออออัออออออออออหอออออออัออออออออออออออออออออหออออออัอออออออออออออปฑฑ
+ฑฑบPrograma  ณ_fConfirm บAutor  ณAdriano Luis Brandaoบ Data ณ  11/07/05   บฑฑ
+ฑฑฬออออออออออุออออออออออสอออออออฯออออออออออออออออออออสออออออฯอออออออออออออนฑฑ
+ฑฑบDesc.     ณ Rotina de confirmacao do envio do e-mail.                  บฑฑ
+ฑฑบ          ณ                                                            บฑฑ
+ฑฑฬออออออออออุออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออนฑฑ
+ฑฑบUso       ณ AP - DELLA VIA                                             บฑฑ
+ฑฑศออออออออออฯออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออผฑฑ
+ฑฑฑฑฑฑฑฑฑฑฑฑฑฑฑฑฑฑฑฑฑฑฑฑฑฑฑฑฑฑฑฑฑฑฑฑฑฑฑฑฑฑฑฑฑฑฑฑฑฑฑฑฑฑฑฑฑฑฑฑฑฑฑฑฑฑฑฑฑฑฑฑฑฑฑฑฑ
+฿฿฿฿฿฿฿฿฿฿฿฿฿฿฿฿฿฿฿฿฿฿฿฿฿฿฿฿฿฿฿฿฿฿฿฿฿฿฿฿฿฿฿฿฿฿฿฿฿฿฿฿฿฿฿฿฿฿฿฿฿฿฿฿฿฿฿฿฿฿฿฿฿฿฿฿฿
+*/
+Static Function _fConfirm()
+
+If ! ApMsgYesNo("Confirma envio desta solicitacao de cadastro ???")
+	Return
+EndIf
+
+MsgRun("Enviando e-mail de solicitacao",,{ || _fEnvio() })
+
+Return
+
+/*
+ÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜ
+ฑฑฑฑฑฑฑฑฑฑฑฑฑฑฑฑฑฑฑฑฑฑฑฑฑฑฑฑฑฑฑฑฑฑฑฑฑฑฑฑฑฑฑฑฑฑฑฑฑฑฑฑฑฑฑฑฑฑฑฑฑฑฑฑฑฑฑฑฑฑฑฑฑฑฑฑฑ
+ฑฑษออออออออออัออออออออออหอออออออัออออออออออออออออออออหออออออัอออออออออออออปฑฑ
+ฑฑบPrograma  ณ_fEnvio   บAutor  ณAdriano Luis Brandaoบ Data ณ  11/07/05   บฑฑ
+ฑฑฬออออออออออุออออออออออสอออออออฯออออออออออออออออออออสออออออฯอออออออออออออนฑฑ
+ฑฑบDesc.     ณ Rotina de envio dos e-mails.                               บฑฑ
+ฑฑบ          ณ                                                            บฑฑ
+ฑฑฬออออออออออุออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออนฑฑ
+ฑฑบUso       ณ AP - DELLA VIA                                             บฑฑ
+ฑฑศออออออออออฯออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออผฑฑ
+ฑฑฑฑฑฑฑฑฑฑฑฑฑฑฑฑฑฑฑฑฑฑฑฑฑฑฑฑฑฑฑฑฑฑฑฑฑฑฑฑฑฑฑฑฑฑฑฑฑฑฑฑฑฑฑฑฑฑฑฑฑฑฑฑฑฑฑฑฑฑฑฑฑฑฑฑฑ
+฿฿฿฿฿฿฿฿฿฿฿฿฿฿฿฿฿฿฿฿฿฿฿฿฿฿฿฿฿฿฿฿฿฿฿฿฿฿฿฿฿฿฿฿฿฿฿฿฿฿฿฿฿฿฿฿฿฿฿฿฿฿฿฿฿฿฿฿฿฿฿฿฿฿฿฿฿
+*/
+Static Function _fEnvio()
+
+oProcess          	:= TWFProcess():New( "SCAD", "Envio Solicitacao Aprovacao"  )
+oProcess          	:NewTask( "SCAD : ", "\WORKFLOW\HTML\SCAD\SCAD.HTM" )
+oProcess:cSubject 	:= "Envio solicitacao Cadastro "
+oProcess:NewVersion(.T.)
+
+oHtml     				:= oProcess:oHTML
+oProcess:cTo      		:= _cEMail
+
+oHtml:ValByName("TIPO",_cCombo)
+oHtml:ValByName("DESC",_cDescri)
+oHtml:ValByName("MOTIVO",_cMotivo)	
+
+oProcess:Start()
+
+ApMsgAlert("E-Mail Enviado")
+_cMotivo 	:= Space(150)
+_cDescri	:= Space(150)
+Return
